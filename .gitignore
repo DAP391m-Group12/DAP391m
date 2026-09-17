@@ -19,3 +19,5 @@ mlruns/
 # IDE
 .vscode/
 .idea/
+#Docs project
+!docs/*
