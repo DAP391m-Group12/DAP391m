@@ -1,0 +1,21 @@
+# Python & Môi trường ảo
+__pycache__/
+*.py[cod]
+.venv/
+env/
+.env
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+# Dữ liệu lớn & Model weights (Tránh đẩy lên Git)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+model/*
+!model/.gitkeep
+# MLflow logs
+mlruns/
+.trash/
+# IDE
+.vscode/
+.idea/
