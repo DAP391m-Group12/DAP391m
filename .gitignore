@@ -21,3 +21,5 @@ mlruns/
 .idea/
 #Docs project
 !docs/*
+
+*.egg-info

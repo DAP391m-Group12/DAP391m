@@ -91,17 +91,32 @@ def load_config(config_path: str | Path = "config.yaml") -> Config:
 
     raise FileNotFoundError(f"Không tìm thấy file cấu hình: {config_path}")
 
-def save_model_config(model_name: str, config_path: str | Path = "model_config.yaml", **hyperparameters: Any) -> Path:
+def save_model_config(
+    model_name: str,
+    training_time: float | str | None = None,
+    config_path: str | Path = "model_config.yaml",
+    **hyperparameters: Any,
+) -> Path:
     """
-    Lưu cấu hình mô hình (tên model và các siêu tham số) vào file YAML.
+    Lưu cấu hình mô hình (tên model, thời gian, siêu tham số) vào lịch sử file YAML.
+    Nếu file đã tồn tại, hàm sẽ tự động thêm (append) lượt chạy mới vào danh sách.
     
     Ví dụ:
-        save_model_config("LogisticRegression", C=1.0, max_iter=200)
+        save_model_config("LogisticRegression", training_time=1.25, C=1.0, max_iter=200)
     """
-    data = {
+    from datetime import datetime
+    
+    now = datetime.now()
+    run_entry: dict[str, Any] = {
+        "run_id": f"{model_name}_{now.strftime('%Y%m%d_%H%M%S')}",
         "model_name": model_name,
-        "hyperparameters": hyperparameters
+        "timestamp": now.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    
+    if training_time is not None:
+        run_entry["training_time"] = f"{training_time:.2f}s" if isinstance(training_time, (int, float)) else str(training_time)
+        
+    run_entry["hyperparameters"] = hyperparameters
     
     def _to_dict(obj: Any) -> Any:
         if isinstance(obj, dict):
@@ -111,8 +126,6 @@ def save_model_config(model_name: str, config_path: str | Path = "model_config.y
         return obj
 
     path = Path(config_path)
-    
-    # Nếu chỉ truyền tên file (vd: "model_config.yaml"), lưu tự động vào thư mục config/
     if not path.is_absolute() and len(path.parts) == 1:
         path = CONFIG_DIR / path
     elif not path.is_absolute():
@@ -120,7 +133,22 @@ def save_model_config(model_name: str, config_path: str | Path = "model_config.y
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Đọc lịch sử cũ nếu file đã tồn tại
+    history: list[Any] = []
+    if path.is_file():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = yaml.safe_load(f)
+                if isinstance(content, list):
+                    history = content
+                elif isinstance(content, dict):
+                    history = [content]
+        except Exception:
+            history = []
+
+    history.append(_to_dict(run_entry))
+
     with open(path, "w", encoding="utf-8") as f:
-        yaml.dump(_to_dict(data), f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        yaml.dump(history, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
     return path
