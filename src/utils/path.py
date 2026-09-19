@@ -2,7 +2,7 @@ from pathlib import Path
 
 # src/utils/path.py
 # path.py -> utils -> src -> project root
-PROJECT_ROOT = Path(__file__).resolve().parent[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 CONFIG_DIR = PROJECT_ROOT/ 'config'
 DATA_DIR = PROJECT_ROOT/ 'data'
@@ -48,4 +48,3 @@ def processed_dataset_dir(dataset_name: str) -> Path:
             f"Unknown dataset_name={dataset_name!r}. Allowed: {allowed}."
         ) from exc
 
-    
