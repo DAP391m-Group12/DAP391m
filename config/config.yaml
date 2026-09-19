@@ -1,0 +1,39 @@
+schema_version: 1
+
+study:
+  name: hmda_new_york_2024_mortgage_approval
+  data_source: HMDA New York 2024
+  prediction_time: end_of_underwriting_before_action_taken_is_recorded
+  output_probability: p_approved
+  interpretation_boundary:
+    - evaluates_historical_decisions_and_model_predictions
+    - does_not_predict_default
+    - does_not_infer_creditworthiness
+    - does_not_establish_causal_or_legal_discrimination_conclusions
+
+dataset_splitting:
+  requirement: identical_train_validation_test_split_for_all_set_a_models
+  hyperparameter_tuning: cross_validation_within_training_set_only
+  validation_use: select_and_freeze_model_specific_threshold
+  test_use: final_evaluation_only
+  random_state: 42
+  stratify_target: true
+  split_proportions:
+    train: 0.60
+    validation: 0.20
+    test: 0.20
+
+bootstrap:
+  resamples: 1000
+  confidence_level: 0.95
+  interval_method: percentile
+  percentile_bounds: [0.025, 0.975]
+  resample_with_replacement: true
+  retrain_models: false
+
+artifacts:
+  raw_data_dir: data/raw
+  processed_data_dir: data/processed
+  model_dir: model
+  reports_dir: reports
+  figures_dir: reports/figures

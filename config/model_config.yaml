@@ -1,0 +1,79 @@
+schema_version: 1
+
+set_a:
+  status: locked
+  purpose: bridge_rq1_rq2
+  models:
+    - logistic_regression
+    - random_forest
+  training:
+    use_identical_dataset_and_split: true
+    hyperparameter_tuning: cross_validation_within_training_only
+    retain_all_models_for_rq2: true
+    cv_folds: 3
+    cv_scoring: roc_auc
+    # Keep CV parallelism bounded on Windows; Random Forest itself runs with
+    # one worker while GridSearchCV schedules these jobs.
+    n_jobs: 2
+  hyperparameter_grids:
+    logistic_regression:
+      model__C: [0.1, 1.0]
+      model__class_weight: [null, balanced]
+    random_forest:
+      model__n_estimators: [200]
+      model__max_depth: [null, 16]
+      model__min_samples_leaf: [1, 5]
+      model__class_weight: [null, balanced]
+  threshold_selection:
+    dataset: validation
+    objective: balanced_accuracy
+    freeze_before_test_and_bootstrap: true
+  rq1:
+    probability_output: p_approved
+    probability_calibration_adjustment: prohibited
+    threshold_independent_metrics:
+      - roc_auc_approved
+      - pr_auc_denied
+      - brier_score_approved
+    calibration_metrics:
+      - calibration_curve
+      - calibration_intercept
+      - calibration_slope
+    threshold_dependent_metrics:
+      - balanced_accuracy
+      - precision_approved
+      - recall_approved
+      - f1_approved
+      - precision_denied
+      - recall_denied
+      - f1_denied
+    computational_metrics:
+      - training_time
+      - inference_time
+    paired_bootstrap:
+      unit: locked_test_observations
+      share_indices_across_models: true
+  rq2:
+    output_to_explain: p_approved
+    methods:
+      - global_shapley_values
+      - shapley_lorenz
+    required_analyses:
+      - logistic_regression_global_shapley_values
+      - logistic_regression_shapley_lorenz
+      - random_forest_global_shapley_values
+      - random_forest_shapley_lorenz
+    use_same_explanation_observations_per_model: true
+    use_same_background_sample_per_model_when_required: true
+    group_contribution_rule: sum_signed_encoded_contributions_then_absolute_l1_normalize
+    normalize_methods_together: prohibited
+    compare_raw_contributions_across_methods: prohibited
+    rank_metrics:
+      - spearman_rank_correlation
+      - kendall_tau_b
+      - top_k_jaccard
+      - mean_absolute_rank_difference
+    paired_bootstrap:
+      unit: explanation_observations
+      share_indices_across_methods: true
+      recompute_global_statistics: true
