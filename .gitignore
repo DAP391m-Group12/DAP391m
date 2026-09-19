@@ -21,3 +21,6 @@ mlruns/
 .idea/
 #Docs project
 !docs/*
+
+# Runtime logs
+reports/logs/

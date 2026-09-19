@@ -1,0 +1,22 @@
+{
+  "logistic_regression": {
+    "best_parameters": {
+      "model__C": 0.1,
+      "model__class_weight": null
+    },
+    "cv_roc_auc": 0.7122804428118883,
+    "threshold": 0.7463921088041002,
+    "training_seconds": 40.83345790000749
+  },
+  "random_forest": {
+    "best_parameters": {
+      "model__class_weight": null,
+      "model__max_depth": null,
+      "model__min_samples_leaf": 5,
+      "model__n_estimators": 200
+    },
+    "cv_roc_auc": 0.7576986995115317,
+    "threshold": 0.7290364416742463,
+    "training_seconds": 598.6566325000022
+  }
+}
