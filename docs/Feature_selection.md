@@ -2,9 +2,9 @@
 
 ## 1. Mục tiêu và phạm vi
 
-Tài liệu này quy định cách chốt feature set cho Dataset B trước khi chạy pipeline huấn luyện chính.
+Tài liệu này là nguồn chuẩn cho bằng chứng và quyết định feature governance trước pipeline huấn luyện chính. Contract dữ liệu—cohort/target, 99 cột, candidate universe, metadata và exclusions—nằm tại `docs/Dataset_B_Data_Selection.md`; không lặp lại toàn bộ contract ở đây.
 
-Feature selection không được thực hiện bằng cách preprocessing toàn bộ 35 predictor candidates, huấn luyện sáu mô hình rồi quay lại loại feature. Quy trình được chốt theo thứ tự:
+Feature selection không được thực hiện bằng cách preprocessing toàn bộ candidate pool, huấn luyện sáu mô hình rồi quay lại loại feature. Quy trình được chốt theo thứ tự:
 
 1. lập luận nghiệp vụ và thời điểm có dữ liệu;
 2. kiểm tra chất lượng dữ liệu tối thiểu;
@@ -17,34 +17,19 @@ Mục tiêu của quy trình là tạo được câu trả lời có bằng ch�
 
 Đây là tài liệu thiết kế và decision protocol, chưa phải kết quả thực nghiệm hay tuyên bố feature importance.
 
-## 2. Target và ranh giới bắt buộc
+## 2. Contract preconditions
 
-- Cohort chỉ gồm các bản ghi có `action_taken` thuộc `{1, 2, 3}`.
-- `y_approved = 1` khi `action_taken` thuộc `{1, 2}`.
-- `y_approved = 0` khi `action_taken = 3`.
-- Giữ `action_taken` gốc để truy vết nhưng không đưa vào feature matrix `X`.
-- Không dùng test set để quyết định giữ/bỏ feature.
-- Các cột hậu quyết định, outcome-dependent hoặc leakage đã bị loại tại Gate 1–2 không được đưa lại vào candidate pool.
+Mọi quyết định ở tài liệu này kế thừa các điều kiện không được thay đổi từ Data Selection: cohort chỉ dùng `action_taken ∈ {1, 2, 3}`, mapping `1/2 → y_approved=1` và `3 → y_approved=0`, raw `action_taken` giữ để truy vết nhưng nằm ngoài `X`, và Gate 1–2 không được mở lại. Test set không dùng để quyết định giữ/bỏ feature.
 
-## 3. Phân nhóm tổng thể
+## 3. Phạm vi quyết định trong tài liệu này
 
-| Nhóm                                              | Số cột | Vai trò                                                                                    |
-| -------------------------------------------------- | -------: | ------------------------------------------------------------------------------------------- |
-| Feature ưu tiên theo lập luận nghiệp vụ      |       15 | Được xem xét trước để hình thành main feature set                                 |
-| Feature cần kiểm tra thêm                       |       18 | Mặc định chưa đưa vào main feature set; chỉ giữ khi có bằng chứng rõ ràng     |
-| Representation thay thế                           |        2 | So sánh với representation gốc; không dùng đồng thời                                |
-| Metadata dùng trong feature-selection diagnostics |        6 | Xử lý cùng notebook feature selection nhưng không đưa vào`X`                      |
-| Metadata chỉ giữ để tham khảo/audit sau       |        3 | Bảo toàn trong Dataset B, không tham gia quyết định feature ở giai đoạn hiện tại |
-| Target source                                      |        1 | Tạo`y_approved`, không phải predictor                                                  |
-| Cột đã loại tại Gate 1–2                     |       54 | Không xem xét lại trong feature selection                                                |
-
-Ba mươi lăm predictor candidates gồm `15 + 18 + 2`. Metadata và target không được tính là predictor.
+Ba mươi lăm predictor candidates gồm 15 feature ưu tiên, 18 feature cần kiểm tra thêm và 2 representation thay thế. Metadata và target không phải predictor; danh sách vai trò đầy đủ và phép đối soát `35 + 9 + 1 + 54 = 99` chỉ được duy trì tại Data Selection. Mục 4–6 ghi bằng chứng cho 35 candidates; mục 7 quy định cách dùng metadata làm diagnostic ngoài `X`.
 
 ## 4. Feature ưu tiên — 15 cột
 
 Nhóm này có prior nghiệp vụ rõ ràng và được kiểm tra trước. “Ưu tiên” không có nghĩa tự động giữ tất cả. Một feature vẫn có thể bị loại nếu không có trước quyết định, chất lượng dữ liệu không đạt, hoặc trùng information content với representation được chọn.
 
-Các kết quả dưới đây được lấy từ saved outputs của `notebooks/eda_datasetB/feature_selectiom.ipynb` trên cohort Dataset B gồm **293.301 hồ sơ**. Cả 15 feature đều có `timing_status = available_before_decision`. Mục 4 mới thực hiện data-quality, distribution và redundancy screening; chưa preprocessing, target association, model training, protected-group sensitivity hoặc mở test set.
+Các kết quả dưới đây được lấy từ saved outputs của `notebooks/eda_datasetB/05_feature_selction.ipynb` trên cohort Dataset B gồm **293.301 hồ sơ**. Cả 15 feature đều có `timing_status = available_before_decision`. Mục 4 mới thực hiện data-quality, distribution và redundancy screening; chưa preprocessing, target association, model training, protected-group sensitivity hoặc mở test set.
 
 | Trạng thái sau mục 4                | Số feature | Feature                                                                                                                                                                                                                                                    |
 | -------------------------------------- | ----------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -403,6 +388,18 @@ Sensitivity analysis chỉ dùng cho quyết định còn mơ hồ sau business 
 
 Sau sensitivity, feature decision được khóa trước khi pipeline huấn luyện chính bắt đầu.
 
+### 10.1. Grouped validation sau screening
+
+Khi một quyết định vẫn còn mở sau các gate ở mục 8–10, validation chỉ thực hiện trên train/validation với representation và preprocessing giống nhau giữa các phương án. Protocol phải ghi rõ baseline đang dùng các feature đã khóa hay block priority còn trạng thái representation-comparison; không được biến screening hiện tại thành claim đã feature-lock.
+
+1. Baseline bắt đầu từ block 15 feature ưu tiên đã được screening; protocol phải nêu rõ trạng thái quyết định hiện hành của block này. So sánh baseline với grouped addition và grouped ablation theo business block, không thêm rời từng slot của cùng một khái niệm.
+2. So sánh raw và derived representation theo cùng split và hyperparameter budget.
+3. Kiểm tra ít nhất một mô hình tuyến tính và một mô hình cây; không chạy toàn bộ sáu model hoặc GSV/SL cho sensitivity variants.
+4. Nếu protocol đã phê duyệt nhiều seed hoặc cross-validation, báo cáo độ biến thiên; không chỉ báo cáo một con số tốt nhất.
+5. Nếu đủ dữ liệu, kiểm tra robustness theo `lei` hoặc held-out-LEI. Fairness sensitivity dùng chín audit metadata ngoài `X`; đây không phải mitigation hoặc causal analysis.
+
+Chỉ số cần báo cáo khi có model-based validation gồm `Δ ROC-AUC`, `Δ PR-AUC` với Denied là lớp cần chú ý, `Δ Brier score` hoặc calibration metric đã khóa, và confidence interval hoặc paired resampling phù hợp cho chênh lệch giữa feature sets. Feature importance đơn lẻ không đủ để quyết định vì có thể phản ánh redundancy, organization proxy, missingness hoặc leakage.
+
 ## 11. Quy tắc ra quyết định
 
 ### Feature ưu tiên
@@ -418,7 +415,11 @@ Chỉ loại khi có bằng chứng cụ thể về timing, leakage, chất lư�
 
 ### Feature cần kiểm tra
 
-Mặc định không đưa vào main set. Chỉ giữ khi cung cấp một khái niệm mới, có dữ liệu đủ tin cậy và không làm tăng độ phức tạp/GSV players mà không có lợi ích diễn giải rõ ràng.
+Mặc định không đưa vào main set. Chỉ giữ khi đồng thời cung cấp một khái niệm mới, có ý nghĩa và timing hợp lệ, coverage/phạm vi áp dụng đủ rõ, giá trị tăng thêm ổn định trên validation thay vì một split, và không chủ yếu phản ánh missingness hoặc proxy `lei`. Lợi ích phải biện minh được chi phí tăng GSV/SL players và không làm suy giảm đáng kể calibration, robustness hoặc fairness sensitivity mà không có lợi ích rõ ràng.
+
+### Representation thay thế
+
+Với mỗi khái niệm raw-versus-derived, chỉ chọn một representation. Ưu tiên raw khi hiệu năng tương đương; chỉ chọn derived khi lợi ích ổn định và vẫn ánh xạ được cho RQ2. Không đưa đồng thời hai representation tương ứng vào main model.
 
 ### Metadata dùng trong feature-selection diagnostics
 
@@ -428,7 +429,7 @@ Mặc định không đưa vào main set. Chỉ giữ khi cung cấp một khái
 
 Chỉ bảo toàn cho audit và truy vết sau này; không tác động đến quyết định feature hiện tại.
 
-## 12. Đầu ra bắt buộc của `feature_selectiom.ipynb`
+## 12. Đầu ra bắt buộc của `05_feature_selction.ipynb`
 
 Notebook feature selection phải kết thúc bằng các artifact logic sau:
 
@@ -453,6 +454,8 @@ Mỗi dòng trong `feature_decision_table` cần có tối thiểu:
 | `quality_evidence`            | Coverage, valid codes, special tokens                |
 | `redundancy_evidence`         | Feature/representation liên quan                    |
 | `protected_group_sensitivity` | Kết quả kiểm tra theo sex/race nếu áp dụng     |
+| `validation_evidence`         | Addition/ablation, metric và uncertainty nếu đã được phép chạy |
+| `stability_evidence`          | Kết quả qua fold/seed/model family nếu protocol yêu cầu |
 | `decision`                    | `keep`, `exclude` hoặc `alternative`          |
 | `decision_reason`             | Một câu lý do có thể bảo vệ được           |
 | `gsv_player`                  | Business player tương ứng hoặc`not_applicable` |
@@ -491,7 +494,7 @@ Chưa được coi là kết quả cuối:
 ## 14. Tài liệu liên quan
 
 - `docs/Dataset_B_Data_Selection.md`
-- `docs/Yêu cầu Kỹ thuật Dataset B cho RQ1 RQ2 và RQ3 - HMDA NY 2024.docx`
+- `docs/Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx`
 - `docs/Yêu cầu Kỹ thuật Set A cho RQ1 và RQ2 - HMDA NY 2024 - Revised.docx`
 - `config/features.yaml`
-- `notebooks/eda_datasetB/feature_selectiom.ipynb`
+- `notebooks/eda_datasetB/05_feature_selction.ipynb`

@@ -277,56 +277,11 @@ Không loại feature chỉ vì missing cao nếu missing phản ánh phạm vi 
 - Dùng association/correlation phù hợp với loại biến để chẩn đoán, nhưng không lấy một ngưỡng correlation đơn lẻ làm quy tắc loại.
 - Kiểm tra quan hệ có điều kiện và khả năng đảo chiều giữa nhóm tổ chức, địa lý hoặc loại sản phẩm; không dựa hoàn toàn vào association toàn cục.
 
-## 6. Thiết kế thực nghiệm để quyết định giữ/bỏ
+## 6. Handoff sang feature governance
 
-Mọi quyết định phải thực hiện trên train/validation; test set được niêm phong đến khi feature set và pipeline đã khóa.
+Tài liệu này chốt candidate universe và các gate dữ liệu bắt buộc. Evidence, grouped validation, decision rules và decision-record schema được duy trì duy nhất tại `docs/Feature_selection.md`, mục 8–12. Bất kỳ validation nào vẫn chỉ dùng train/validation; test set được niêm phong đến khi feature set và pipeline đã khóa.
 
-1. **Baseline:** huấn luyện cùng protocol với 15 feature ưu tiên nghiệp vụ.
-2. **Grouped addition:** lần lượt thêm các block trong nhóm 18 feature cần bằng chứng, không thêm rời từng slot của cùng một khái niệm.
-3. **Grouped ablation:** từ mô hình đầy đủ hợp lệ, bỏ từng block để đo giá trị tăng thêm.
-4. **Representation comparison:** so sánh raw với derived bằng cùng split, preprocessing và hyperparameter budget.
-5. **Model-family check:** kiểm tra trên ít nhất mô hình tuyến tính và mô hình cây để tránh giữ feature chỉ vì hợp với một inductive bias.
-6. **Stability:** lặp trên nhiều split/seed hoặc cross-validation đã định trước; báo cáo độ biến thiên, không chỉ một con số tốt nhất.
-7. **Institution robustness:** thêm đánh giá theo `lei` hoặc held-out-LEI nếu đủ dữ liệu, vì quy trình báo cáo giữa tổ chức có thể khác nhau.
-8. **Fairness sensitivity:** dùng chín metadata ngoài X để xem việc thêm/bỏ block có làm thay đổi sai lệch hiệu năng giữa nhóm hay không.
-
-Các chỉ số nên ưu tiên:
-
-- `Δ ROC-AUC` cho năng lực xếp hạng chung;
-- `Δ PR-AUC` với lớp Denied là lớp cần chú ý, do mất cân bằng lớp;
-- `Δ Brier score` hoặc calibration metric đã khóa;
-- confidence interval hoặc paired resampling cho chênh lệch giữa hai feature set;
-- độ ổn định của thứ hạng/ảnh hưởng feature giữa fold và model family.
-
-Feature importance đơn lẻ không đủ để quyết định. Importance cao có thể đến từ redundancy, proxy tổ chức, missingness hoặc leakage.
-
-## 7. Quy tắc ra quyết định cuối
-
-**Nhóm 15 feature ưu tiên nghiệp vụ:** giữ mặc định trong baseline. Chỉ loại khi có bằng chứng về sai schema/lineage, không có tại thời điểm quyết định, chất lượng dữ liệu không đạt, hoặc redundancy với representation được chọn.
-
-**Nhóm 18 feature cần thực nghiệm:** chỉ giữ khi thỏa đồng thời:
-
-- hợp lệ về thời điểm và ý nghĩa;
-- có coverage/phạm vi áp dụng đủ để mô hình hóa;
-- tạo giá trị tăng thêm ổn định trên validation, không chỉ một split;
-- giá trị không đến chủ yếu từ missingness hoặc proxy `lei`;
-- không làm suy giảm đáng kể calibration, robustness hay fairness sensitivity mà không có lợi ích rõ ràng.
-
-**Nhóm 2 derived alternatives:** chọn đúng một representation cho mỗi khái niệm. Ưu tiên raw khi hiệu năng tương đương; chọn derived chỉ khi lợi ích ổn định và vẫn ánh xạ được cho RQ2.
-
-Mỗi quyết định giữ/bỏ phải có một decision record gồm:
-
-- tên feature hoặc block;
-- ý nghĩa nghiệp vụ và thời điểm có dữ liệu;
-- kiểu dữ liệu/mã hợp lệ;
-- coverage và missingness theo target/`lei`;
-- redundancy hoặc representation liên quan;
-- kết quả addition/ablation kèm độ bất định;
-- độ ổn định qua fold, seed và model family;
-- fairness sensitivity;
-- quyết định cuối và một câu lý do có thể bảo vệ được.
-
-## 8. Trạng thái hiện tại
+## 7. Trạng thái contract hiện tại
 
 Đã chốt:
 
@@ -339,18 +294,17 @@ Mỗi quyết định giữ/bỏ phải có một decision record gồm:
 
 Chưa được coi là đã chứng minh:
 
-- feature nào trong 35 cột có importance cao;
-- block nào tạo cải thiện có ý nghĩa thống kê;
-- raw hay derived representation tốt hơn;
+- feature nào trong 35 cột có importance cao hoặc giá trị tăng thêm ổn định;
+- raw hay derived representation nào sẽ được chọn;
 - missingness nào là hợp lệ, proxy quy trình hay leakage;
 - feature set cuối cùng cho sáu mô hình.
 
-## 9. Nguồn tham chiếu
+## 8. Nguồn tham chiếu
 
 ### Tài liệu nội bộ
 
 - `docs/Project_planning_recover.docx`
-- `docs/Yêu cầu Kỹ thuật Dataset B cho RQ1 RQ2 và RQ3 - HMDA NY 2024.docx`
+- `docs/Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx`
 - `docs/Yêu cầu Kỹ thuật Set A cho RQ1 và RQ2 - HMDA NY 2024 - Revised.docx`
 
 ### HMDA 2024 chính thức
