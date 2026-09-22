@@ -6,15 +6,19 @@ This page is the entry point for Dataset B documentation. It records document
 ownership and the completed migration map. It is intentionally short so that a
 working session can open only the document needed for its task.
 
-After the controlled rewrite, the two existing Markdown files are authoritative
-for separate responsibilities:
+After the controlled rewrite, three Markdown files are authoritative for
+separate responsibilities:
 
 - [Dataset B Data Selection](Dataset_B_Data_Selection.md) owns the Dataset B
   contract: cohort and target, the 99-column role partition, candidate and
   exclusion inventory, audit metadata, and the mandatory data gates.
 - [Feature Selection](Feature_selection.md) owns feature-governance evidence:
   the priority-feature screening, feature/block decisions, unresolved
-  candidates, validation protocol, and required notebook artifacts.
+  candidates, validation protocol, required notebook artifacts, and the
+  temporary training feature lock.
+- [Dataset B Pipeline](Dataset_B_Pipeline.md) owns execution modes,
+  split/CV/refit/validation/test flow, train-only preprocessing boundaries,
+  six-model routes, and artifact gates.
 
 The technical-requirement DOCX files are retained as reports. This guide does
 not replace or rename them.
@@ -59,9 +63,17 @@ third narrative document:
 - **Feature Selection** is the canonical source for evidence and decisions
   inside that candidate universe, including the completed priority screening
   and unresolved blocks.
-- A future preprocessing/pipeline document, if created after consolidation,
-  should contain execution modes only. It must reference—not repeat—the
-  feature list, metrics, or role tables.
+- [Dataset B Pipeline](Dataset_B_Pipeline.md) contains execution modes and
+  split/CV/refit/validation/test flow. It references—not repeats—the feature
+  list, metrics, or role tables.
+
+The single decision locators are:
+
+- the temporary training feature lock and all feature decisions: Feature
+  Selection, Section 13;
+- split, `StratifiedKFold`, configuration selection, refit, validation and
+  test boundaries: Dataset B Pipeline, Section 5.2;
+- the RQ1 metric, bootstrap, and uncertainty contract: [Project Planning Recover](Project_planning_recover.docx) and [Set B Technical Requirement](<Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx>).
 
 Two wording risks must be preserved as distinctions, not resolved by
 assumption:

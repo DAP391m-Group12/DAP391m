@@ -472,11 +472,11 @@ Notebook này không thực hiện huấn luyện đầy đủ sáu mô hình, k
 - 6 metadata được xử lý cùng feature-selection diagnostics;
 - 3 metadata chỉ giữ để tham khảo/audit;
 - target và cohort mapping;
-- feature set phải được khóa trước khi chạy sáu mô hình và GSV/SL chính thức.
+- temporary training feature lock phải được version trước RQ1/CV; final feature lock vẫn bắt buộc trước các deliverable kết luận cuối và GSV/SL chính thức.
 
 Đã chốt từ kết quả audit 15 feature ưu tiên ở mục 4:
 
-- 12 feature có quyết định `keep`;
+- 12 feature có quyết định `keep`; danh sách này là **temporary training feature lock v0.2** cho RQ1/CV. `Dataset_B_Pipeline.md` chỉ tham chiếu section này, không sao chép lại danh sách;
 - `property_value` có quyết định `exclude_from_main` nhưng vẫn được giữ trong source/audit;
 - block `loan_amount` – `property_value` – LTV đã chọn `loan_amount` + `loan_to_value_ratio` cho main set thay vì giữ cả ba representation;
 - `construction_method` và `total_units` đã vượt qua data-quality gate nhưng có trạng thái `keep_for_representation_comparison`;
