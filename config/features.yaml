@@ -59,33 +59,10 @@ datasets:
         source: loan_type
 
   dataset_b:
-    status: proposed_for_lock
+    status: temporary_training_lock_v0_2
     purpose: main_rq1_rq2_rq3
-
-    model_input_raw_columns:
-      - applicant_race-1
-      - applicant_race-2
-      - applicant_race-3
-      - applicant_race-4
-      - applicant_race-5
-      - income
-      - loan_amount
-      - loan_purpose
-      - lien_status
-      - loan_type
-
-    audit_only_columns:
-      - applicant_sex
-
-    protected_attributes:
-      sex:
-        source_column: applicant_sex
-
-    multihot_groups:
-      applicant_race:
-        source_columns:
-          - applicant_race-1
-          - applicant_race-2
-          - applicant_race-3
-          - applicant_race-4
-          - applicant_race-5
+    canonical_feature_contract: dataset_b/feature_set_v1.yaml
+    model_input_contract: dataset_b/feature_set_v1.yaml
+    note: >-
+      Dataset B model inputs and audit columns must be read from the
+      versioned contract. Do not reuse the former Dataset B race-slot inputs.

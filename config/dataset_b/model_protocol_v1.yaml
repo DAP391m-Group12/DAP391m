@@ -1,0 +1,85 @@
+schema_version: 1
+dataset: dataset_b
+protocol_version: model_protocol_v1
+purpose: rq1_phase_1_fixed_baseline
+
+contracts:
+  feature: dataset_b/feature_set_v1.yaml
+  split: dataset_b/split_v1.yaml
+  preprocessing_version: dataset_b_preprocessing_v2
+  cv_artifact: data/preprocessing/dataset_b_v1/cv_preprocessing_v2
+
+cross_validation:
+  population: train_only
+  splitter: StratifiedKFold
+  n_splits: 5
+  shuffle: true
+  random_state: 42
+  trial_budget_per_model: 1
+  primary_metric: roc_auc
+  stability_statistic: standard_deviation_roc_auc
+  hyperparameter_search: false
+
+class_handling:
+  sample_weight: false
+  resampling: false
+  class_weight_balanced: false
+  scale_pos_weight_from_class_ratio: false
+
+models:
+  lr:
+    estimator: sklearn.linear_model.LogisticRegression
+    preprocessing_profile: lr
+    parameters:
+      penalty: l2
+      C: 1.0
+      solver: lbfgs
+      max_iter: 1000
+      fit_intercept: true
+      class_weight: null
+  rf:
+    estimator: sklearn.ensemble.RandomForestClassifier
+    preprocessing_profile: tree
+    parameters:
+      n_estimators: 100
+      criterion: gini
+      max_depth: null
+      min_samples_leaf: 1
+      max_features: sqrt
+      bootstrap: true
+      class_weight: null
+      random_state: 42
+  xgb:
+    estimator: xgboost.XGBClassifier
+    preprocessing_profile: tree
+    parameters:
+      n_estimators: 100
+      max_depth: 6
+      learning_rate: 0.3
+      subsample: 1.0
+      colsample_bytree: 1.0
+      objective: binary:logistic
+      tree_method: hist
+      eval_metric: logloss
+      scale_pos_weight: 1.0
+      random_state: 42
+
+refit:
+  population: full_train
+  reinitialize_preprocessing: true
+  reinitialize_model: true
+
+validation:
+  use: threshold_selection
+  objective: balanced_accuracy
+  may_refit_preprocessing_or_model: false
+
+test:
+  use: final_rq1_evaluation_only
+  may_change_preprocessing_model_or_threshold: false
+
+runtime:
+  early_stopping: false
+  eval_set: false
+  record_library_versions: true
+  record_convergence_warnings: true

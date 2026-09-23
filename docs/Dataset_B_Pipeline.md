@@ -8,7 +8,7 @@ Tài liệu này mô tả luồng thực thi Dataset B sau khi data contract và
 - [Feature Selection](Feature_selection.md): screening evidence, feature decisions và feature-lock gate;
 - repository [README](../README.md): kiến trúc chung Dataset A + Dataset B.
 
-**Trạng thái hiện tại:** đây là execution design, không phải bằng chứng pipeline đã chạy. `src/dataset_b/` mới có skeleton thư mục; `config/dataset_b/` có các template contract nhưng README xác định chúng chưa là cấu hình vận hành. Không suy ra imputation, encoding, scaling, balancing, seed, tuning budget hay GSV/SL settings khi các giá trị đó chưa được khóa.
+**Trạng thái hiện tại (22/09/2026):** split và preprocessing CV pha 1 đã có code cùng dữ liệu xuất v2 gồm 66 cột; chưa chạy LR/RF/XGBoost, chưa có fitted model hoặc kết quả RQ1. [Quyết định preprocessing và baseline pha 1](Dataset_B_v1_preprocessing.md) ghi rõ phần đã triển khai. `config/dataset_b/feature_set_v1.yaml` và `config/dataset_b/model_protocol_v1.yaml` đã được đồng bộ với `dataset_b_preprocessing_v2` và ba baseline cố định.
 
 ## 2. Luồng Dataset B độc lập
 
@@ -47,11 +47,11 @@ RQ2 và RQ3 không được âm thầm retrain model hoặc tái tạo split. GS
 
 Mọi model nhận cùng **locked raw feature information**. Mỗi family có thể dùng profile preprocessing khác, nhưng profile không được thêm/bỏ business information hoặc fit trên validation/test.
 
-| Model | Family route | Preprocessing requirement hiện đã chốt | Chi tiết chưa được chốt |
+| Model | Family route | Preprocessing requirement hiện đã chốt | Còn phải triển khai hoặc chốt |
 | --- | --- | --- | --- |
-| Logistic Regression | Linear | Train-only profile trên locked information | Imputation, encoding, scaling, balancing, tuning |
-| Random Forest | Tree | Train-only profile trên locked information | Imputation, encoding, balancing, tuning |
-| XGBoost | Tree boosting | Train-only profile trên locked information | Imputation, encoding, balancing, tuning |
+| Logistic Regression | Linear | Two-channel, OHE bỏ dummy `OBSERVED` và `RobustScaler` cho bốn kênh số; baseline không trọng số lớp | Model runner chưa triển khai |
+| Random Forest | Tree | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Model runner chưa triển khai |
+| XGBoost | Tree boosting | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Model runner chưa triển khai |
 | plain MLP | Neural | Train-only profile trên locked information | Imputation, encoding, scaling, balancing, tuning |
 | RealMLP | Neural tabular | Train-only profile trên locked information | Profile implementation và mọi hyperparameter |
 | TabMmini | Neural tabular | Train-only profile trên locked information | Profile implementation và mọi hyperparameter |
@@ -59,10 +59,32 @@ Mọi model nhận cùng **locked raw feature information**. Mỗi family có th
 Các ràng buộc bắt buộc cho mọi route:
 
 - fit mọi transformation trên train hoặc train fold tương ứng;
-- giữ blank, `NA`, `Exempt`/`1111` và not-applicable tách biệt cho đến khi profile đã được phê duyệt;
+- với profile pha 1, đưa blank/whitespace và `NaN` thực vào `MISSING`; giữ `NA`, `Exempt`/`1111` và not-applicable theo đúng miền của từng cột;
 - không tự xóa/clip/log-transform outlier chỉ từ diagnostics;
 - không đưa `lei`, `county_code`, `applicant_sex`, `applicant_age` hay năm applicant-race slots vào main `X`;
 - không dùng test set cho feature decision, preprocessing fit hoặc tuning.
+
+### 4.1. Neural wrapper contract đã chốt
+
+Plain MLP, RealMLP và TabMmini phải đi qua **một wrapper contract chung tương thích scikit-learn**. Wrapper là tầng giao tiếp thống nhất với orchestration/CV; nó không buộc ba model dùng chung preprocessing hoặc cùng backend implementation.
+
+Wrapper phải đáp ứng các điều kiện sau:
+
+- tương thích `BaseEstimator` và `ClassifierMixin`, hỗ trợ tối thiểu `fit`, `predict_proba`, `get_params`, `set_params` và clone trong cross-validation;
+- công bố `classes_` theo thứ tự `[0, 1]`; cột `predict_proba(X)[:, 1]` luôn là `P(y_approved = 1)`;
+- quản lý hoặc ủy quyền nhất quán việc chuyển dữ liệu sang tensor, random seed, device, batch/DataLoader và fitted state của backend;
+- khởi tạo fitted state độc lập cho từng fold; không tái sử dụng model, optimizer hoặc fitted transformer từ fold khác;
+- không tự tạo hoặc thay đổi split, không tự đọc validation/test và không tự retrain khi gọi `predict_proba`;
+- cho phép lưu và truy vết preprocessing version, model configuration, random state và fitted-state artifact của từng run.
+
+Ranh giới fit/transform bắt buộc cho cả transformer nằm ngoài wrapper và transformer nội bộ của backend:
+
+1. Trong mỗi fold của 5-fold CV trên Train 70%, mọi transformer và neural backend chỉ được `fit` trên fold-train; fold-validation chỉ được `transform` và dự báo.
+2. Sau khi chọn configuration, preprocessing và model được khởi tạo lại rồi `fit` trên toàn bộ Train 70%.
+3. Validation 15% chỉ được `transform` và dự báo để chọn threshold bằng Balanced Accuracy; không được `fit`, `partial_fit`, cập nhật vocabulary hoặc tính lại thống kê preprocessing.
+4. Sau khi threshold đã khóa, Test 15% chỉ được `transform` và dự báo cho final evaluation; không được dùng để thay đổi preprocessing, model, configuration hoặc threshold.
+
+Contract wrapper này đã khóa kiến trúc giao tiếp và leakage boundary. Quyết định pha 1 cho LR/RF/XGBoost nằm tại [tài liệu preprocessing](Dataset_B_v1_preprocessing.md#7-baseline-model-pha-1-đã-chốt-để-triển-khai-tiếp); profile cho ba neural family còn phải chốt riêng.
 
 ## 5. Decision register v0.2 — RQ1
 
@@ -82,7 +104,7 @@ Pipeline chỉ yêu cầu feature version này được lưu cùng split, prepro
 | Random state | `42` | Áp dụng cho split manifest và CV splitter đã chốt. |
 | LEI grouping constraint | Không dùng | `lei` không thuộc 12 core features và hiện không là grouping constraint. |
 | CV | Bắt buộc: `StratifiedKFold`, `k = 5`, `shuffle = True`, `random_state = 42` | Chỉ chạy trên Train 70%; validation và test không xuất hiện trong bất kỳ fold nào. |
-| Chọn configuration | Mean ROC-AUC là primary; standard deviation ROC-AUC là stability evidence | Chọn một configuration cho từng model family từ kết quả CV. |
+| Chọn configuration | Mean ROC-AUC là primary; standard deviation ROC-AUC là stability evidence | Baseline pha 1 có đúng một configuration cố định cho mỗi family, nên CV đo hiệu năng/độ ổn định chứ không tìm hyperparameter. Nếu mở tuning về sau, chỉ chọn trong Train CV. |
 | Refit | Refitting trên toàn Train 70% | Chỉ thực hiện sau khi configuration của model family đã được chọn. |
 | Validation set | 15%, độc lập khỏi CV | Chọn threshold riêng cho mỗi model bằng tối đa hóa Balanced Accuracy; sau đó khóa threshold. Validation cũng giữ artifact cần thiết cho downstream RQ. |
 | Test set | 15%, độc lập khỏi CV | Chỉ dùng cho final RQ1 evaluation sau khi configuration, preprocessing và threshold đã khóa. |
@@ -95,9 +117,9 @@ Metric contract RQ1, bootstrap và uncertainty được quản lý duy nhất t�
 
 | Hạng mục | Trạng thái |
 | --- | --- |
-| Search procedure và trial budget | Chờ chốt, bao gồm cách phân bổ budget công bằng giữa model families. |
-| Early stopping | Chờ chốt: metric, patience, maximum epochs và restore-best-weights. |
-| Preprocessing theo model family | Chờ chốt: cleaning, imputation, encoding, scaling và balancing. |
+| Search procedure và trial budget | Pha 1 LR/RF/XGBoost dùng một baseline cố định cho mỗi model, trial budget bằng 1 và không search; quy tắc cho pha tuning hoặc neural còn chờ chốt. |
+| Early stopping | Pha 1 LR/RF/XGBoost không dùng early stopping hoặc `eval_set`; thiết lập cho neural còn chờ chốt. |
+| Preprocessing theo model family | Pha 1 theo [quyết định preprocessing](Dataset_B_v1_preprocessing.md): 66 cột, bỏ bốn dummy `OBSERVED`, LR scale bốn kênh số, RF/XGBoost không scale. Profile neural còn mở; wrapper và fit/transform boundary đã chốt tại Section 4.1. |
 | CI cho chênh lệch metric giữa các model | Chờ chốt: phương pháp và quy tắc tuyên bố ý nghĩa thống kê. |
 | Cấu trúc percentile / chi tiết CI RQ1 còn lại | Chờ chốt nếu chưa được xác định riêng cho Dataset B. |
 | RQ2 và RQ3 settings | Chờ chốt riêng; không tự suy diễn explanation sample, background, compute budget, Top-k hoặc fairness threshold. |
@@ -130,7 +152,7 @@ Mỗi run có thể tái tạo cần liên kết ít nhất dataset/view version
 | `fairness/` | RQ3 descriptive audit sau RQ1 |
 | `artifacts/` | Versioned run/artifact registry |
 
-Các tên trên là architecture mapping cho skeleton hiện có, không phải xác nhận module implementation đã tồn tại hoặc runnable.
+Các tên trên là architecture mapping, không xác nhận mọi module đã tồn tại hoặc runnable. Hiện `splits/` và phần preprocessing pha 1 đã có code; model runner và các bước đánh giá RQ1 chưa có bằng chứng chạy.
 
 ## 8. Đọc theo nhiệm vụ
 
