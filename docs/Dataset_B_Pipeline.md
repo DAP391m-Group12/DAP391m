@@ -8,7 +8,15 @@ Tài liệu này mô tả luồng thực thi Dataset B sau khi data contract và
 - [Feature Selection](Feature_selection.md): screening evidence, feature decisions và feature-lock gate;
 - repository [README](../README.md): kiến trúc chung Dataset A + Dataset B.
 
-**Trạng thái hiện tại (22/09/2026):** split và preprocessing CV pha 1 đã có code cùng dữ liệu xuất v2 gồm 66 cột; chưa chạy LR/RF/XGBoost, chưa có fitted model hoặc kết quả RQ1. [Quyết định preprocessing và baseline pha 1](Dataset_B_v1_preprocessing.md) ghi rõ phần đã triển khai. `config/dataset_b/feature_set_v1.yaml` và `config/dataset_b/model_protocol_v1.yaml` đã được đồng bộ với `dataset_b_preprocessing_v2` và ba baseline cố định.
+**Trạng thái hiện tại (23/09/2026):** split và preprocessing CV pha 1 đã có code cùng dữ liệu xuất v2 gồm 66 cột. Ba notebook Logistic Regression, Random Forest và XGBoost trong `notebooks/dataset_b/` có saved execution evidence đến RQ1 Test evaluation: Train-only CV, full-Train refit, Validation threshold selection và Test metrics theo experimental feature lock v0.2. Đây là bằng chứng được lưu trong notebook, không phải xác nhận clean-kernel end-to-end rerun trong lần kiểm tra tài liệu này. PMLP-00 đã triển khai environment, neural preprocessing artifact năm fold và plain-MLP wrapper; chưa chạy real-fold model CV hoặc đọc Validation/Test. RealMLP và TabMmini chưa có notebook/model-runner evidence. [Quyết định preprocessing và baseline pha 1](Dataset_B_v1_preprocessing.md) ghi contract đầu vào của ba baseline; `config/dataset_b/feature_set_v1.yaml` và `config/dataset_b/model_protocol_v1.yaml` vẫn là nguồn cấu hình pha 1.
+
+Ranh giới bằng chứng của ba notebook hiện hành:
+
+- Logistic Regression có execution count liên tục và saved outputs cho năm fold, full-Train refit, threshold `0.747` cùng bước kiểm tra lại Test predictions/RQ1 metrics hiện hữu; CV summary và OOF predictions không được lưu thành hai artifact độc lập như RF/XGBoost.
+- Random Forest có saved outputs cho CV artifacts, full-Train refit, threshold `0.662`, một lượt Test prediction và 1.000 bootstrap replicates; execution count đầu notebook không tạo thành một chuỗi clean-kernel liên tục.
+- XGBoost có saved outputs cho CV artifacts, full-Train refit, threshold `0.744` cùng bước kiểm tra lại Test predictions/RQ1 metrics hiện hữu; execution count có khoảng trống và runtime library versions được notebook ghi nhận khác versions của preprocessing artifact.
+
+Các kết quả này vẫn thuộc `temporary_training_lock_v0_2`, không phải `FINAL_MODEL_FEATURES`, không phải paired model comparison và không tự mở gate RQ2/RQ3.
 
 ## 2. Luồng Dataset B độc lập
 
@@ -47,12 +55,12 @@ RQ2 và RQ3 không được âm thầm retrain model hoặc tái tạo split. GS
 
 Mọi model nhận cùng **locked raw feature information**. Mỗi family có thể dùng profile preprocessing khác, nhưng profile không được thêm/bỏ business information hoặc fit trên validation/test.
 
-| Model | Family route | Preprocessing requirement hiện đã chốt | Còn phải triển khai hoặc chốt |
+| Model | Family route | Preprocessing requirement hiện đã chốt | Trạng thái triển khai hoặc còn phải chốt |
 | --- | --- | --- | --- |
-| Logistic Regression | Linear | Two-channel, OHE bỏ dummy `OBSERVED` và `RobustScaler` cho bốn kênh số; baseline không trọng số lớp | Model runner chưa triển khai |
-| Random Forest | Tree | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Model runner chưa triển khai |
-| XGBoost | Tree boosting | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Model runner chưa triển khai |
-| plain MLP | Neural | Train-only profile trên locked information | Imputation, encoding, scaling, balancing, tuning |
+| Logistic Regression | Linear | Two-channel, OHE bỏ dummy `OBSERVED` và `RobustScaler` cho bốn kênh số; baseline không trọng số lớp | Notebook baseline có saved RQ1 Test evidence; chưa xác nhận clean-kernel rerun, CV summary/OOF chưa được persist thành artifact độc lập |
+| Random Forest | Tree | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Notebook baseline có saved RQ1 Test evidence; chưa xác nhận clean-kernel rerun |
+| XGBoost | Tree boosting | Two-channel, OHE bỏ dummy `OBSERVED`, không scale; baseline không trọng số lớp | Notebook baseline có saved RQ1 Test evidence; chưa xác nhận clean-kernel rerun và còn runtime/preprocessing version difference cần truy vết |
+| plain MLP | Neural | `dataset_b_neural_preprocessing_v1`: fold-local median → `log1p`, fixed-schema OHE, CSR `float32`, dense `float32` theo batch; provisional config không weighting/early stopping | PMLP-00 đã verified; CV và model evaluation thuộc PMLP-01 trở đi |
 | RealMLP | Neural tabular | Train-only profile trên locked information | Profile implementation và mọi hyperparameter |
 | TabMmini | Neural tabular | Train-only profile trên locked information | Profile implementation và mọi hyperparameter |
 
@@ -84,7 +92,7 @@ Ranh giới fit/transform bắt buộc cho cả transformer nằm ngoài wrapper
 3. Validation 15% chỉ được `transform` và dự báo để chọn threshold bằng Balanced Accuracy; không được `fit`, `partial_fit`, cập nhật vocabulary hoặc tính lại thống kê preprocessing.
 4. Sau khi threshold đã khóa, Test 15% chỉ được `transform` và dự báo cho final evaluation; không được dùng để thay đổi preprocessing, model, configuration hoặc threshold.
 
-Contract wrapper này đã khóa kiến trúc giao tiếp và leakage boundary. Quyết định pha 1 cho LR/RF/XGBoost nằm tại [tài liệu preprocessing](Dataset_B_v1_preprocessing.md#7-baseline-model-pha-1-đã-chốt-để-triển-khai-tiếp); profile cho ba neural family còn phải chốt riêng.
+Contract wrapper này đã khóa kiến trúc giao tiếp và leakage boundary. Quyết định pha 1 cho LR/RF/XGBoost nằm tại [tài liệu preprocessing](Dataset_B_v1_preprocessing.md#7-baseline-model-pha-1-đã-chốt-để-triển-khai-tiếp). Plain MLP dùng contract riêng tại [Engine preprocessing](Dataset_B_Engine_preprocesing.md); route của RealMLP và TabMmini vẫn mở và không chặn chuỗi PMLP.
 
 ## 5. Decision register v0.2 — RQ1
 
@@ -117,9 +125,9 @@ Metric contract RQ1, bootstrap và uncertainty được quản lý duy nhất t�
 
 | Hạng mục | Trạng thái |
 | --- | --- |
-| Search procedure và trial budget | Pha 1 LR/RF/XGBoost dùng một baseline cố định cho mỗi model, trial budget bằng 1 và không search; quy tắc cho pha tuning hoặc neural còn chờ chốt. |
-| Early stopping | Pha 1 LR/RF/XGBoost không dùng early stopping hoặc `eval_set`; thiết lập cho neural còn chờ chốt. |
-| Preprocessing theo model family | Pha 1 theo [quyết định preprocessing](Dataset_B_v1_preprocessing.md): 66 cột, bỏ bốn dummy `OBSERVED`, LR scale bốn kênh số, RF/XGBoost không scale. Profile neural còn mở; wrapper và fit/transform boundary đã chốt tại Section 4.1. |
+| Search procedure và trial budget | Pha 1 LR/RF/XGBoost dùng một baseline cố định cho mỗi model, trial budget bằng 1 và không search. Plain MLP bắt đầu từ một configuration provisional duy nhất; PMLP-01 không tự biến nó thành project default/final. Quy tắc RealMLP/TabMmini còn mở. |
+| Early stopping | Pha 1 LR/RF/XGBoost không dùng early stopping hoặc `eval_set`; provisional plain MLP cũng khóa `early_stopping = false`. Thiết lập RealMLP/TabMmini còn mở. |
+| Preprocessing theo model family | Pha 1 theo [quyết định preprocessing](Dataset_B_v1_preprocessing.md): 66 cột, bỏ bốn dummy `OBSERVED`, LR scale bốn kênh số, RF/XGBoost không scale. Plain MLP dùng median → `log1p`, không scale, external OHE CSR `float32`; RealMLP/TabMmini còn mở. |
 | CI cho chênh lệch metric giữa các model | Chờ chốt: phương pháp và quy tắc tuyên bố ý nghĩa thống kê. |
 | Cấu trúc percentile / chi tiết CI RQ1 còn lại | Chờ chốt nếu chưa được xác định riêng cho Dataset B. |
 | RQ2 và RQ3 settings | Chờ chốt riêng; không tự suy diễn explanation sample, background, compute budget, Top-k hoặc fairness threshold. |
@@ -152,7 +160,7 @@ Mỗi run có thể tái tạo cần liên kết ít nhất dataset/view version
 | `fairness/` | RQ3 descriptive audit sau RQ1 |
 | `artifacts/` | Versioned run/artifact registry |
 
-Các tên trên là architecture mapping, không xác nhận mọi module đã tồn tại hoặc runnable. Hiện `splits/` và phần preprocessing pha 1 đã có code; model runner và các bước đánh giá RQ1 chưa có bằng chứng chạy.
+Các tên trên là architecture mapping, không xác nhận mọi module đã tồn tại hoặc runnable. Hiện `splits/`, preprocessing pha 1 và plain-MLP wrapper đã có code; ba notebook LR/RF/XGBoost có saved execution evidence đến RQ1 Test evaluation. Plain MLP mới có PMLP-00 infrastructure/artifact evidence, chưa có real-fold training evidence; RealMLP và TabMmini chưa có implementation evidence.
 
 ## 8. Đọc theo nhiệm vụ
 

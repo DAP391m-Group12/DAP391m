@@ -52,6 +52,10 @@ STATUS_REFERENCE_CATEGORIES = tuple(
     for column in NUMERIC_COLUMNS
 )
 ENCODED_FEATURE_COUNT = 66
+CATEGORICAL_SCHEMA = {column: tuple(categories) for column, categories in _CATEGORIES.items()}
+CATEGORICAL_COLUMNS = _CATEGORICAL_COLUMNS
+TWO_CHANNEL_COLUMNS = _TWO_CHANNEL_COLUMNS
+NUMERIC_VALUE_COLUMNS = _NUMERIC_VALUE_COLUMNS
 
 
 class DatasetBOneHotEncoder(TransformerMixin, BaseEstimator):
@@ -63,15 +67,23 @@ class DatasetBOneHotEncoder(TransformerMixin, BaseEstimator):
     ``OBSERVED`` is the reference category for each numeric status channel;
     ``NA``, ``Exempt`` and ``MISSING`` remain explicit where schema-valid.
     Output is CSR with four numeric value columns followed by OHE columns.
+    The default remains ``float64`` for classical backward compatibility;
+    neural profiles must request ``float32`` explicitly.
     """
+
+    def __init__(self, *, dtype: object = np.float64) -> None:
+        self.dtype = dtype
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DatasetBOneHotEncoder:
         self._validate_input(X)
+        output_dtype = np.dtype(self.dtype)
+        if output_dtype not in (np.dtype(np.float32), np.dtype(np.float64)):
+            raise ValueError("Dataset B OHE dtype must be float32 or float64.")
         self.encoder_ = OneHotEncoder(
             categories=[list(_CATEGORIES[column]) for column in _CATEGORICAL_COLUMNS],
             handle_unknown="error",
             sparse_output=True,
-            dtype=np.float64,
+            dtype=output_dtype,
         ).fit(X.loc[:, _CATEGORICAL_COLUMNS])
 
         names = list(_NUMERIC_VALUE_COLUMNS)
@@ -94,6 +106,7 @@ class DatasetBOneHotEncoder(TransformerMixin, BaseEstimator):
         self.feature_names_out_ = tuple(names)
         self.feature_sources_ = tuple(sources)
         self.feature_categories_ = tuple(categories)
+        self.output_dtype_ = output_dtype
         _LOGGER.info(
             "Fitted Dataset B OHE rows=%d numeric_columns=%d categorical_inputs=%d output_columns=%d",
             len(X), len(_NUMERIC_VALUE_COLUMNS), len(_CATEGORICAL_COLUMNS), len(names),
@@ -103,10 +116,10 @@ class DatasetBOneHotEncoder(TransformerMixin, BaseEstimator):
     def transform(self, X: pd.DataFrame) -> csr_matrix:
         check_is_fitted(self, "encoder_")
         self._validate_input(X)
-        numeric = csr_matrix(X.loc[:, _NUMERIC_VALUE_COLUMNS].to_numpy(dtype=np.float64))
+        numeric = csr_matrix(X.loc[:, _NUMERIC_VALUE_COLUMNS].to_numpy(dtype=self.output_dtype_))
         categorical = self.encoder_.transform(X.loc[:, _CATEGORICAL_COLUMNS])
         categorical = categorical[:, self.encoded_keep_indices_]
-        result = hstack((numeric, categorical), format="csr", dtype=np.float64)
+        result = hstack((numeric, categorical), format="csr", dtype=self.output_dtype_)
         _LOGGER.info("Transformed Dataset B OHE rows=%d columns=%d", *result.shape)
         return result
 

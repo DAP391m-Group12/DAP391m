@@ -109,6 +109,21 @@ def test_ohe_columns_remain_identical_across_fold_fits():
     assert not hasattr(template, "encoder_")
 
 
+def test_ohe_dtype_is_configurable_without_changing_classical_default():
+    channels = DatasetBNumericTwoChannel().fit_transform(_parsed(_row()))
+    classical = DatasetBOneHotEncoder().fit_transform(channels)
+    explicit_classical = DatasetBOneHotEncoder(dtype=np.float64).fit_transform(channels)
+    neural = DatasetBOneHotEncoder(dtype=np.float32).fit_transform(channels)
+
+    assert classical.dtype == explicit_classical.dtype == np.float64
+    assert neural.dtype == np.float32
+    assert (classical != explicit_classical).nnz == 0
+    np.testing.assert_array_equal(classical.toarray(), neural.toarray())
+
+    with pytest.raises(ValueError, match="float32 or float64"):
+        DatasetBOneHotEncoder(dtype=np.int32).fit(channels)
+
+
 def test_ohe_rejects_unknown_codes_nonfinite_values_and_wrong_schema():
     channels = DatasetBNumericTwoChannel().fit_transform(_parsed(_row()))
     encoder = DatasetBOneHotEncoder().fit(channels)
