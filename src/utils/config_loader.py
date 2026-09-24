@@ -80,6 +80,7 @@ def load_config(config_path: str | Path = "config.yaml") -> Config:
 
     candidates = [
         path,
+        CONFIG_DIR / path,
         CONFIG_DIR / path.name,
         CONFIG_DIR / f"{path.name}.yaml",
         PROJECT_ROOT / path,

@@ -46,16 +46,21 @@ class TestPathResolutionAndLoading:
     def test_load_default_config(self):
         cfg = load_config()
         assert isinstance(cfg, Config)
-        assert cfg.lop.host == "localhost"
-        assert cfg.lop.port == 5432
+        assert cfg.project.name == "dap391m_gr12"
+        assert cfg.logging.default_level == "INFO"
 
     def test_load_by_filename(self):
         cfg = load_config("config.yaml")
-        assert cfg.lop.database == "mydb"
+        assert cfg.source.raw_file == "data/raw/state_NY_2024.csv"
 
     def test_load_from_relative_path(self):
         cfg = load_config("config/config.yaml")
-        assert cfg.lop.port == 5432
+        assert cfg.contracts.dataset_b_split == "dataset_b/split_v1.yaml"
+
+    def test_load_nested_config_from_config_namespace(self):
+        cfg = load_config("dataset_b/split_v1.yaml")
+        assert cfg.dataset == "dataset_b"
+        assert cfg.random_state == 42
 
     def test_load_missing_file_raises(self):
         with pytest.raises(FileNotFoundError):

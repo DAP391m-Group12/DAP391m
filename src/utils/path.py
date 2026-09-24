@@ -31,7 +31,7 @@ RAW_STATE_NY_PATH = RAW_DATA_DIR / "state_NY_2024.csv"
 
 # Dataset outputs
 DATASET_A_DIR = PROCESSED_DATA_DIR / "dataset_a"
-DATASET_B_DIR = PROCESSED_DATA_DIR / "dataset_b"
+DATASET_B_DIR = DATA_DIR / "dataset_b"
 
 DATASET_DIRS = {
     "dataset_a": DATASET_A_DIR,
