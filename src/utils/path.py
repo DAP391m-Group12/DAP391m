@@ -27,7 +27,7 @@ APP_CONFIG_PATH = CONFIG_DIR / "config.yaml"
 MODEL_CONFIG_PATH = CONFIG_DIR / "model_config.yaml"
 
 # Current raw source
-RAW_STATE_NY_PATH = RAW_DATA_DIR / "state_NY.csv"
+RAW_STATE_NY_PATH = RAW_DATA_DIR / "state_NY_2024.csv"
 
 # Dataset outputs
 DATASET_A_DIR = PROCESSED_DATA_DIR / "dataset_a"
