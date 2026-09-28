@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-09-27T19:34:40.7846908+07:00",
+  "workspace": "D:/Proj/DAP/DAP391m_GR12",
+  "stage": "wave_0_source_freeze",
+  "authority": "migration_control_only",
+  "rules": {
+    "legacy_markdown_must_remain_unchanged_during_handbook_authoring": true,
+    "docx_write_scope": false,
+    "handbook_is_authoritative": false,
+    "maximum_parallel_authored_files": 2
+  },
+  "sources": [
+    {
+      "path": "docs/Colab_env.md",
+      "kind": "md",
+      "bytes": 1048,
+      "lines": 27,
+      "sha256": "6a90facfed74649bc0ece7c1621250b3f792125e7d9012f2e09934098ca1fc9f",
+      "last_write_utc": "2026-09-25T06:09:26.0000000Z"
+    },
+    {
+      "path": "docs/Dataset_B_Data_Selection.md",
+      "kind": "md",
+      "bytes": 15054,
+      "lines": 315,
+      "sha256": "de4df5016e13412ba45fa5e4bbb43514c4bb8ea55a2b52c05db2465ab1880b05",
+      "last_write_utc": "2026-09-22T03:26:34.0000000Z"
+    },
+    {
+      "path": "docs/Dataset_B_Engine_preprocesing.md",
+      "kind": "md",
+      "bytes": 25981,
+      "lines": 400,
+      "sha256": "4fda947584df8585a793c100eceb09ef82f391f81983419fb2cf024f7f24f62a",
+      "last_write_utc": "2026-09-26T14:27:11.0592124Z"
+    },
+    {
+      "path": "docs/Dataset_B_Pipeline.md",
+      "kind": "md",
+      "bytes": 32483,
+      "lines": 226,
+      "sha256": "ea36deff01a4b99e36f60680687486f7daac7ce64355647dac5f81204604a5b2",
+      "last_write_utc": "2026-09-27T07:24:00.5797387Z"
+    },
+    {
+      "path": "docs/Dataset_B_v1_preprocessing.md",
+      "kind": "md",
+      "bytes": 19085,
+      "lines": 464,
+      "sha256": "d6bdf6f405009d26c9439f74337083313dec34f39c5262ed10a0f51a9e047b0e",
+      "last_write_utc": "2026-09-25T06:43:08.0000000Z"
+    },
+    {
+      "path": "docs/Feature_selection.md",
+      "kind": "md",
+      "bytes": 43054,
+      "lines": 500,
+      "sha256": "3d09351f5e3ff72df0ac76f9edda8caa9a1827fbc186447a9e0ff60665a883ed",
+      "last_write_utc": "2026-09-22T03:26:34.0000000Z"
+    },
+    {
+      "path": "docs/Neural_Training_Guideline.md",
+      "kind": "md",
+      "bytes": 19987,
+      "lines": 481,
+      "sha256": "05d3637f8f04b2adc2de8f7e558fcd191dabf4b517fecec9d3556da856988a09",
+      "last_write_utc": "2026-09-27T06:47:39.4193868Z"
+    },
+    {
+      "path": "docs/README.md",
+      "kind": "md",
+      "bytes": 9809,
+      "lines": 142,
+      "sha256": "f63d6ae4b5c03526d44e174b35ccd09c311a66c2043c7d213985c134ccb3599c",
+      "last_write_utc": "2026-09-27T06:44:46.2207974Z"
+    },
+    {
+      "path": "docs/Project_planning_recover.docx",
+      "kind": "docx",
+      "bytes": 35223,
+      "lines": null,
+      "sha256": "65d9f05a7238dc7fb17dce0f8e98c59be136d82088b5b1cca89ddced77dd0804",
+      "last_write_utc": "2026-09-22T03:26:34.0000000Z",
+      "write_protected_by_task_scope": true
+    },
+    {
+      "path": "docs/Yêu cầu Kỹ thuật Set A cho RQ1 và RQ2 - HMDA NY 2024 - Revised.docx",
+      "kind": "docx",
+      "bytes": 1008755,
+      "lines": null,
+      "sha256": "4f7d7be99a3297535ea22d9783a75f1f96de91b3c4dbe18f4b175277a38318c2",
+      "last_write_utc": "2026-09-22T03:26:34.0000000Z",
+      "write_protected_by_task_scope": true
+    },
+    {
+      "path": "docs/Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx",
+      "kind": "docx",
+      "bytes": 40711,
+      "lines": null,
+      "sha256": "da0e465fc22e52c96b6f37a1932134fb021715b2f5e1586dfe596fd1aa78ae6c",
+      "last_write_utc": "2026-09-22T03:26:34.0000000Z",
+      "write_protected_by_task_scope": true
+    }
+  ]
+}

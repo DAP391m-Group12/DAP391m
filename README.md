@@ -120,6 +120,10 @@ Dataset A là bridge analysis, không phải đại diện cho toàn bộ nghiê
 
 Dataset B là nhánh thực nghiệm chính.
 
+[Dataset B Handbook](docs/handbook/README.md) là entry point authoritative cho
+data contract, feature governance, preprocessing, training, evaluation và
+đường dẫn tới trạng thái thực thi hiện hành.
+
 - RQ1 chạy sáu model: Logistic Regression, Random Forest, XGBoost, plain MLP, RealMLP và TabMmini.
 - Feature governance diễn ra trước RQ1. Hiện có 12 raw features ở trạng thái `keep` sau screening; đây chưa phải `FINAL_MODEL_FEATURES`.
 - `property_value` là `exclude_from_main`; `construction_method` và `total_units` vẫn cần representation comparison.
@@ -130,9 +134,9 @@ Dataset B là nhánh thực nghiệm chính.
 
 Mỗi run có thể tái tạo phải bảo tồn dataset/feature/split version, record IDs, fitted preprocessing, fitted model, threshold đã khóa, prediction theo `record_id`, metric outputs và bootstrap artifacts. RQ2/RQ3 chỉ đọc artifacts đã khóa, không âm thầm retrain hoặc tái tạo split.
 
-## Trạng thái hiện tại
+## Trạng thái thực thi hiện hành
 
-- Dataset B folder namespace và `DATASET_B_DIR = data/dataset_b` đã được tạo/đồng bộ.
-- Dataset B contracts trong `config/dataset_b/` hiện là templates rỗng, chưa là nguồn cấu hình vận hành.
-- `src/dataset_b/` là implementation namespace đã tạo, chưa xác nhận có pipeline chạy được.
-- RQ2/RQ3 settings còn mở không được tự điền trong config hoặc code.
+[STATUS](docs/handbook/STATUS.md) là nguồn duy nhất cho trạng thái thực thi
+hiện hành của Dataset B. Các trạng thái hoặc tiến độ được lưu trong tài liệu
+khác chỉ là lịch sử có nhãn, hợp đồng, hoặc quy trình; không dùng chúng thay
+cho STATUS.

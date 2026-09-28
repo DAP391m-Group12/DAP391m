@@ -120,7 +120,7 @@ class PlainMLPClassifier(ClassifierMixin, BaseEstimator):
         return (self.predict_proba(X)[:, 1] >= 0.5).astype(np.int8)
 
     def checkpoint_payload(self) -> dict[str, Any]:
-        """Return a state-dict payload suitable for the later PMLP-02 artifact."""
+        """Return a state-dict payload suitable for the PMLP-03 fitted bundle."""
         check_is_fitted(self, ("model_", "classes_", "n_features_in_"))
         return {
             "model_state_dict": self.model_.state_dict(),
