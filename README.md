@@ -1,94 +1,142 @@
-# HMDA New York 2024
+# DAP391m Group 12
 
-Dự án DAP391m · AI2003 · Group 2 nghiên cứu dự đoán trạng thái xử lý hồ sơ vay trên HMDA New York 2024, giải thích mô hình và đánh giá fairness, sau đó đưa kết quả vào ứng dụng Web thông qua API.
+Nghiên cứu dự đoán kết quả phê duyệt khoản vay thế chấp từ HMDA New York 2024. Dự án có hai nhánh nghiên cứu độc lập: Dataset A là bridge analysis cho RQ1/RQ2; Dataset B là tập thực nghiệm chính cho RQ1/RQ2/RQ3.
 
-**Trạng thái hiện tại: hạ tầng lõi Phase 1 đã triển khai và đang chờ review G1; chưa nhập dữ liệu, triển khai pipeline nghiệp vụ, huấn luyện model hoặc vận hành API.**
+Mục tiêu là dự đoán xác suất hồ sơ được phê duyệt, không phải xác suất vỡ nợ, mức độ tín nhiệm thực tế, hay bằng chứng nhân quả/pháp lý về phân biệt đối xử.
 
-## Mục tiêu và phạm vi
+## Quy tắc dữ liệu chung
 
-- **RQ1:** so sánh Logistic Regression, Decision Tree, Random Forest, XGBoost và MLP, kèm baseline; chọn model trên validation với macro-F1 là chỉ số chính.
-- **RQ2:** đối chiếu GSV và Shapley–Lorenz theo từng lớp trên Logistic Regression và model phi tuyến được chọn. Phương pháp phải được kiểm chứng trước thực nghiệm rộng.
-- **RQ3:** đánh giá chênh lệch giữa các nhóm giới tính trong các county đủ điều kiện tại New York. Thực nghiệm trên bang khác là phần mở rộng có điều kiện.
+- Cohort nghiên cứu chỉ giữ `action_taken ∈ {1, 2, 3}`.
+- `y_approved = 1` khi `action_taken ∈ {1, 2}`; `y_approved = 0` khi `action_taken = 3`.
+- `action_taken` được giữ để tạo target và truy vết, không thuộc feature matrix `X`.
+- Raw source là immutable. Mỗi dataset có feature contract, split, preprocessing, model và artifact độc lập.
+- Không dùng test set để chọn feature, fit preprocessing hay tune model.
 
-Target `action_taken` gồm ba lớp: khoản vay đã được cấp, hồ sơ được chấp thuận nhưng người nộp không chấp nhận, và hồ sơ bị từ chối. Kết quả mô tả xử lý hồ sơ lịch sử; không phải dự đoán vỡ nợ hoặc quyết định cấp tín dụng thực tế.
+## Pipeline toàn dự án
 
-## Tài liệu chính
+```mermaid
+flowchart TB
+    R[HMDA NY 2024 raw source<br/>immutable] --> L[Source integrity and lineage]
+    L --> A[Dataset A bridge branch]
+    L --> B[Dataset B main research branch]
+    A --> AV[Set A view and locked feature groups]
+    AV --> AM[LR and RF only]
+    AM --> AR1[RQ1 baseline]
+    AM --> AR2[RQ2 GSV and SL bridge]
+    B --> BV[Cohort, target and audit-frame boundary]
+    BV --> BF[Feature governance and feature lock]
+    BF --> BM[Six-model RQ1]
+    BM --> BR1[LR, RF, XGBoost, plain MLP,<br/>RealMLP and TabMmini]
+    BR1 --> BR2[RQ2 explanation scope]
+    BR1 --> BR3[RQ3 descriptive fairness audit]
+    AR1 --> O[Versioned artifacts and reports]
+    AR2 --> O
+    BR1 --> O
+    BR2 --> O
+    BR3 --> O
+```
 
-- [Project Master](docs/HMDA_Project_Master_Main.docx): kiến trúc, phạm vi công việc, đầu ra và điều kiện nghiệm thu của 9 phase trong 10 tuần.
-- [Project Planning](docs/HMDA_New_York_Project_Planning.docx): căn cứ nghiên cứu, RQ, thiết kế thực nghiệm và yêu cầu học phần.
-- [Chỉ mục tài liệu](docs/README.md): vai trò, trạng thái và nguồn sự thật của từng tài liệu.
-- [Protocol](docs/protocol.md), [paper review](docs/paper_review.md) và [API contract](docs/api_contract.md): bản nháp nền đã đối chiếu; các mục phụ thuộc dữ liệu, công thức hoặc triển khai vẫn được đánh dấu `PENDING`.
-- [Notebook guidelines](docs/notebook_guidelines.md) và [reproducibility](docs/reproducibility.md): chuẩn notebook, provenance và mức bằng chứng.
-- [Contributing](CONTRIBUTING.md) và [Security](SECURITY.md): quy trình đóng góp, bảo vệ secret/dữ liệu và kiểm tra trước chia sẻ.
+Source-lineage conventions và target rule có thể dùng chung; `X`, audit metadata, split manifests, fitted preprocessing, models, predictions và results không được dùng chung giữa Dataset A và Dataset B.
 
-README là điểm bắt đầu cho thành viên nhóm; đặc tả chi tiết và gate được quản lý trong Project Master.
+## Pipeline modes và model scope
 
-## Kiến trúc và luồng dữ liệu
+| Mode | Dataset A | Dataset B | Model được chạy |
+|---|---|---|---|
+| `source_integrity` | Kiểm tra nguồn và lineage | Kiểm tra nguồn và lineage | Không chạy model |
+| `dataset_view` | Tạo Set A view theo contract đã khóa | Tạo cohort, target và audit frame | Không chạy model |
+| `feature_governance` | Không mở lại Set A contract | Audit, redundancy, representation và feature lock | Không chạy sáu model; LR/RF chỉ dùng cho sensitivity hẹp nếu được phê duyệt |
+| `rq1_train_evaluate` | Baseline bridge | Thực nghiệm chính | A: LR, RF. B: LR, RF, XGBoost, plain MLP, RealMLP, TabMmini |
+| `rq2_explain` | GSV/SL bridge | Chỉ sau RQ1 và feature lock | A: LR, RF. B: LR, RF, XGBoost và một neural model được chọn sau RQ1 |
+| `rq3_fairness_audit` | Ngoài scope Set A hiện tại | Audit prediction theo `record_id` | Cả sáu model Dataset B |
+| `reporting` | Baseline và explanation artifacts | RQ1, RQ2, RQ3 artifacts | Không retrain model |
 
-PostgreSQL là nguồn dữ liệu dùng chung. Pipeline đọc dữ liệu, kiểm tra chất lượng và tạo snapshot có phiên bản; CSV nguồn và bản xuất được lưu local trong `data/`. Các thành phần tái sử dụng nằm trong package `src/hmda/`; notebook điều khiển phân tích/thực nghiệm và trình bày kết quả; API gọi package/service và nạp model đã lưu.
+## Preprocessing contract
 
-| Luồng | Trách nhiệm | Notebook |
-| --- | --- | --- |
-| EDADataPipeline | Dữ liệu gần raw để kiểm chất lượng và mô tả; không split, imputation, scaling hoặc encoding cho model | `notebooks/eda/` |
-| TrainingDataPipeline | Kiểm dữ liệu, chia tập, phân tích train, lựa chọn preprocessing rồi train/đánh giá theo protocol | `notebooks/train/` |
-| RegionDataPipeline | Kiểm dữ liệu vùng đối chiếu và dùng lại pipeline/model NY đã khóa; không fit lại | `notebooks/research/` |
+Dataset A và Dataset B không dùng chung fitted preprocessor. Trong từng dataset, mọi model phải nhận cùng feature information đã khóa; khác biệt chỉ nằm ở preprocessing profile phù hợp model family.
 
-**Preprocessing chưa được quyết định.** Chỉ lựa chọn sau phân tích và kiểm tra dữ liệu. Mọi phép biến đổi học từ dữ liệu phải fit trên train; validation, test, API và cross-region dùng lại trạng thái phù hợp đã lưu.
+```text
+locked raw feature information
+            │
+            ▼
+train-only, family-specific preprocessing profile
+            │
+            ▼
+fitted model pipeline and versioned artifact
+```
 
-`path.py` đã tìm project root từ `__file__` và marker dự án, không dùng `cwd`. Config và logging lõi đã có kiểm tra/redaction; các quality gate, snapshot bất biến và đối soát PostgreSQL–CSV vẫn thuộc Phase 2.
+Thông số imputation, encoding, scaling, outlier handling, balancing, seed và tuning budget của Dataset B chưa được khóa đầy đủ. Vì vậy README không tự quy định algorithm preprocessing cụ thể cho sáu model. Bất kỳ profile nào cũng phải fit trên train/fold tương ứng và không được thêm hoặc loại information so với feature set đã phê duyệt.
 
-## Cấu trúc dùng chung
+## Cấu trúc thư mục hiện tại
 
-| Vùng | Trách nhiệm |
-| --- | --- |
-| `src/hmda/core/` | Path, config, logging và exceptions |
-| `src/hmda/data/`, `pipelines/` | Nạp dữ liệu, repository, validation, split, snapshot và ba pipeline |
-| `src/hmda/preprocessing/`, `modeling/`, `evaluation/` | Xử lý sau khi được lựa chọn, huấn luyện và đánh giá |
-| `src/hmda/explainability/`, `fairness/`, `visualization/` | Giải thích, audit và biểu đồ dùng chung |
-| `src/hmda/services/` | Dự đoán và đọc kết quả cho API |
-| `notebooks/` | EDA, train và research theo ba thư mục riêng |
-| `configs/` | Toàn bộ tham số và mẫu môi trường không chứa secret |
-| `data/raw/`, `data/snapshots/` | CSV nguồn và bản xuất EDA/training/region theo ID, lưu local |
-| `artifacts/runs/`, `logs/` | Kết quả theo run và log runtime local |
-| `sql/` | Migrations PostgreSQL và truy vấn quality |
-| `api/`, `web/` | Dịch vụ và giao diện; frontend stack chưa chọn |
-| `tests/` | 22 unit test Phase 1; integration/e2e nghiệp vụ vẫn là placeholder |
-| `docs/` | Tài liệu chính và đặc tả theo phase |
+```text
+DAP391m_GR12/
+│
+├── README.md                    # Tài liệu kiến trúc, pipeline modes và phạm vi Dataset A/B
+├── pyproject.toml               # Metadata package và dependency policy của dự án
+├── requirements.txt             # Danh sách dependency hiện có
+├── .gitignore                   # Quy tắc ignore hiện hữu; Dataset B artifacts cần được review trước khi tạo outputs
+│
+├── config/                      # Cấu hình hiện hữu và Dataset B contract templates
+│   ├── config.yaml              # Target rule và cấu hình dataset hiện hữu
+│   ├── features.yaml            # Legacy/shared feature config; cần đồng bộ sau feature lock Dataset B
+│   ├── model_config.yaml        # Vị trí lưu model configuration history khi được sử dụng
+│   └── dataset_b/               # Dành cho data, feature, split, model, RQ2 và RQ3 contracts versioned
+│
+├── data/
+│   ├── raw/                     # HMDA source read-only, không ghi đè
+│   ├── processed/datasetA/      # Khu vực output hiện hữu, tách riêng cho Dataset A
+│   └── dataset_b/               # Namespace Dataset B: derived data, audit frame và split manifests
+│
+├── artifacts/dataset_b/         # Khu vực artifact Dataset B theo dataset/feature/split/model/run version
+│
+├── notebooks/                   # EDA và evidence notebooks; không là nguồn duy nhất của contract
+│   ├── 01_eda.ipynb             # EDA tổng quát hiện hữu
+│   └── eda_datasetB/            # Feature-governance notebooks của Dataset B
+│
+├── docs/                        # Nguồn yêu cầu kỹ thuật, planning và feature-governance evidence
+├── reports/                     # Báo cáo và figures được tạo từ artifacts đã khóa
+├── sql/                          # Không gian SQL của dự án
+│
+├── src/
+│   ├── utils/                   # Utility dùng chung: project paths, config loading và logging
+│   ├── pipeline/                # Legacy/general pipeline scaffold; không phải pipeline Dataset B độc lập
+│   └── dataset_b/               # Namespace implementation Dataset B: preparation đến artifacts, tách khỏi Dataset A
+│
+└── tests/                       # Test cho utility và pipeline khi implementation được bổ sung
+```
 
-Xem thêm [cấu hình](configs/README.md), [dữ liệu local](data/README.md), [artifacts](artifacts/README.md) và [kiểm tra](tests/README.md).
+`src/api/` hiện tồn tại như scaffold nhưng không thuộc research pipeline hiện tại. API serving chỉ được xem xét sau khi một model artifact đã được đăng ký rõ; không được dùng để quyết định feature selection, RQ2 hoặc RQ3.
 
-## Bắt đầu làm việc
+## Dataset A
 
-1. Đọc Project Master và Planning để hiểu phạm vi và phase đang thực hiện.
-2. Cài `uv` và dùng Python 3.13.9; tại project root chạy `uv sync --dev` để đồng bộ từ `uv.lock`.
-3. Chạy `uv run pytest` và kiểm import bằng `uv run python -c "import hmda; print(hmda.__version__)"`.
-4. Ở Phase 2, thiết lập quyền PostgreSQL, nguồn dữ liệu, quality checks và snapshot trước khi phân tích/train.
+Dataset A là bridge analysis, không phải đại diện cho toàn bộ nghiên cứu Dataset B.
 
-Hạ tầng Phase 1 gồm package `src` layout, root/path, config, logging/exceptions và các protocol component/pipeline độc lập dữ liệu. 11 notebook vẫn chỉ có Markdown và chưa có code/output; các module nghiệp vụ ngoài Phase 1 phần lớn còn là scaffold. Chưa có dữ liệu, snapshot, model hoặc kết quả nghiên cứu. Không dùng 22 unit test hạ tầng làm bằng chứng G2–G8.
+- Chạy Logistic Regression và Random Forest.
+- Dùng cùng information content và bảy explanation groups đã khóa.
+- RQ1 đánh giá baseline; RQ2 so sánh GSV và SL trên `P(approved)`.
+- Không dùng kết quả Dataset A để suy rộng cho XGBoost, plain MLP, RealMLP hoặc TabMmini.
 
-Lệnh, phiên bản và bằng chứng kiểm thực tế nằm trong [reproducibility](docs/reproducibility.md). Deployment vẫn chưa được triển khai.
+## Dataset B
 
-## Quy tắc đưa file lên Git
+Dataset B là nhánh thực nghiệm chính.
 
-Nhóm dùng [workflow Git](docs/git/WORKFLOW.md), [mẫu commit](docs/git/COMMIT_TEMPLATE.txt) và [mẫu pull request](.github/pull_request_template.md). Workflow quy định branch, commit, review/merge, conflict và cách xem lịch sử; hồ sơ agent tham chiếu cùng tài liệu này.
+[Dataset B Handbook](docs/handbook/README.md) là entry point authoritative cho
+data contract, feature governance, preprocessing, training, evaluation và
+đường dẫn tới trạng thái thực thi hiện hành.
 
-Git quản lý code, notebook nguồn, test, SQL, cấu hình không bí mật, dependency lock và tài liệu dùng chung. `.gitignore` loại trừ:
+- RQ1 chạy sáu model: Logistic Regression, Random Forest, XGBoost, plain MLP, RealMLP và TabMmini.
+- Feature governance diễn ra trước RQ1. Hiện có 12 raw features ở trạng thái `keep` sau screening; đây chưa phải `FINAL_MODEL_FEATURES`.
+- `property_value` là `exclude_from_main`; `construction_method` và `total_units` vẫn cần representation comparison.
+- `applicant_sex`, năm race slots, `lei`, `county_code` và `applicant_age` nằm ngoài `X` để audit/truy vết.
+- RQ2 chỉ chạy sau RQ1 và feature lock. RQ3 là descriptive fairness audit của prediction từ cả sáu model, không phải fairness mitigation.
 
-- CSV ở mọi thư mục, kể cả `.CSV`, `.csv.gz` và bản sao `.csv.*`.
-- Dữ liệu, model/artifact và log local; chỉ giữ README cùng marker `.gitkeep` trong các vùng này.
-- Hồ sơ agent mặc định bị loại trừ, nhưng context kiến trúc, rules, session start, project state, guideline, decision, issue và research log của dự án được phép theo dõi để thành viên dùng chung. Task chi tiết, cấu hình trợ lý, `AGENTS.md`, `_archive/` và `.tmp/` vẫn local. Danh sách chính xác do `.gitignore` hiện hành quản lý; mọi file agent phải được rà soát trước chia sẻ.
-- Nhật ký AI cá nhân trong `docs/ai_audit/`; chỉ chuẩn bị bản bàn giao đã rà soát khi đến phase liên quan.
-- File môi trường thật, secret, credentials, khóa truy cập, cấu hình máy và tệp tạm. Mẫu `configs/local.env.example` được giữ vì không chứa giá trị bí mật.
-- Tài liệu cá nhân đặt trong `personal/`, `private/`, `.private/` hoặc `local_only/`; các file mang hậu tố `.private.*` và `.personal.*` cũng được loại trừ.
+## Artifact tối thiểu cần bảo tồn
 
-`agent/PROJECT_MASTER_CONTEXT.md`, `agent/SESSION_START.md`, `agent/AGENT_RULES.md` và `agent/PROJECT_STATE.md` giúp thành viên/agent mới đọc kiến trúc, quy tắc và tiến độ mà không cần nạp toàn bộ DOCX. `AGENTS.md` và task chi tiết vẫn local; README này tiếp tục là điểm vào dùng chung cho người làm dự án.
+Mỗi run có thể tái tạo phải bảo tồn dataset/feature/split version, record IDs, fitted preprocessing, fitted model, threshold đã khóa, prediction theo `record_id`, metric outputs và bootstrap artifacts. RQ2/RQ3 chỉ đọc artifacts đã khóa, không âm thầm retrain hoặc tái tạo split.
 
-`.gitignore` chỉ lọc theo đường dẫn/tên file, không phát hiện thông tin cá nhân hoặc secret bên trong README, DOCX, notebook hay mã nguồn. Trước commit, kiểm tra danh sách file và nội dung được stage; rà soát cả output/metadata của notebook. Không dùng `git add -f` để đưa các file đã chặn lên Git.
+## Trạng thái thực thi hiện hành
 
-Nếu một file đã được Git theo dõi, thêm vào `.gitignore` không tự gỡ file hoặc xóa lịch sử. Khi gặp trường hợp đó cần xử lý riêng trước khi chia sẻ; credential đã lộ phải được thu hồi hoặc thay mới.
-
-## Lộ trình
-
-Phase 0 chốt phạm vi và tổ chức công việc → Phase 1 hạ tầng → Phase 2 dữ liệu/quality → Phase 3 EDA → Phase 4 training và RQ1 → Phase 5 GSV/SL → Phase 6 fairness/region → Phase 7 Web API → Phase 8 tái lập và bàn giao.
-
-Tổng thời lượng dự kiến là 10 tuần, có phụ thuộc và phần chuẩn bị song song theo Master. Mỗi phase chỉ được nghiệm thu khi có bằng chứng đúng phạm vi; báo cáo và slide cuối học phần được tạo từ kết quả thực tế.
+[STATUS](docs/handbook/STATUS.md) là nguồn duy nhất cho trạng thái thực thi
+hiện hành của Dataset B. Các trạng thái hoặc tiến độ được lưu trong tài liệu
+khác chỉ là lịch sử có nhãn, hợp đồng, hoặc quy trình; không dùng chúng thay
+cho STATUS.

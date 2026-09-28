@@ -1,33 +1,14 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hmda-project"
+name = "dap391m"
 version = "0.1.0"
-description = "Reusable infrastructure for the HMDA New York research project"
+description = "Data Science Project DAP391m"
 readme = "README.md"
-requires-python = ">=3.13,<3.14"
-dependencies = [
-    "psycopg[binary]>=3.2,<4",
-    "python-dotenv>=1.1,<2",
-    "PyYAML>=6.0.3,<7",
-]
-
-[dependency-groups]
-dev = [
-    "ipykernel>=6.31,<7",
-    "pytest>=8.4,<9",
-]
+requires-python = ">=3.10"
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["hmda*"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-ra --basetemp=.pytest/.pytest_tmp"
-cache_dir = ".pytest/.pytest_cache"
-markers = [
-    "integration: requires an external service or multi-component test environment",
-]
+where = ["."]
+include = ["src*"]

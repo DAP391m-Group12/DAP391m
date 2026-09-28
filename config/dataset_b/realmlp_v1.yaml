@@ -1,0 +1,50 @@
+schema_version: 1
+dataset: dataset_b
+model: realmlp
+config_version: realmlp_v1
+contract_id: REALMLP-PILOT-START-01
+
+backend:
+  package: pytabkit
+  package_version: "1.7.3"
+  estimator_class: pytabkit.models.sklearn.sklearn_interfaces.RealMLP_TD_Classifier
+
+estimator_parameters:
+  device: cuda
+  random_state: 42
+  n_cv: 1
+  n_refit: 0
+  n_repeats: 1
+  n_ens: 1
+  n_epochs: 256
+  batch_size: 256
+  predict_batch_size: 1024
+  hidden_sizes: [256, 256, 256]
+  act: selu
+  use_parametric_act: true
+  opt: adam
+  lr: 0.04
+  lr_sched: coslog4
+  wd: 0.02
+  wd_sched: flat_cos
+  p_drop: 0.15
+  p_drop_sched: flat_cos
+  val_metric_name: cross_entropy
+  use_ls: false
+  use_early_stopping: false
+  verbosity: 2
+
+backend_controls:
+  val_fraction: 0.0
+  categorical_columns: explicit_by_name
+
+project_policy:
+  allow_silent_cpu_fallback: false
+  class_weighting: false
+  sample_weighting: false
+
+input_contract:
+  preprocessing_version: dataset_b_neural_preprocessing_v1
+  representation: realmlp_native_16_columns
+  numerical_dtype: float32
+  categorical_dtype: category

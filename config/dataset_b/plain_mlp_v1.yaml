@@ -1,0 +1,54 @@
+schema_version: 1
+dataset: dataset_b
+model: plain_mlp
+model_version: plain_mlp_v1
+status: provisional_starting_configuration
+is_project_default: false
+is_final_configuration: false
+selected_by_train_cv: false
+
+contracts:
+  feature: dataset_b/feature_set_v1.yaml
+  split: dataset_b/split_v1.yaml
+  preprocessing_version: dataset_b_neural_preprocessing_v1
+  cv_artifact: data/preprocessing/dataset_b_v1/cv_neural_preprocessing_v1
+
+environment:
+  name: dap391m-neural
+  python_version: 3.12.13
+  torch_release: 2.14.0
+  torch_build: cpu
+  device: cpu
+  requirements: requirements.txt
+
+preprocessing:
+  profile: plain_mlp_external_ohe
+  encoded_feature_count: 66
+  stored_format: csr
+  stored_dtype: float32
+  model_boundary_format: dense_per_batch
+  model_input_dtype: float32
+  numeric_transform: median_then_log1p
+  numeric_scaler: none
+
+architecture:
+  hidden_layers: [128, 64]
+  activation: ReLU
+  output_units: 1
+
+training:
+  loss: BCEWithLogitsLoss
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  dropout: 0.1
+  batch_size: 256
+  epochs: 100
+  early_stopping: false
+  random_state: 42
+  deterministic_algorithms: true
+
+class_handling:
+  class_weight: false
+  sample_weight: false
+  resampling: false

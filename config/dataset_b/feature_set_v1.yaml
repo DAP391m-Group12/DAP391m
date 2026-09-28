@@ -1,0 +1,61 @@
+schema_version: 1
+dataset: dataset_b
+feature_version: temporary_training_lock_v0_2
+status: temporary_training_lock
+purpose: rq1_cv
+
+source_of_truth:
+  document: docs/handbook/contracts/feature_governance.md
+  section: 6
+
+target:
+  name: y_approved
+  source_column: action_taken
+  eligible_values: [1, 2, 3]
+  positive_values: [1, 2]
+  negative_values: [3]
+  forbidden_model_inputs: [action_taken]
+
+model_input_raw_columns:
+  - loan_type
+  - loan_purpose
+  - lien_status
+  - reverse_mortgage
+  - open-end_line_of_credit
+  - business_or_commercial_purpose
+  - income
+  - debt_to_income_ratio
+  - loan_amount
+  - loan_to_value_ratio
+  - loan_term
+  - occupancy_type
+
+audit_only_columns:
+  - lei
+  - county_code
+  - applicant_race-1
+  - applicant_race-2
+  - applicant_race-3
+  - applicant_race-4
+  - applicant_race-5
+  - applicant_sex
+  - applicant_age
+
+protected_attributes:
+  sex:
+    source_column: applicant_sex
+  applicant_race:
+    source_columns:
+      - applicant_race-1
+      - applicant_race-2
+      - applicant_race-3
+      - applicant_race-4
+      - applicant_race-5
+
+constraints:
+  audit_columns_are_model_inputs: false
+  temporary_lock_is_final_model_features: false
+  preprocessing_profile: dataset_b_preprocessing_v2
+  encoded_feature_count: 66
+  numeric_status_reference_category: OBSERVED
+  missing_category_retained: true

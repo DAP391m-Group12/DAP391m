@@ -1,0 +1,24 @@
+schema_version: 1
+dataset: dataset_b
+split_version: split_v1
+feature_contract: dataset_b/feature_set_v1.yaml
+split_unit: record_id
+grouping_constraint: none
+random_state: 42
+
+holdout_split:
+  train_fraction: 0.70
+  validation_fraction: 0.15
+  test_fraction: 0.15
+  stratify_by: y_approved
+
+cross_validation:
+  splitter: StratifiedKFold
+  n_splits: 5
+  shuffle: true
+  random_state: 42
+  allowed_population: train_only
+
+boundaries:
+  validation_used_for: threshold_selection_and_downstream_rq_artifacts
+  test_used_for: final_rq1_evaluation_only
