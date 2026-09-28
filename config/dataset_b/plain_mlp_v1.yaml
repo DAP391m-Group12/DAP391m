@@ -19,7 +19,7 @@ environment:
   torch_release: 2.14.0
   torch_build: cpu
   device: cpu
-  requirements: requirements-neural.txt
+  requirements: requirements.txt
 
 preprocessing:
   profile: plain_mlp_external_ohe

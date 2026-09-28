@@ -37,7 +37,7 @@ _SOURCE_FILES = {
     "split_contract": CONFIG_DIR / "dataset_b" / "split_v1.yaml",
     "plain_mlp_config": CONFIG_DIR / "dataset_b" / "plain_mlp_v1.yaml",
     "split_manifest": PROJECT_ROOT / "artifacts" / "dataset_b" / "split_v1.json",
-    "neural_requirements": PROJECT_ROOT / "requirements-neural.txt",
+    "neural_requirements": PROJECT_ROOT / "requirements.txt",
 }
 
 

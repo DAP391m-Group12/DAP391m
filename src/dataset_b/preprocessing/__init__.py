@@ -10,6 +10,12 @@ from .neural_profiles import make_plain_mlp_preprocessing_pipeline
 from .numeric_two_channel import DatasetBNumericTwoChannel
 from .profiles import DatasetBNumericValueRobustScaler, DatasetBRawParserStep, make_preprocessing_pipeline
 from .raw_parser import DatasetBRawParser, ParseDiagnostics, ParsedFeatures, RawFeatureError
+from .realmlp_native import (
+    DatasetBRealMLPNativeAdapter,
+    RealMLPCategorySupportError,
+    make_realmlp_native_preprocessing_pipeline,
+    validate_realmlp_category_support,
+)
 from .split_inputs import DatasetBPartition, DatasetBSplitLoader, SplitInputError
 
 __all__ = [
@@ -20,10 +26,13 @@ __all__ = [
     "DatasetBNumericTwoChannel",
     "DatasetBOneHotEncoder",
     "DatasetBNeuralLog1pTransformer",
+    "DatasetBRealMLPNativeAdapter",
     "DatasetBNumericValueRobustScaler",
     "DatasetBRawParserStep",
     "make_preprocessing_pipeline",
     "make_plain_mlp_preprocessing_pipeline",
+    "make_realmlp_native_preprocessing_pipeline",
+    "validate_realmlp_category_support",
     "CATEGORICAL_COLUMNS",
     "CATEGORICAL_SCHEMA",
     "ENCODED_FEATURE_COUNT",
@@ -31,5 +40,6 @@ __all__ = [
     "ParseDiagnostics",
     "ParsedFeatures",
     "RawFeatureError",
+    "RealMLPCategorySupportError",
     "SplitInputError",
 ]

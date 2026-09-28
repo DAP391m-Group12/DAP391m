@@ -1,0 +1,327 @@
+{
+  "schema_version": 1,
+  "stage": "wave_0_source_to_destination_map",
+  "scope_rule": "Each mapping covers the named top-level section and all of its child headings unless a child section is listed separately.",
+  "migration_rules": [
+    "Every legacy Markdown section has at least one declared destination or an explicit archive-only treatment.",
+    "Execution claims move to STATUS.md only after evidence reconciliation.",
+    "Contract and runbook files must not repeat current execution status.",
+    "Cross-references replace duplicated narrative whenever another file owns the fact.",
+    "The three DOCX reports remain at their current paths and are not migration destinations."
+  ],
+  "destinations": [
+    "docs/handbook/README.md",
+    "docs/handbook/STATUS.md",
+    "docs/handbook/contracts/data_contract.md",
+    "docs/handbook/contracts/feature_governance.md",
+    "docs/handbook/contracts/split_and_evaluation.md",
+    "docs/handbook/contracts/preprocessing_classical.md",
+    "docs/handbook/contracts/preprocessing_neural.md",
+    "docs/handbook/runbooks/baseline_training.md",
+    "docs/handbook/runbooks/neural_training.md",
+    "docs/handbook/archive/documentation_migration_2026-09.md",
+    "docs/handbook/archive/colab_environment_superseded.md"
+  ],
+  "sources": [
+    {
+      "path": "docs/Dataset_B_Data_Selection.md",
+      "coverage": [
+        {
+          "sections": "document title, scope banner, 1-4",
+          "primary_destination": "docs/handbook/contracts/data_contract.md",
+          "treatment": "Retain cohort, target, 99-column reconciliation, role inventories, exclusions, and interpretation boundaries."
+        },
+        {
+          "sections": "5.1-5.5",
+          "primary_destination": "docs/handbook/contracts/data_contract.md",
+          "treatment": "Retain stable schema, lineage, cohort, quality, timing, leakage, and applicability gates; feature-specific results are referenced from feature governance."
+        },
+        {
+          "sections": "5.6",
+          "primary_destination": "docs/handbook/contracts/feature_governance.md",
+          "treatment": "Retain redundancy and representation decision rules without duplicating the candidate inventory."
+        },
+        {
+          "sections": "6",
+          "primary_destination": "docs/handbook/README.md",
+          "treatment": "Replace the legacy handoff prose with the new reading and ownership route."
+        },
+        {
+          "sections": "7",
+          "primary_destination": "docs/handbook/contracts/data_contract.md",
+          "secondary_destination": "docs/handbook/contracts/feature_governance.md",
+          "treatment": "Keep stable data-contract decisions in data_contract; move unresolved feature decisions to feature_governance; do not present either as model execution status."
+        },
+        {
+          "sections": "8",
+          "primary_destination": "docs/handbook/contracts/data_contract.md",
+          "treatment": "Retain relevant references, including unchanged DOCX paths."
+        }
+      ]
+    },
+    {
+      "path": "docs/Feature_selection.md",
+      "coverage": [
+        {
+          "sections": "document title and 1-14",
+          "primary_destination": "docs/handbook/contracts/feature_governance.md",
+          "treatment": "Retain feature evidence, protocols, decision schema, temporary lock, open decisions, and references. Replace repeated cohort, target, role inventories, and metadata definitions with links to data_contract."
+        }
+      ]
+    },
+    {
+      "path": "docs/Dataset_B_v1_preprocessing.md",
+      "coverage": [
+        {
+          "sections": "document title and 1",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep stable classical preprocessing identifiers and boundaries in the contract. Admit execution claims to STATUS only after artifact reconciliation."
+        },
+        {
+          "sections": "2",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "secondary_destination": "docs/handbook/contracts/data_contract.md",
+          "treatment": "Keep split and fitting boundaries in split_and_evaluation; reference target and input-role ownership from data_contract."
+        },
+        {
+          "sections": "3-5",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "treatment": "Retain 12-input representation, parser transformations, OHE/scaling contract, and preprocessing artifact schema."
+        },
+        {
+          "sections": "6-8",
+          "primary_destination": "docs/handbook/runbooks/baseline_training.md",
+          "treatment": "Condense notebook and execution examples into a coder-facing runbook; prefer public APIs over copied implementation."
+        },
+        {
+          "sections": "9",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "treatment": "Retain the threshold and model-phase boundary; model-specific outcomes belong only in STATUS after reconciliation."
+        },
+        {
+          "sections": "10-11",
+          "primary_destination": "docs/handbook/runbooks/baseline_training.md",
+          "treatment": "Retain operational logging, artifact, and pre-run checks without treating checklist completion as evidence."
+        },
+        {
+          "sections": "12",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "secondary_destination": "docs/handbook/runbooks/baseline_training.md",
+          "treatment": "Keep contract limits in preprocessing_classical and operational cautions in the runbook; execution claims require reconciliation before STATUS."
+        }
+      ]
+    },
+    {
+      "path": "docs/Dataset_B_Engine_preprocesing.md",
+      "coverage": [
+        {
+          "sections": "document title and 1",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Retain ownership and route distinctions in contracts; send dated execution claims to evidence reconciliation, not direct migration."
+        },
+        {
+          "sections": "2.1 and 2.3",
+          "primary_destination": "docs/handbook/contracts/data_contract.md",
+          "treatment": "Own predictor/audit separation and raw token semantics once; preprocessing contracts reference them."
+        },
+        {
+          "sections": "2.2",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "treatment": "Retain split, fit, Validation, and Test boundaries."
+        },
+        {
+          "sections": "3",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "treatment": "Reconcile with the Phase 1 source and retain only classical route details owned here."
+        },
+        {
+          "sections": "4-7",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Retain neural semantic transforms, category handling, native/external adapters, dtype boundaries, and stable representation decisions."
+        },
+        {
+          "sections": "8",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/runbooks/baseline_training.md",
+          "treatment": "Place model-configuration and regularization ownership in the applicable runbook; do not copy provisional values across model families."
+        },
+        {
+          "sections": "9",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "secondary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Separate classical and neural artifact contracts by owner."
+        },
+        {
+          "sections": "10",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "secondary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Split the six-model matrix into route-specific contract tables; discard duplicated execution status unless independently admitted to STATUS."
+        },
+        {
+          "sections": "11",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "secondary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "treatment": "Distribute acceptance criteria to the contract that owns each preprocessing route."
+        },
+        {
+          "sections": "12",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep stable decisions and non-claim boundaries in contracts; current PASS, pending, and runtime evidence require STATUS reconciliation."
+        },
+        {
+          "sections": "13",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "secondary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "treatment": "Retain only references used by each new owner; runtime-result references are handled during STATUS reconciliation."
+        }
+      ]
+    },
+    {
+      "path": "docs/Dataset_B_Pipeline.md",
+      "coverage": [
+        {
+          "sections": "document title and 1",
+          "primary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Rebuild model task chains from evidence; do not copy contradictory current-state prose directly."
+        },
+        {
+          "sections": "2-3",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "treatment": "Retain the stable Dataset B execution flow and execution-mode boundaries without current task status."
+        },
+        {
+          "sections": "4",
+          "primary_destination": "docs/handbook/contracts/preprocessing_classical.md",
+          "secondary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Route preprocessing facts to their model-family owner and remove duplicated state summaries."
+        },
+        {
+          "sections": "4.1",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Retain the shared neural wrapper interface boundary if verified against implementation."
+        },
+        {
+          "sections": "5.1",
+          "primary_destination": "docs/handbook/contracts/feature_governance.md",
+          "treatment": "Retain only the temporary feature-lock decision and reference its canonical evidence."
+        },
+        {
+          "sections": "5.2-5.4",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "treatment": "Retain split, selection, refit, metric, uncertainty, and data-opening decisions; route model-specific implementation outcomes to STATUS."
+        },
+        {
+          "sections": "6",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep gate and handoff definitions in the contract; admit completed gate evidence to STATUS only after validation."
+        },
+        {
+          "sections": "7",
+          "primary_destination": "docs/handbook/README.md",
+          "secondary_destination": "docs/handbook/runbooks/baseline_training.md",
+          "treatment": "Use the code map to support task routing and runbook links; do not claim mapped modules exist without verification."
+        },
+        {
+          "sections": "8",
+          "primary_destination": "docs/handbook/README.md",
+          "treatment": "Convert task-reading guidance into the concise handbook index."
+        }
+      ]
+    },
+    {
+      "path": "docs/Neural_Training_Guideline.md",
+      "coverage": [
+        {
+          "sections": "document title and 1",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/README.md",
+          "treatment": "Retain runbook authority and route current progress exclusively to STATUS."
+        },
+        {
+          "sections": "2",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "treatment": "Retain machine responsibilities and offline/local execution boundary."
+        },
+        {
+          "sections": "3",
+          "primary_destination": "docs/handbook/contracts/split_and_evaluation.md",
+          "treatment": "Own Train, CV, Validation, and Test leakage boundaries once."
+        },
+        {
+          "sections": "4",
+          "primary_destination": "docs/handbook/contracts/preprocessing_neural.md",
+          "treatment": "Retain shared semantic preprocessing and adapter boundaries."
+        },
+        {
+          "sections": "5-12",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep model order, pilot, configuration-governance, GPU, observability, history, epoch-decision, and publication procedures in the runbook; execution PASS evidence goes through reconciliation."
+        },
+        {
+          "sections": "13",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep the stage sequence and gate semantics in the runbook; hashes and completed-stage claims belong only in reconciled STATUS evidence."
+        },
+        {
+          "sections": "14",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Keep the TabMmini opening criteria in the runbook and its current satisfaction state in STATUS."
+        },
+        {
+          "sections": "15",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "secondary_destination": "docs/handbook/STATUS.md",
+          "treatment": "Separate durable decision policy from historical PASS and VERIFIED outcomes."
+        },
+        {
+          "sections": "16",
+          "primary_destination": "docs/handbook/runbooks/neural_training.md",
+          "treatment": "Generalize the handoff checklist so it is not tied to a stale next RealMLP stage."
+        }
+      ]
+    },
+    {
+      "path": "docs/README.md",
+      "coverage": [
+        {
+          "sections": "document title and Purpose and current authority",
+          "primary_destination": "docs/handbook/README.md",
+          "treatment": "Retain only concise task-based routing and ownership; current model state links to STATUS."
+        },
+        {
+          "sections": "G1",
+          "primary_destination": "docs/handbook/archive/documentation_migration_2026-09.md",
+          "treatment": "Preserve the completed legacy migration map as non-authoritative history."
+        },
+        {
+          "sections": "G2",
+          "primary_destination": "docs/handbook/README.md",
+          "secondary_destination": "docs/handbook/archive/documentation_migration_2026-09.md",
+          "treatment": "Keep current ownership rules in README; preserve historical controlled-rewrite rationale in archive."
+        },
+        {
+          "sections": "G4 acceptance checklist and G4 reference status",
+          "primary_destination": "docs/handbook/archive/documentation_migration_2026-09.md",
+          "treatment": "Preserve as migration history, not as an active handbook acceptance claim."
+        }
+      ]
+    },
+    {
+      "path": "docs/Colab_env.md",
+      "coverage": [
+        {
+          "sections": "entire document",
+          "primary_destination": "docs/handbook/archive/colab_environment_superseded.md",
+          "treatment": "Preserve the superseded redirect and non-evidence warning outside the active reading path."
+        }
+      ]
+    }
+  ]
+}

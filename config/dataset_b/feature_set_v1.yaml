@@ -5,8 +5,8 @@ status: temporary_training_lock
 purpose: rq1_cv
 
 source_of_truth:
-  document: docs/Feature_selection.md
-  section: 13
+  document: docs/handbook/contracts/feature_governance.md
+  section: 6
 
 target:
   name: y_approved
