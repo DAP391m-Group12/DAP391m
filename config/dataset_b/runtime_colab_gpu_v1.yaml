@@ -1,0 +1,98 @@
+schema_version: 1
+dataset: dataset_b
+runtime_profile: runtime_colab_gpu_v1
+status: paused_before_runtime_execution
+scope: gpu_00_environment_probe_only
+
+pause:
+  state: paused
+  effective_date: "2026-09-24"
+  reason: focus_shift_to_other_project_work
+  last_completed_stage: gpu_00_design_and_static_review
+  runtime_execution_started: false
+  evidence_available: false
+  gpu_01_authorized: false
+  resume_requires:
+    - explicit_user_authorization
+    - fix_gpu_00_pass_aggregation
+    - select_git_clone_only_or_implement_zip_support
+    - select_evidence_overwrite_or_versioning_policy
+    - clean_committed_repository_state
+
+contracts:
+  model: dataset_b/plain_mlp_v1.yaml
+  feature: dataset_b/feature_set_v1.yaml
+  split: dataset_b/split_v1.yaml
+  preprocessing_version: dataset_b_neural_preprocessing_v1
+  cv_artifact: data/preprocessing/dataset_b_v1/cv_neural_preprocessing_v1
+
+colab:
+  provider: google_colab_managed_runtime
+  runtime_version: "2026.07"
+  hardware_accelerator: gpu
+  high_ram_required: false
+  ssh_enabled: false
+
+environment:
+  python_version: 3.12.13
+  torch_release: 2.14.0
+  torch_cuda_build_candidate: cu126
+  torch_index_url: https://download.pytorch.org/whl/cu126
+  device: cuda
+  require_cuda_available: true
+  require_cuda_build: true
+  install_from_repository_requirements: false
+  note: requirements.txt is CPU-oriented and is not the GPU environment source.
+
+execution:
+  precision: float32
+  amp: false
+  random_state: 42
+  deterministic_algorithms: true
+  num_workers: 2
+  pin_memory: true
+  job_unit: one_model_one_fold
+  local_work_root: /content/dap391m_job
+  copy_input_to_local_disk: true
+
+persistent_storage:
+  provider: google_drive
+  mount_point: /content/drive
+  root: /content/drive/MyDrive/DAP391m_GR12_remote
+  train_directly_from_persistent_storage: false
+  atomic_publish_required: true
+
+checkpoint:
+  save_best: true
+  save_last: true
+  every_n_epochs: 1
+  resume: true
+  required_state:
+    - model_state
+    - optimizer_state
+    - scheduler_state_if_used
+    - epoch_and_optimizer_step
+    - best_metric_and_epoch
+    - patience_state_if_used
+    - training_history
+    - python_numpy_torch_rng_state
+    - cuda_rng_state
+    - source_config_input_hashes
+    - runtime_fingerprint
+
+gpu_00:
+  model_training_allowed: false
+  dataset_read_allowed: false
+  validation_read_allowed: false
+  test_read_allowed: false
+  required_checks:
+    - exact_python_version
+    - exact_torch_release
+    - cuda_build_present
+    - cuda_available
+    - gpu_identity_and_driver
+    - finite_cuda_tensor_operation
+    - repository_commit_identity
+    - runtime_config_hash
+    - google_drive_atomic_write_read
+  evidence_file: gpu00_environment.json
