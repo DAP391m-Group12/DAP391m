@@ -98,6 +98,36 @@ Both rules are fixed fit-time policy, not hyperparameter tuning. The protocol
 continues to require `sample_weight: false`, `resampling: false`, and
 `hyperparameter_search: false`.
 
+PlainMLP uses fit-population `pos_weight = n_denied / n_approved`, with
+Approved as the positive class. The temporary selector for each outer fold
+derives the value from that fold's inner-fit rows; the fresh final outer
+estimator recalculates it from the complete outer fold-train population. The
+full-Train temporary selector derives it from the full-Train inner-fit rows;
+the fresh final full-Train estimator recalculates it from all 205,310 Train
+rows. PlainMLP must not combine `pos_weight` with sample weights or resampling,
+and Validation/Test labels must not contribute to any weight.
+
+### 3.2 PlainMLP inner-stopping and refit boundary
+
+PlainMLP uses a stratified 90% inner-fit / 10% inner-stop split with random
+state 42 inside each permitted fit population. The temporary selector monitors
+inner-stop BCE loss in `min` mode for at most 100 epochs, with patience 10 and
+`min_delta = 0.00001`, and selects the best epoch. The selector, optimizer, and
+their fitted preprocessing state are then discarded. A fresh final estimator
+and fresh fit-local preprocessor fit the complete outer fold-train population
+for exactly the selected epoch count before predicting outer fold-validation
+once. Outer fold-validation, project Validation, and Test are forbidden from
+the inner-stop set.
+
+The same procedure applies to full Train: a temporary full-Train selector
+chooses the epoch using only its Train-derived inner split, then a fresh final
+estimator and fresh preprocessor fit all 205,310 Train rows for that epoch
+count. The complete sequence is five temporary outer-fold selectors, five
+final outer-fold estimators, one temporary full-Train selector, and one final
+full-Train estimator: 12 fresh model initializations, of which only the six
+final estimators are model evidence. Temporary selector state is never
+published or reused by a final estimator.
+
 ## 4. Full-Train refit boundary
 
 After one configuration has been selected for a model family:
@@ -110,9 +140,10 @@ After one configuration has been selected for a model family:
    Validation for threshold selection.
 
 Fold-fitted preprocessing or a fold-fitted model is a CV artifact and cannot be
-reused as the full-Train fitted state. The full-Train fit must not receive an
-internal Validation or Test channel unless a later approved model-specific
-protocol explicitly changes the contract and remains compatible with this
+reused as the full-Train fitted state. The full-Train fit must not receive
+project Validation or Test as an internal channel. PlainMLP may use only the
+Train-derived inner-stop procedure in Section 3.2; another internal channel
+requires a later approved model-specific protocol compatible with this
 partition boundary.
 
 ## 5. Validation threshold boundary
@@ -132,6 +163,14 @@ Validation. The threshold-selection artifact must identify:
 Validation must not refit preprocessing or the model, update a vocabulary,
 change a configuration, or trigger open-ended tuning. Once selected, the
 threshold is immutable for Test evaluation and the corresponding RQ1 bootstrap.
+
+For PlainMLP, the candidate grid is the 999 values from 0.001 through 0.999 in
+steps of 0.001. Ties in maximum Balanced Accuracy are resolved first by the
+minimum absolute distance to 0.5 and then by the lower threshold. The persisted
+probability matrix is `float64`, finite, shaped `(n_rows, 2)`, bounded in
+`[0, 1]`, and each row sums to one under `rtol = 0`, `atol = 1.0e-7`. Both
+columns returned by `predict_proba` are persisted directly: no rounding,
+clipping, or persistence-layer reconstruction is allowed.
 
 ## 6. Test evaluation boundary
 
@@ -183,8 +222,11 @@ The following rules are mandatory:
   compared directly against the values recorded for the same `run_id`;
 - `calibration_slope` is compared after rounding both stored and recomputed
   values to six decimal places; the other metrics and all interval endpoints
-  use their approved numerical tolerance policy. No other metric uses decimal
-  rounding.
+  use `rtol = 0`, `atol = 1.0e-14`; point metrics use `rtol = 0`,
+  `atol = 1.0e-12`. No other metric uses decimal rounding;
+- the existing locked bootstrap indices must not be regenerated;
+- SHA, digest, raw-byte identity, and the probability row-sum tolerance are
+  not numerical-equivalence gates for metrics or confidence intervals.
 
 The detailed confidence-interval method for between-model metric differences
 and the rule for declaring statistical significance are still open in the Set B
@@ -290,9 +332,14 @@ and denominator decisions.
 
 - Do not regenerate or reorder `split_v1` inside a notebook or model runner.
 - Do not fit any preprocessing or model state on Validation or Test.
+- Do not place outer fold-validation, project Validation, or Test in an inner
+  stopping set, and do not reuse a temporary selector as a final estimator.
 - Do not use Validation for repeated, unbounded configuration tuning.
 - Do not choose or revise a threshold on Test.
+- Do not run final Test inference more than once for a model `run_id`.
 - Do not retrain inside a Test bootstrap replicate.
+- Do not regenerate locked bootstrap indices or use SHA/digest identity as a
+  numerical-comparison gate.
 - Do not describe a per-model Test result as a paired cross-model comparison.
 - Do not mix superseded 12-feature results with final 15-feature benchmark
   results in a comparison, ranking, bootstrap summary, or RQ2/RQ3 input.

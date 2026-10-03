@@ -1,4 +1,4 @@
-"""Non-negative log transform for Dataset B neural numeric value channels."""
+"""Selective non-negative log transform for Dataset B PlainMLP inputs."""
 
 from __future__ import annotations
 
@@ -10,40 +10,48 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.validation import check_is_fitted
 
 from .categorical_encoder import NUMERIC_VALUE_COLUMNS, TWO_CHANNEL_COLUMNS
+from .lr_log_transformer import LOG1P_VALUE_COLUMNS
 
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class DatasetBNeuralLog1pTransformer(TransformerMixin, BaseEstimator):
-    """Apply ``log1p`` only after fold-local numeric placeholders exist."""
+    """Apply ``log1p`` to income and loan amount after fit-local imputation."""
 
     def fit(self, X: pd.DataFrame, y: object = None) -> DatasetBNeuralLog1pTransformer:
         values = self._numeric_values(X)
         self.n_features_in_ = len(TWO_CHANNEL_COLUMNS)
         self.feature_names_in_ = np.asarray(TWO_CHANNEL_COLUMNS, dtype=object)
-        self._validate_domain(values)
+        self._validate_domain(self._selected(values))
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         check_is_fitted(self, "n_features_in_")
         values = self._numeric_values(X)
-        self._validate_domain(values)
-        transformed = np.log1p(values)
+        selected = self._selected(values)
+        self._validate_domain(selected)
+        transformed = np.log1p(selected)
         if not np.isfinite(transformed).all():
             raise ValueError("Dataset B neural log1p produced NaN or infinity.")
 
         output = X.copy(deep=True)
-        output.loc[:, NUMERIC_VALUE_COLUMNS] = transformed
+        output.loc[:, list(LOG1P_VALUE_COLUMNS)] = transformed
         self.last_audit_ = {
             "rows": len(output),
-            "minimum_before_log1p": float(values.min()) if values.size else None,
-            "maximum_before_log1p": float(values.max()) if values.size else None,
+            "log1p_columns": LOG1P_VALUE_COLUMNS,
+            "unchanged_numeric_columns": tuple(
+                column
+                for column in NUMERIC_VALUE_COLUMNS
+                if column not in LOG1P_VALUE_COLUMNS
+            ),
+            "minimum_before_log1p": float(selected.min()) if selected.size else None,
+            "maximum_before_log1p": float(selected.max()) if selected.size else None,
             "finite_after_log1p": True,
         }
         _LOGGER.info(
-            "Applied Dataset B neural log1p rows=%d numeric_columns=%d min_before=%s",
-            len(output), len(NUMERIC_VALUE_COLUMNS), self.last_audit_["minimum_before_log1p"],
+            "Applied Dataset B PlainMLP selective log1p rows=%d columns=%s min_before=%s",
+            len(output), LOG1P_VALUE_COLUMNS, self.last_audit_["minimum_before_log1p"],
         )
         return output
 
@@ -56,7 +64,7 @@ class DatasetBNeuralLog1pTransformer(TransformerMixin, BaseEstimator):
     @staticmethod
     def _numeric_values(X: pd.DataFrame) -> np.ndarray:
         if not isinstance(X, pd.DataFrame) or tuple(X.columns) != TWO_CHANNEL_COLUMNS:
-            raise ValueError("Dataset B neural log1p input must contain the 16 two-channel columns in order.")
+            raise ValueError("Dataset B neural log1p input must contain the 19 two-channel columns in order.")
         try:
             values = X.loc[:, NUMERIC_VALUE_COLUMNS].to_numpy(dtype=np.float64)
         except (TypeError, ValueError) as exc:
@@ -68,4 +76,11 @@ class DatasetBNeuralLog1pTransformer(TransformerMixin, BaseEstimator):
     @staticmethod
     def _validate_domain(values: np.ndarray) -> None:
         if (values < 0).any():
-            raise ValueError("Dataset B neural log1p requires non-negative numeric value channels.")
+            raise ValueError("Dataset B neural log1p requires non-negative income and loan amount values.")
+
+    @staticmethod
+    def _selected(values: np.ndarray) -> np.ndarray:
+        indices = [
+            NUMERIC_VALUE_COLUMNS.index(column) for column in LOG1P_VALUE_COLUMNS
+        ]
+        return values[:, indices]

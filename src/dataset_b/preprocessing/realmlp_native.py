@@ -19,7 +19,6 @@ from .categorical_encoder import (
 )
 from .neural_log_transformer import DatasetBNeuralLog1pTransformer
 from .numeric_two_channel import DatasetBNumericTwoChannel
-from .profiles import DatasetBRawParserStep
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ class RealMLPCategorySupportError(ValueError):
 def _validate_native_frame(X: pd.DataFrame) -> None:
     if not isinstance(X, pd.DataFrame) or tuple(X.columns) != TWO_CHANNEL_COLUMNS:
         raise ValueError(
-            "Dataset B RealMLP native input must contain the 16 two-channel columns in order."
+            "Dataset B RealMLP native input must contain the 19 two-channel columns in order."
         )
 
     try:
@@ -185,10 +184,9 @@ class DatasetBRealMLPNativeAdapter(TransformerMixin, BaseEstimator):
 
 
 def make_realmlp_native_preprocessing_pipeline() -> Pipeline:
-    """Build a fresh parser -> two-channel -> log1p -> native RealMLP profile."""
+    """Build a fresh normalized-15 -> two-channel -> selective-log1p profile."""
     return Pipeline(
         [
-            ("parse", DatasetBRawParserStep()),
             ("two_channel", DatasetBNumericTwoChannel()),
             ("log1p_numeric", DatasetBNeuralLog1pTransformer()),
             ("native", DatasetBRealMLPNativeAdapter()),

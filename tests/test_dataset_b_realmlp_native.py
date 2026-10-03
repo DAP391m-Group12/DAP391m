@@ -16,7 +16,7 @@ from src.dataset_b.preprocessing.categorical_encoder import (
     NUMERIC_VALUE_COLUMNS,
     TWO_CHANNEL_COLUMNS,
 )
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.preprocessing.raw_parser import DatasetBRawParser, FEATURE_COLUMNS
 
 
 def _row(**changes):
@@ -33,6 +33,9 @@ def _row(**changes):
         "loan_to_value_ratio": "75",
         "loan_term": "360",
         "occupancy_type": "1",
+        "preapproval": "1",
+        "interest_only_payment": "2",
+        "balloon_payment": "2",
     }
     row.update(changes)
     return row
@@ -42,8 +45,12 @@ def _frame(*rows):
     return pd.DataFrame(rows, columns=FEATURE_COLUMNS, dtype=object)
 
 
+def _normalized_frame(*rows):
+    return DatasetBRawParser().parse(_frame(*rows)).cleaned
+
+
 def test_realmlp_native_profile_is_fold_local_typed_and_non_mutating():
-    train = _frame(
+    train = _normalized_frame(
         _row(income="0", loan_amount="100", loan_to_value_ratio="NA"),
         _row(
             income="100",
@@ -51,10 +58,10 @@ def test_realmlp_native_profile_is_fold_local_typed_and_non_mutating():
             loan_to_value_ratio="Exempt",
             reverse_mortgage="1111",
         ),
-        _row(income="", loan_amount="", loan_term="NA"),
+        _row(income="NA", loan_amount="200", loan_term="NA"),
     )
-    held_out = _frame(
-        _row(income="", loan_amount="400", loan_to_value_ratio="NA", loan_term="NA")
+    held_out = _normalized_frame(
+        _row(income="NA", loan_amount="400", loan_to_value_ratio="NA", loan_term="NA")
     )
     train_before = train.copy(deep=True)
     held_out_before = held_out.copy(deep=True)
@@ -71,11 +78,13 @@ def test_realmlp_native_profile_is_fold_local_typed_and_non_mutating():
     assert np.isfinite(train_native.loc[:, NUMERIC_VALUE_COLUMNS].to_numpy()).all()
     assert np.isfinite(held_out_native.loc[:, NUMERIC_VALUE_COLUMNS].to_numpy()).all()
     assert held_out_native.loc[0, "income_value"] == np.float32(np.log1p(50.0))
-    assert held_out_native.loc[0, "income_status"] == "MISSING"
+    assert held_out_native.loc[0, "income_status"] == "NA"
     assert held_out_native.loc[0, "loan_to_value_ratio_status"] == "NA"
     assert held_out_native.loc[0, "loan_term_status"] == "NA"
     assert train_native.loc[1, "loan_to_value_ratio_status"] == "Exempt"
-    assert train_native.loc[1, "reverse_mortgage"] == "1111"
+    assert train_native.loc[1, "reverse_mortgage"] == "Exempt"
+    assert train_native.loc[0, "loan_to_value_ratio_value"] == np.float32(75.0)
+    assert train_native.loc[0, "loan_term_value"] == np.float32(360.0)
     assert profile.named_steps["native"].last_audit_["numeric_dtype"] == "float32"
     pd.testing.assert_frame_equal(train, train_before)
     pd.testing.assert_frame_equal(held_out, held_out_before)
@@ -83,7 +92,7 @@ def test_realmlp_native_profile_is_fold_local_typed_and_non_mutating():
 
 def test_realmlp_category_support_reports_absent_both_and_rejects_unseen_held_out():
     profile = make_realmlp_native_preprocessing_pipeline()
-    train_native = profile.fit_transform(_frame(_row(), _row(income="NA")))
+    train_native = profile.fit_transform(_normalized_frame(_row(), _row(income="NA")))
 
     report = validate_realmlp_category_support(train_native, train_native.iloc[[0]])
     assert report["loan_type"]["4"] == {
@@ -105,7 +114,7 @@ def test_realmlp_category_support_reports_absent_both_and_rejects_unseen_held_ou
 
 def test_realmlp_native_adapter_is_cloneable_and_rejects_invalid_boundary():
     profile = make_realmlp_native_preprocessing_pipeline()
-    channels = profile[:-1].fit_transform(_frame(_row(), _row(income="NA")))
+    channels = profile[:-1].fit_transform(_normalized_frame(_row(), _row(income="NA")))
     template = DatasetBRealMLPNativeAdapter()
     first = clone(template).fit(channels)
     second = clone(template).fit(channels)
@@ -124,5 +133,5 @@ def test_realmlp_native_adapter_is_cloneable_and_rejects_invalid_boundary():
     with pytest.raises(ValueError, match="Unexpected Dataset B category"):
         first.transform(unknown)
 
-    with pytest.raises(ValueError, match="16 two-channel columns"):
+    with pytest.raises(ValueError, match="19 two-channel columns"):
         first.transform(channels.drop(columns="loan_type"))

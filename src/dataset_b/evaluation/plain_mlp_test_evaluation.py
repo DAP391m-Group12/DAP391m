@@ -16,6 +16,11 @@ from scipy.optimize import brentq, minimize, root
 from scipy.special import expit, logit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
+from src.dataset_b.contracts import (
+    DatasetBSemanticValidationError,
+    FeatureContractValidation,
+    validate_feature_contract,
+)
 from src.dataset_b.evaluation.plain_mlp_validation_threshold import (
     DEFAULT_VALIDATION_DIR,
     validate_plain_mlp_validation_threshold,
@@ -29,6 +34,7 @@ from src.dataset_b.runtime.plain_mlp_full_train import (
     _read_json as _read_full_train_json,
     _sha256_file,
     _sha256_ids,
+    _lineage_matches_feature_provenance,
     load_plain_mlp_bundle,
     validate_plain_mlp_full_train,
 )
@@ -41,7 +47,12 @@ DEFAULT_BOOTSTRAP_INDICES = PROJECT_ROOT / "artifacts/dataset_b/rq1_test_bootstr
 DEFAULT_BOOTSTRAP_MANIFEST = PROJECT_ROOT / "artifacts/dataset_b/rq1_test_bootstrap_manifest.json"
 EXPECTED_TEST_ROWS = 43_996
 BOOTSTRAP_REPLICATES = 1_000
+CALIBRATION_SLOPE_DECIMALS = 6
+BOOTSTRAP_RECOMPUTATION_ATOL = 1e-14
+PROBABILITY_SUM_ATOL = 1e-7
 CONTRACT_ID = "PMLP-05"
+FEATURE_VERSION = "final_feature_lock"
+EVALUATION_STATUS = "complete_rq1_evaluation_final_feature_lock"
 PREDICTION_COLUMNS = (
     "record_id", "y_approved", "p_approved", "p_denied",
     "predicted_approved", "predicted_denied",
@@ -82,11 +93,16 @@ def _write_json(path: str | Path, value: dict[str, Any]) -> None:
 def _calibration(
     labels: np.ndarray, probabilities: np.ndarray
 ) -> tuple[float, float, dict[str, str]]:
-    logits = logit(np.clip(probabilities, 1e-15, 1 - 1e-15))
+    logits = logit(probabilities)
     targets = labels.astype(np.float64)
     invalid: dict[str, str] = {}
     intercept = float("nan")
     slope = float("nan")
+    if not np.isfinite(logits).all():
+        return intercept, slope, {
+            "calibration_intercept": "nonfinite_unmodified_probability_logit",
+            "calibration_slope": "nonfinite_unmodified_probability_logit",
+        }
     try:
         intercept = float(
             brentq(lambda value: float(np.mean(expit(logits + value) - targets)), -80, 80)
@@ -223,22 +239,38 @@ def _paths(
     }
 
 
-def _lineage(paths: dict[str, Path], ids: Sequence[str]) -> dict[str, str]:
+def _lineage(
+    paths: dict[str, Path],
+    ids: Sequence[str],
+    *,
+    feature_contract_provenance: str | None = None,
+) -> dict[str, str]:
     source_paths = {
         "full_train_manifest_sha256": paths["full_train_dir"] / "manifest.json",
         "fitted_bundle_sha256": paths["full_train_dir"] / "checkpoints/fitted_bundle.joblib",
         "validation_threshold_sha256": paths["validation_dir"] / "threshold_selection/threshold_selection.json",
         "split_manifest_sha256": paths["split_manifest_path"],
         "test_source_sha256": paths["split_dir"] / "test.csv",
-        "feature_contract_sha256": paths["feature_contract_path"],
         "plain_mlp_config_sha256": paths["config_path"],
         "bootstrap_manifest_sha256": paths["bootstrap_manifest_path"],
         "bootstrap_indices_sha256": paths["bootstrap_indices_path"],
     }
-    return {
+    lineage = {
         **{name: _sha256_file(path) for name, path in source_paths.items()},
         "test_record_ids_sha256": _sha256_ids(ids),
     }
+    if feature_contract_provenance is not None:
+        lineage["feature_contract_sha256"] = feature_contract_provenance
+    return lineage
+
+
+def _semantic_feature_contract(path: Path) -> FeatureContractValidation:
+    try:
+        return validate_feature_contract(path)
+    except DatasetBSemanticValidationError as exc:
+        raise PlainMLPTestEvaluationError(
+            "Dataset B semantic feature contract is invalid."
+        ) from exc
 
 
 def _validate_bootstrap(
@@ -249,12 +281,9 @@ def _validate_bootstrap(
             indices = value["indices"]
     except Exception as exc:
         raise PlainMLPTestEvaluationError("Cannot read shared bootstrap indices.") from exc
-    manifest = _read_json(paths["bootstrap_manifest_path"])
     denied = int(np.count_nonzero(labels == 0))
     if (
-        _sha256_file(paths["bootstrap_indices_path"]) != manifest.get("indices_sha256")
-        or manifest.get("test_record_id_sha256") != _sha256_ids(ids)
-        or indices.shape != (BOOTSTRAP_REPLICATES, EXPECTED_TEST_ROWS)
+        indices.shape != (BOOTSTRAP_REPLICATES, EXPECTED_TEST_ROWS)
         or indices.dtype != np.int32
         or not np.all((indices >= 0) & (indices < EXPECTED_TEST_ROWS))
         or not np.all(labels[indices[:, :denied]] == 0)
@@ -262,6 +291,182 @@ def _validate_bootstrap(
     ):
         raise PlainMLPTestEvaluationError("Shared bootstrap indices violate the locked contract.")
     return indices
+
+
+def _bootstrap_metric_matches(
+    name: str, stored: np.ndarray, recomputed: np.ndarray
+) -> np.ndarray:
+    """Compare one frozen bootstrap metric under the locked PMLP-06 policy."""
+    stored = np.asarray(stored, dtype=np.float64)
+    recomputed = np.asarray(recomputed, dtype=np.float64)
+    if stored.shape != recomputed.shape:
+        raise PlainMLPTestEvaluationError("Bootstrap metric shapes differ.")
+    finite = np.isfinite(stored) & np.isfinite(recomputed)
+    matches = np.equal(np.isfinite(stored), np.isfinite(recomputed))
+    if name == "calibration_slope":
+        matches[finite] = np.equal(
+            np.round(stored[finite], CALIBRATION_SLOPE_DECIMALS),
+            np.round(recomputed[finite], CALIBRATION_SLOPE_DECIMALS),
+        )
+    else:
+        matches[finite] = np.isclose(
+            stored[finite], recomputed[finite],
+            rtol=0.0, atol=BOOTSTRAP_RECOMPUTATION_ATOL,
+        )
+    return matches
+
+
+def audit_plain_mlp_bootstrap_recomputation(
+    output_dir: str | Path = DEFAULT_OUTPUT_DIR,
+    *,
+    bootstrap_indices_path: str | Path = DEFAULT_BOOTSTRAP_INDICES,
+    bootstrap_manifest_path: str | Path = DEFAULT_BOOTSTRAP_MANIFEST,
+) -> dict[str, Any]:
+    """Recompute frozen bootstrap metrics without model loading or inference."""
+    directory = Path(output_dir)
+    predictions_path = directory / "test_predictions.csv"
+    bootstrap_path = directory / "rq1_bootstrap_metrics.csv"
+    result_path = directory / "rq1_test_metrics.json"
+    result = _read_json(result_path)
+    predictions = pd.read_csv(predictions_path, dtype={"record_id": str})
+    stored = pd.read_csv(bootstrap_path)
+    if (
+        tuple(predictions.columns) != PREDICTION_COLUMNS
+        or len(predictions) != EXPECTED_TEST_ROWS
+        or len(stored) != BOOTSTRAP_REPLICATES
+        or tuple(stored.columns) != BOOTSTRAP_COLUMNS
+    ):
+        raise PlainMLPTestEvaluationError("Bootstrap audit inputs are invalid.")
+
+    ids = tuple(predictions.record_id.astype(str))
+    labels = predictions.y_approved.to_numpy(dtype=np.int8)
+    probabilities = predictions.p_approved.to_numpy(dtype=np.float64)
+    paths = {
+        "bootstrap_indices_path": Path(bootstrap_indices_path),
+        "bootstrap_manifest_path": Path(bootstrap_manifest_path),
+    }
+    indices = _validate_bootstrap(paths, labels, ids)
+    threshold = float(result["threshold"])
+    rows = []
+    for replicate_id, replicate_indices in enumerate(indices):
+        values, problems, _ = _metrics(
+            labels[replicate_indices], probabilities[replicate_indices], threshold
+        )
+        rows.append(
+            {
+                "replicate_id": replicate_id,
+                **values,
+                "invalid_metrics": json.dumps(
+                    problems, ensure_ascii=False, sort_keys=True
+                ),
+            }
+        )
+    recomputed = pd.DataFrame(rows, columns=BOOTSTRAP_COLUMNS)
+
+    replicate_ids_match = np.array_equal(
+        stored.replicate_id.to_numpy(dtype=np.int64),
+        recomputed.replicate_id.to_numpy(dtype=np.int64),
+    )
+    invalid_metrics_match = stored.invalid_metrics.fillna("").astype(str).equals(
+        recomputed.invalid_metrics.fillna("").astype(str)
+    )
+    metric_comparison = {}
+    all_metric_values_match = True
+    for name in METRIC_NAMES:
+        stored_values = stored[name].to_numpy(dtype=np.float64)
+        recomputed_values = recomputed[name].to_numpy(dtype=np.float64)
+        matches = _bootstrap_metric_matches(name, stored_values, recomputed_values)
+        finite = np.isfinite(stored_values) & np.isfinite(recomputed_values)
+        maximum_difference = (
+            float(np.max(np.abs(stored_values[finite] - recomputed_values[finite])))
+            if finite.any() else None
+        )
+        metric_comparison[name] = {
+            "matching_replicates": int(np.count_nonzero(matches)),
+            "mismatching_replicates": int(len(matches) - np.count_nonzero(matches)),
+            "maximum_absolute_difference": maximum_difference,
+        }
+        all_metric_values_match = all_metric_values_match and bool(matches.all())
+
+    ci_comparison = {}
+    all_confidence_intervals_match = True
+    for name in METRIC_NAMES:
+        values = recomputed[name].to_numpy(dtype=np.float64)
+        valid = values[np.isfinite(values)]
+        low = float(np.quantile(valid, 0.025, method="linear")) if len(valid) else None
+        high = float(np.quantile(valid, 0.975, method="linear")) if len(valid) else None
+        expected = result["confidence_intervals_95_percentile"][name]
+        matches = (
+            expected.get("valid_replicates") == len(valid)
+            and expected.get("invalid_replicates") == len(values) - len(valid)
+            and (low is None) == (expected.get("lower_2_5") is None)
+            and (high is None) == (expected.get("upper_97_5") is None)
+            and (
+                low is None
+                or np.isclose(low, expected["lower_2_5"], rtol=0.0, atol=1e-14)
+            )
+            and (
+                high is None
+                or np.isclose(high, expected["upper_97_5"], rtol=0.0, atol=1e-14)
+            )
+        )
+        ci_comparison[name] = {
+            "valid_replicates": int(len(valid)),
+            "invalid_replicates": int(len(values) - len(valid)),
+            "lower_2_5": low,
+            "upper_97_5": high,
+            "matches_stored_ci": bool(matches),
+        }
+        all_confidence_intervals_match = all_confidence_intervals_match and bool(matches)
+
+    passed = (
+        replicate_ids_match
+        and invalid_metrics_match
+        and all_metric_values_match
+        and all_confidence_intervals_match
+    )
+    return {
+        "schema_version": 1,
+        "contract_id": "PMLP-06-BOOTSTRAP-RECOMPUTATION",
+        "status": "PASS" if passed else "FAIL",
+        "comparison_policy": {
+            "calibration_slope": {
+                "method": "decimal_rounding",
+                "decimal_places": CALIBRATION_SLOPE_DECIMALS,
+            },
+            "other_metrics": {
+                "method": "absolute_tolerance",
+                "rtol": 0.0,
+                "atol": BOOTSTRAP_RECOMPUTATION_ATOL,
+            },
+            "confidence_intervals": {
+                "method": "absolute_tolerance",
+                "rtol": 0.0,
+                "atol": 1e-14,
+            },
+        },
+        "inputs": {
+            "predictions_sha256": _sha256_file(predictions_path),
+            "bootstrap_indices_sha256": _sha256_file(paths["bootstrap_indices_path"]),
+            "bootstrap_manifest_sha256": _sha256_file(paths["bootstrap_manifest_path"]),
+            "stored_bootstrap_sha256": _sha256_file(bootstrap_path),
+        },
+        "execution_boundary": {
+            "model_loaded": False,
+            "training_performed": False,
+            "inference_performed": False,
+            "bootstrap_indices_regenerated": False,
+            "stored_pmlp05_artifacts_modified": False,
+        },
+        "replicates": int(len(recomputed)),
+        "metric_count": len(METRIC_NAMES),
+        "replicate_ids_match": replicate_ids_match,
+        "invalid_metrics_payloads_match": invalid_metrics_match,
+        "metric_comparison": metric_comparison,
+        "all_metric_values_match": all_metric_values_match,
+        "ci_comparison": ci_comparison,
+        "all_confidence_intervals_match": all_confidence_intervals_match,
+    }
 
 
 def run_plain_mlp_test_evaluation(
@@ -275,6 +480,7 @@ def run_plain_mlp_test_evaluation(
     config_path: str | Path = DEFAULT_CONFIG_PATH,
     bootstrap_indices_path: str | Path = DEFAULT_BOOTSTRAP_INDICES,
     bootstrap_manifest_path: str | Path = DEFAULT_BOOTSTRAP_MANIFEST,
+    run_id: str = "plain_mlp_v1",
 ) -> dict[str, Any]:
     """Predict Test once, compute RQ1 metrics, and reuse the frozen bootstrap."""
     destination = Path(output_dir)
@@ -291,7 +497,14 @@ def run_plain_mlp_test_evaluation(
             f"Temporary directory already exists and was preserved: {working}"
         )
     try:
-        full_manifest = validate_plain_mlp_full_train(paths["full_train_dir"])
+        feature_contract = _semantic_feature_contract(paths["feature_contract_path"])
+        full_manifest = validate_plain_mlp_full_train(
+            paths["full_train_dir"],
+            split_manifest_path=paths["split_manifest_path"],
+            split_dir=paths["split_dir"],
+            feature_contract_path=paths["feature_contract_path"],
+            config_path=paths["config_path"],
+        )
         validate_plain_mlp_validation_threshold(paths["validation_dir"])
         selection_path = paths["validation_dir"] / "threshold_selection/threshold_selection.json"
         selection = _read_json(selection_path)
@@ -324,8 +537,18 @@ def run_plain_mlp_test_evaluation(
         positive = np.flatnonzero(np.asarray(estimator.classes_) == 1)
         if probability_matrix.shape != (EXPECTED_TEST_ROWS, 2) or positive.shape != (1,):
             raise PlainMLPTestEvaluationError("Test probability matrix or class order is invalid.")
-        probabilities = probability_matrix[:, int(positive[0])]
-        if not np.isfinite(probabilities).all() or np.any((probabilities < 0) | (probabilities > 1)):
+        approved_index = int(positive[0])
+        denied_index = 1 - approved_index
+        probabilities = probability_matrix[:, approved_index]
+        denied_probabilities = probability_matrix[:, denied_index]
+        if (
+            not np.isfinite(probability_matrix).all()
+            or np.any((probability_matrix < 0) | (probability_matrix > 1))
+            or not np.allclose(
+                probability_matrix.sum(axis=1), 1.0,
+                rtol=0.0, atol=PROBABILITY_SUM_ATOL,
+            )
+        ):
             raise PlainMLPTestEvaluationError("Test probabilities are invalid.")
         point, invalid, counts = _metrics(labels, probabilities, float(threshold))
         if invalid:
@@ -362,7 +585,7 @@ def run_plain_mlp_test_evaluation(
                 "record_id": ids,
                 "y_approved": labels,
                 "p_approved": probabilities,
-                "p_denied": 1 - probabilities,
+                "p_denied": denied_probabilities,
                 "predicted_approved": (probabilities >= threshold).astype(np.int8),
                 "predicted_denied": (probabilities < threshold).astype(np.int8),
             }
@@ -377,14 +600,19 @@ def run_plain_mlp_test_evaluation(
             bootstrap.to_csv(index=False, float_format="%.17g", lineterminator="\n"),
             encoding="utf-8", newline="",
         )
-        lineage = _lineage(paths, ids)
+        lineage = _lineage(
+            paths,
+            ids,
+            feature_contract_provenance=feature_contract.raw_sha256,
+        )
         result = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
-            "evaluation_status": "complete_rq1_evaluation_experimental_feature_v0_2",
+            "evaluation_status": EVALUATION_STATUS,
             "model_version": "plain_mlp_v1",
-            "feature_version": "temporary_training_lock_v0_2",
+            "feature_version": FEATURE_VERSION,
             "split_version": "split_v1",
             "preprocessing_version": "dataset_b_neural_preprocessing_v1",
             "partition": "test",
@@ -423,6 +651,7 @@ def run_plain_mlp_test_evaluation(
         manifest = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
             "rows": len(labels),
             "threshold": float(threshold),
@@ -474,7 +703,14 @@ def validate_plain_mlp_test_evaluation_artifact(
         kwargs.get("bootstrap_manifest_path", DEFAULT_BOOTSTRAP_MANIFEST),
     )
     directory = Path(output_dir)
-    validate_plain_mlp_full_train(paths["full_train_dir"])
+    _semantic_feature_contract(paths["feature_contract_path"])
+    validate_plain_mlp_full_train(
+        paths["full_train_dir"],
+        split_manifest_path=paths["split_manifest_path"],
+        split_dir=paths["split_dir"],
+        feature_contract_path=paths["feature_contract_path"],
+        config_path=paths["config_path"],
+    )
     validate_plain_mlp_validation_threshold(paths["validation_dir"])
     actual = {path.name for path in directory.iterdir() if path.is_file()} if directory.is_dir() else set()
     if actual != FINAL_FILES:
@@ -504,7 +740,11 @@ def validate_plain_mlp_test_evaluation_artifact(
     if (
         set(np.unique(labels).tolist()) != {0, 1}
         or not np.isfinite(probabilities).all()
-        or not np.allclose(frame.p_denied, 1 - probabilities, rtol=0.0, atol=1e-15)
+        or not np.isfinite(frame.p_denied.to_numpy(dtype=np.float64)).all()
+        or not np.allclose(
+            frame.p_denied.to_numpy(dtype=np.float64) + probabilities,
+            1.0, rtol=0.0, atol=PROBABILITY_SUM_ATOL,
+        )
         or not np.array_equal(frame.predicted_approved, (probabilities >= threshold).astype(np.int8))
         or not np.array_equal(frame.predicted_denied, (probabilities < threshold).astype(np.int8))
     ):
@@ -548,18 +788,26 @@ def validate_plain_mlp_test_evaluation_artifact(
         expected_mismatch = (
             tuple(frame.record_id.astype(str)) != tuple(str(value) for value in expected_ids)
             or not np.array_equal(labels, np.asarray(expected_labels, dtype=np.int8))
-            or manifest.get("lineage_sha256") != expected_lineage
-            or result.get("lineage_sha256") != expected_lineage
+            or not _lineage_matches_feature_provenance(
+                manifest.get("lineage_sha256"), expected_lineage
+            )
+            or not _lineage_matches_feature_provenance(
+                result.get("lineage_sha256"), expected_lineage
+            )
         )
     if (
         expected_mismatch
         or manifest.get("contract_id") != CONTRACT_ID
         or manifest.get("status") != "PASS"
+        or manifest.get("run_id") != result.get("run_id")
+        or result.get("run_id") != selection.get("run_id")
         or manifest.get("rows") != EXPECTED_TEST_ROWS
         or manifest.get("threshold") != threshold
         or manifest.get("lineage_sha256") != result.get("lineage_sha256")
         or result.get("contract_id") != CONTRACT_ID
         or result.get("status") != "PASS"
+        or result.get("evaluation_status") != EVALUATION_STATUS
+        or result.get("feature_version") != FEATURE_VERSION
         or result.get("threshold") != threshold
         or result.get("prediction_sha256") != _sha256_file(directory / "test_predictions.csv")
         or result.get("bootstrap_replicates_sha256")
@@ -597,6 +845,7 @@ def validate_plain_mlp_test_evaluation(
         kwargs.get("bootstrap_indices_path", DEFAULT_BOOTSTRAP_INDICES),
         kwargs.get("bootstrap_manifest_path", DEFAULT_BOOTSTRAP_MANIFEST),
     )
+    _semantic_feature_contract(paths["feature_contract_path"])
     loader = DatasetBSplitLoader(
         manifest_path=paths["split_manifest_path"],
         split_dir=paths["split_dir"],

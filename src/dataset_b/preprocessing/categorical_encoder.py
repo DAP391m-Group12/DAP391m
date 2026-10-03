@@ -62,8 +62,7 @@ class DatasetBOneHotEncoder(TransformerMixin, BaseEstimator):
     ``OBSERVED`` is the reference category for each numeric status channel;
     ``NA`` and ``Exempt`` remain explicit where schema-valid.
     Output is CSR with four numeric value columns followed by OHE columns.
-    The default remains ``float64`` for classical backward compatibility;
-    neural profiles must request ``float32`` explicitly.
+    The default is ``float64`` and is required by the final PlainMLP route.
     """
 
     def __init__(self, *, dtype: object = np.float64) -> None:

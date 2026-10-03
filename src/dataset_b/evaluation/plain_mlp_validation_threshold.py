@@ -23,9 +23,9 @@ from src.dataset_b.runtime.plain_mlp_full_train import _sha256_file
 
 
 DEFAULT_OUTPUT_DIR = DEFAULT_VALIDATION_DIR / "threshold_selection"
-CONTRACT_ID = "PMLP-04B"
+CONTRACT_ID = "PMLP-F05-THRESHOLD"
 CANDIDATE_THRESHOLDS = tuple(value / 1000 for value in range(1, 1000))
-PREDICTION_COLUMNS = ("record_id", "y_approved", "p_approved")
+PREDICTION_COLUMNS = ("record_id", "y_approved", "p_denied", "p_approved")
 CANDIDATE_COLUMNS = (
     "threshold", "balanced_accuracy", "recall_approved", "recall_denied",
     "tp_approved", "fn_approved", "tn_denied", "fp_denied",
@@ -162,6 +162,7 @@ def run_plain_mlp_validation_threshold(
         result = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": source_result.get("run_id"),
             "status": "PASS",
             "stage": "validation_threshold_selection",
             "objective": "maximize_validation_balanced_accuracy",
@@ -208,6 +209,7 @@ def run_plain_mlp_validation_threshold(
         manifest = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": source_result.get("run_id"),
             "status": "PASS",
             "rows": len(labels),
             "candidate_rows": len(rows),
@@ -271,6 +273,8 @@ def validate_plain_mlp_validation_threshold(
     if (
         manifest.get("contract_id") != CONTRACT_ID
         or manifest.get("status") != "PASS"
+        or manifest.get("run_id") != source_result.get("run_id")
+        or result.get("run_id") != source_result.get("run_id")
         or manifest.get("candidate_rows") != len(CANDIDATE_THRESHOLDS)
         or manifest.get("selected_threshold") != selected["threshold"]
         or manifest.get("source_prediction_sha256") != prediction_hash

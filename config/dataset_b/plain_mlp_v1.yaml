@@ -1,38 +1,42 @@
-schema_version: 1
+schema_version: 2
 dataset: dataset_b
 model: plain_mlp
 model_version: plain_mlp_v1
-status: provisional_starting_configuration
+status: final_locked_configuration
 is_project_default: false
-is_final_configuration: false
+is_final_configuration: true
 selected_by_train_cv: false
+hyperparameter_search: false
 
 contracts:
   feature: dataset_b/feature_set_v1.yaml
   split: dataset_b/split_v1.yaml
   preprocessing_version: dataset_b_neural_preprocessing_v1
-  cv_artifact: data/preprocessing/dataset_b_v1/cv_neural_preprocessing_v1
-
-environment:
-  name: dap391m-neural
-  python_version: 3.12.13
-  torch_release: 2.14.0
-  torch_build: cpu
-  device: cpu
-  requirements: requirements.txt
+  raw_feature_count: 15
+  semantic_feature_count: 19
+  encoded_feature_count: 62
+  cv_artifact_root: data/preprocessing/dataset_b_v1/cv_neural_preprocessing_v1
 
 preprocessing:
-  profile: plain_mlp_external_ohe
-  encoded_feature_count: 66
-  stored_format: csr
-  stored_dtype: float32
-  model_boundary_format: dense_per_batch
-  model_input_dtype: float32
+  profile: plain_mlp_external_fixed_schema_ohe
   numeric_transform: median_then_log1p
-  numeric_scaler: none
+  numeric_scaler: robust_scaler
+  scaled_numeric_columns:
+    - income_value
+    - loan_amount_value
+    - loan_to_value_ratio_value
+    - loan_term_value
+  scale_ohe_columns: false
+  stored_format: csr
+  stored_dtype: float64
+  model_boundary_format: dense_per_batch
+  model_input_dtype: float64
+  fit_scope: fit_population_only
+  fresh_state_per_outer_fold: true
+  fresh_state_for_full_train: true
 
 architecture:
-  hidden_layers: [128, 64]
+  hidden_layers: [256, 128, 64]
   activation: ReLU
   output_units: 1
 
@@ -42,13 +46,98 @@ training:
   learning_rate: 0.001
   weight_decay: 0.0001
   dropout: 0.1
-  batch_size: 256
-  epochs: 100
-  early_stopping: false
+  requested_batch_size: 256
+  batch_fallback_on_cuda_oom: [128, 64]
+  max_epochs: 100
   random_state: 42
   deterministic_algorithms: true
 
 class_handling:
-  class_weight: false
+  strategy: fit_population_pos_weight
+  positive_class: approved
+  formula: n_denied / n_approved
   sample_weight: false
   resampling: false
+
+inner_stopping:
+  fraction: 0.10
+  stratified: true
+  random_state: 42
+  monitor: inner_stop_bce_loss
+  mode: min
+  max_epochs: 100
+  patience: 10
+  min_delta: 0.00001
+  restore_best_epoch: true
+  refit_full_fit_population: true
+  temporary_selector_state_reuse: false
+
+runtime:
+  device: cuda
+  device_index: 0
+  allow_silent_cpu_fallback: false
+  dtype: float64
+  require_finite_cuda_float64_smoke: true
+  require_forward_backward_optimizer_step: true
+  require_checkpoint_dtype_roundtrip: true
+  record_peak_memory: true
+  batch_fallback_only_after_confirmed_cuda_oom: true
+
+probability:
+  dtype: float64
+  shape_columns: 2
+  row_sum_rtol: 0
+  row_sum_atol: 1.0e-7
+  allow_rounding: false
+  allow_clipping: false
+  allow_persistence_reconstruction: false
+
+threshold:
+  candidates:
+    start: 0.001
+    stop: 0.999
+    step: 0.001
+    count: 999
+  objective: maximize_balanced_accuracy
+  tie_break:
+    - minimum_absolute_distance_to_0.5
+    - lower_threshold
+  selection_partition: validation
+  freeze_before_test: true
+
+bootstrap:
+  replicates: 1000
+  confidence_interval: percentile_95
+  indices: locked_existing_indices
+  regenerate_indices: false
+
+comparison:
+  use_sha_or_digest_for_numerical_equivalence: false
+  replicate_ids: exact
+  valid_invalid_payloads: exact
+  calibration_slope_decimal_places: 6
+  other_bootstrap_metrics:
+    rtol: 0
+    atol: 1.0e-14
+  confidence_interval_endpoints:
+    rtol: 0
+    atol: 1.0e-14
+  point_metrics:
+    rtol: 0
+    atol: 1.0e-12
+
+run_policy:
+  run_id_pattern: plain_mlp_final_15f_<YYYYMMDD>_<NN>
+  preprocessing_run_path: data/preprocessing/dataset_b_v1/cv_neural_preprocessing_v1/<run_id>
+  artifact_working_path: artifacts/dataset_b/plain_mlp/working/<run_id>
+  artifact_final_path: artifacts/dataset_b/plain_mlp/final/<run_id>
+  allow_overwrite: false
+  allow_resume: false
+  allow_historical_relabel: false
+  outer_cv_folds: 5
+  expected_temporary_selectors: 6
+  expected_final_estimators: 6
+  expected_fresh_model_initializations: 12
+  oof_required_coverage: exactly_once
+  validation_prediction_passes: 1
+  test_prediction_passes: 1

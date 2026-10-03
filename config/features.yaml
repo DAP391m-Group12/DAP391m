@@ -59,10 +59,11 @@ datasets:
         source: loan_type
 
   dataset_b:
-    status: temporary_training_lock_v0_2
+    status: final_feature_lock
     purpose: main_rq1_rq2_rq3
     canonical_feature_contract: dataset_b/feature_set_v1.yaml
     model_input_contract: dataset_b/feature_set_v1.yaml
     note: >-
-      Dataset B model inputs and audit columns must be read from the
-      versioned contract. Do not reuse the former Dataset B race-slot inputs.
+      Dataset B final 15-field model inputs and audit columns must be read from
+      the versioned contract. Do not reuse temporary-lock fitted state or the
+      former Dataset B race-slot inputs.

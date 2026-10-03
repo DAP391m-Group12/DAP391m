@@ -28,6 +28,12 @@ only after it has its own approved configuration and equivalent runtime and
 validation interfaces. RealMLP parameters must not be copied into another model
 family by implication.
 
+PlainMLP's final policy is locked in
+[`plain_mlp_v1.yaml`](../../../config/dataset_b/plain_mlp_v1.yaml). That policy
+does not imply source readiness or execution completion; a PlainMLP command may
+be used only after its implementation and validator directly match the locked
+configuration and the current stage is authorized.
+
 ## 2. Authorization envelope and gate types
 
 Before changing code or running a stage, record the authorized model, files,
@@ -36,7 +42,7 @@ gate types consistently:
 
 | Gate type | Examples | User approval rule |
 | --- | --- | --- |
-| Internal verification | Static review, unit tests, manifest/hash validation, schema and dtype checks, no-training CLI checks | Does not create a new authorization gate. Run it whenever it is required inside an already authorized scope. |
+| Internal verification | Static review, unit tests, manifest/schema/content validation, dtype checks, and no-training CLI checks | Does not create a new authorization gate. Run it whenever it is required inside an already authorized scope. |
 | Operational safety | GPU/CUDA probe, backend import, finite tensor smoke, history smoke, atomic-rename probe, disk/runtime checks | Does not require separate approval when execution is already authorized. A failure stops the run. |
 | Data boundary | First access to project Validation; first access to Test | Requires explicit authorization unless the active authorization already names that partition and stage. Validation authorization never implies Test authorization. |
 | Research decision | Change feature set, model configuration, preprocessing policy, epoch/stopping policy, threshold policy, or evaluation policy | Requires explicit approval unless the exact decision was already granted in the active scope. Produce evidence first; do not implement an unapproved choice. |
@@ -59,22 +65,30 @@ failure that is itself blocking.
 Use this order; stop at the first failed gate:
 
 1. Confirm the authorization envelope and unchanged feature, split,
-   preprocessing, and model configuration identities.
-2. Run internal no-training checks.
-3. Run the GPU preflight and compatibility/history smoke.
-4. Materialize or validate immutable Train-only pilot IDs.
-5. Run the pilot without project Validation or Test access.
-6. Review pilot evidence and lock exactly one epoch/stopping policy.
-7. Run a one-fold orchestration and atomic-publication smoke when the runtime is
+   preprocessing, and model configuration fields.
+2. Create one new `run_id` and its empty run-scoped working/final destinations.
+3. Run the final data-quality gate and stop before fitted state is created if
+   any check fails.
+4. Regenerate and validate the 15/19/62 preprocessing inputs for that `run_id`.
+5. Run internal no-training checks.
+6. Run the GPU preflight and compatibility/history smoke.
+7. Materialize or validate immutable Train-only pilot IDs.
+8. Run the pilot without project Validation or Test access.
+9. Review pilot evidence and lock exactly one epoch/stopping policy. For
+   PlainMLP, verify the already locked inner-stopping policy without changing
+   it; the pilot is not a new configuration-selection gate.
+10. Run a one-fold orchestration and atomic-publication smoke when the runtime is
    new or the publication path changed.
-8. Run or resume Train-only cross-validation with fresh fitted state per fold.
-9. Reinitialize preprocessing and model state, then fit full Train using the
+11. Run Train-only cross-validation with fresh fitted state per fold.
+12. Reinitialize preprocessing and model state, then fit full Train using the
    locked policy.
-10. Open Validation only under its data-boundary authorization; generate one
+13. Open Validation only under its data-boundary authorization; generate one
     ordered prediction artifact and select the threshold under the evaluation
     contract.
-11. Open Test only under its separate data-boundary authorization and only
+14. Open Test only under its separate data-boundary authorization and only
     after the model, preprocessing, and threshold are frozen.
+15. Validate the complete bundle directly, mark the run `COMPLETE`, publish its
+    final directory, validate it again, and freeze it against overwrite.
 
 Pilot and smoke outputs are not CV, Validation, Test, or RQ1 evidence. Outer
 fold-validation may be predicted once after a fold fit, but it must not control
@@ -84,22 +98,81 @@ the epoch budget, stopping rule, preprocessing, or backend-fitted state.
 
 From the repository root:
 
-1. Confirm the active configuration and source hashes that will be recorded in
-   manifests.
-2. Confirm the immutable `split_v1` membership and order; do not regenerate it
-   from a model runner.
-3. Confirm that the model consumes the neural representation assigned by the
-   preprocessing contract.
-4. Run the relevant unit and no-training tests. A test that imports only a CPU
+1. Create one new `run_id` for the authorized final retraining execution and
+   record it in every preprocessing, model, prediction, threshold, and
+   evaluation manifest.
+2. Use run-scoped directories such as
+   `artifacts/dataset_b/<model>/working/<run_id>/` and
+   `artifacts/dataset_b/<model>/final/<run_id>/`; confirm that neither target
+   will overwrite or resume an earlier run.
+3. Confirm the active feature, model, runtime, split, and preprocessing files
+   by reading their parsed schema, types, values, and ordered lists directly.
+4. Confirm the immutable `split_v1` membership, order, and row counts; do not
+   regenerate it from a model runner.
+5. Confirm that the selected route consumes the final representation assigned
+   by the preprocessing contract: 15 raw inputs, 19 semantic columns, and 62
+   PlainMLP OHE columns where external OHE applies.
+6. Regenerate preprocessing inputs for the new `run_id`. Do not resume,
+   extend, relabel, or consume a fitted preprocessor, native frame, OHE matrix,
+   model, optimizer, or checkpoint from a 12-feature run.
+7. Run the relevant unit and no-training tests. A test that imports only a CPU
    build is not GPU evidence.
-5. Ensure the artifact destination is on the filesystem on which the final
+8. Ensure the working destination is on the filesystem on which the final
    same-filesystem rename will occur.
-6. Check free disk space for the temporary directory, model, histories,
-   predictions, hashes, and retained failed attempts.
-7. Confirm that no final output directory will be overwritten.
+9. Check free disk space for the temporary directory, model, histories,
+   predictions, and retained failed attempts.
+10. Confirm that no final output directory will be overwritten.
 
 Record failures in the handoff. Do not repair a feature, config, or policy
 difference as incidental cleanup; route it through the research-decision gate.
+
+### 4.1 Mandatory data-quality gate
+
+Run this gate before every pilot, CV execution, and full-Train fit. The gate
+must validate content directly and record its evidence under the current
+`run_id`:
+
+1. the raw input contains the exact ordered 15-feature schema;
+2. target, `record_id`, and audit-only columns remain outside model input;
+3. no retained final input is null, empty, whitespace-only, or textual `nan`;
+4. every raw token satisfies its field domain and numeric validity rules;
+5. for each of the five exemption-coded flags,
+   `raw_1111_count == normalized_exempt_count`;
+6. `semantic_1111_count == 0` for every model-facing input;
+7. normalization preserves retained row count, ordered `record_id`, target,
+   and partition alignment;
+8. the shared semantic frame has the exact ordered 19-column schema;
+9. PlainMLP OHE has the exact ordered 62-column schema, while RealMLP and
+   TabMmini receive the exact native 19-column schema;
+10. category lists contain semantic `Exempt` where permitted and contain no
+    model-facing `1111` or `MISSING` category;
+11. dtype, sparse/native container, transformation, model parameter, and
+    runtime fields match the approved route directly.
+
+For PlainMLP, item 11 specifically requires fit-local `RobustScaler` on the
+four numeric value columns only, CSR and current dense batch `float64`, and
+`float64` parameters, targets, logits, and loss. Any 66-column, `float32`,
+CPU-only, no-scaler, or fixed-100-epoch execution path fails this gate.
+
+Any failed check returns `FAIL` and stops the run before preprocessing or model
+fit. The operator may train only after this gate returns `PASS` for the current
+stage and `run_id`. If an existing command or validator requires legacy
+12-feature inputs or cannot produce this evidence, stop; do not use that path
+for final retraining.
+
+### 4.2 Schema and content validation
+
+Feature, model, and runtime configuration files are accepted from their parsed
+schema, types, values, ordered lists, and data-quality invariants. Manifests
+must store the directly reviewable input schema, semantic schema, output
+schema/category maps, transformation settings, model parameters, runtime
+settings, row counts, ordered identifiers, and observed validation results.
+
+Persisted artifacts are accepted by reopening them and directly checking their
+expected container, shape, dtype, finiteness, value ranges, ordered
+`record_id`, labels where permitted, prediction values, threshold, histories,
+and manifest fields. Presentation-only YAML differences do not fail a run;
+changed semantic content does.
 
 ## 5. GPU compatibility gate
 
@@ -131,11 +204,20 @@ A runtime PASS is bound to its interpreter and environment fingerprint. Rerun
 the gate after changing the interpreter, backend, GPU/CUDA environment, device,
 or relevant runtime configuration.
 
+For PlainMLP, the gate additionally requires device index 0, a finite CUDA
+`float64` calculation, `float64` CSR-to-dense batch transfer, `float64` model
+parameters, targets, logits, and loss, a successful forward/backward/optimizer
+step, checkpoint reload with dtype preserved, and recorded peak memory. Batch
+fallback may follow only a confirmed CUDA OOM and only in the locked sequence
+256, 128, 64. Unavailable CUDA, any silent CPU fallback, or any model-facing
+`float32` value returns `FAIL`/`BLOCKED`; it never authorizes a degraded run.
+
 ## 6. Pilot procedure
 
 Pilot data must come only from immutable Train membership. The pilot-fit and
-pilot-inner-stop ID files must be disjoint, have exact membership and hashes,
-and contain no project Validation or Test IDs. Use the public split functions
+pilot-inner-stop ID files must be disjoint, reproduce their directly recorded
+ordered membership, and contain no project Validation or Test IDs. Use the
+public split functions
 in
 [`realmlp_pilot.py`](../../../src/dataset_b/splits/realmlp_pilot.py) to
 materialize once or validate an existing pilot split; do not regenerate the IDs
@@ -169,18 +251,19 @@ Review the observed pilot history and choose exactly one policy:
 
 Choose `FIXED_EPOCH` only when the observed Train-only pilot trajectory
 supports a defensible epoch budget. Record the selected epoch, rationale,
-history hash, and the same full-Train refit policy. CV folds and full-Train fit
-must use the locked budget consistently, must not create an inner-stop set, and
-must represent inner-validation and best-epoch history fields as not
-applicable.
+directly referenced history records, and the same full-Train refit policy. CV
+folds and full-Train fit must use the locked budget consistently, must not
+create an inner-stop set, and must represent inner-validation and best-epoch
+history fields as not applicable.
 
 ### Train-only inner stopping
 
 Choose `INNER_EARLY_STOPPING` only when the backend-supported procedure is
 fully specified. Record the inner split fraction and seed, patience parameters,
-metric, maximum budget, refit behavior, and evidence hash. Each fold must derive
-the stopping set from fold-train only. Full-Train refit must derive any stopping
-set from Train only. Project Validation is never an early-stopping channel.
+metric, maximum budget, refit behavior, and directly referenced evidence. Each
+fold must derive the stopping set from fold-train only. Full-Train refit must
+derive any stopping set from Train only. Project Validation is never an
+early-stopping channel.
 
 If the curve remains unstable or the optimum is unresolved at the budget
 boundary, do not guess. Propose another Train-only pilot budget or approved seed
@@ -203,6 +286,22 @@ the fixed-epoch branch. If a pilot selects `INNER_EARLY_STOPPING`, stop after
 publishing and validating that decision. Do not use the fixed-epoch runners
 until a separately authorized implementation has added the approved inner
 split/stopping behavior and matching validators.
+
+### PlainMLP locked inner-stopping policy
+
+PlainMLP does not choose between the two branches above. It uses stratified
+Train-derived inner stopping with fraction 0.10 and random state 42, monitoring
+`inner_stop_bce_loss` in `min` mode with maximum 100 epochs, patience 10, and
+`min_delta = 0.00001`. Restore only the selected best epoch number, then
+discard the temporary selector, optimizer, and selector-fitted preprocessing.
+A fresh final estimator and fresh fit-local preprocessor must refit the entire
+outer fold-train or full-Train population for exactly that epoch count.
+
+Across five-fold CV and the full-Train stage, require five temporary CV epoch
+selectors, five final outer-CV estimators, one temporary full-Train selector,
+and one final full-Train estimator. This is 12 fresh model initializations; only
+the six final estimators are model evidence. Outer fold-validation, project
+Validation, and Test must not enter an inner-stop set.
 
 ## 8. History and logging
 
@@ -234,8 +333,9 @@ or block execution by default.
 
 ## 9. CV and full-Train execution
 
-After the pilot decision and runtime gate validate, the current RealMLP
-interfaces are:
+After the data-quality gate, regenerated preprocessing inputs, pilot decision,
+and runtime gate validate for the same `run_id`, the current RealMLP interfaces
+are:
 
 ```console
 python -m src.dataset_b.runtime.run_realmlp_cv_smoke run
@@ -250,37 +350,51 @@ Each CV fold must initialize fresh preprocessing, model, optimizer, and
 backend-fitted state. Publish ordered fold predictions once after training;
 aggregate OOF evidence only after every required fold validates. Full-Train
 must also start from fresh state and consume only Train membership. A completed
-CV model must not be reused as the full-Train model.
+CV model must not be reused as the full-Train model. Legacy 12-feature fitted
+state is never a valid starting point. Rerun the data-quality gate immediately
+before full-Train fit and stop if its directly recorded result is not `PASS`.
+
+PlainMLP additionally recalculates `pos_weight = n_denied / n_approved` from
+each population actually being fitted: inner-fit for a selector, complete
+outer fold-train for its fresh final estimator, full-Train inner-fit for the
+full-Train selector, and all 205,310 Train rows for the final full-Train
+estimator. OOF evidence must cover every Train row exactly once. Each final
+outer fold-validation prediction is generated once; selector predictions are
+not OOF evidence.
 
 ## 10. Atomic publication and crash recovery
 
-Write a run or fold to a sibling temporary directory on the same filesystem as
-its final destination. During execution, the temporary directory is diagnostic
-working state only and must not feed OOF aggregation or downstream evaluation.
+Write a run or fold under `working/<run_id>` on the same filesystem as its
+`final/<run_id>` destination. During execution, the working directory is
+diagnostic state only and must not feed OOF aggregation or downstream
+evaluation.
 
 Before publication:
 
 1. finish training and the stage-appropriate prediction;
 2. verify row count, exact ordered `record_id` membership, probability shape,
    finiteness, and range;
-3. verify model, history, predictions, result, and manifest contents;
-4. hash every required payload;
-5. write `COMPLETED` last and close open file handles;
-6. validate the complete temporary bundle;
-7. rename the whole directory to its final name on the same filesystem;
-8. validate the final directory again.
+3. reopen and verify model, history, predictions, result, schema, configuration,
+   normalization counts, equality gate, and manifest contents directly;
+4. confirm every component records the same `run_id`;
+5. set the manifest state to `COMPLETE` last and close open file handles;
+6. validate the complete working bundle;
+7. rename the whole `working/<run_id>` directory to `final/<run_id>` on the
+   same filesystem;
+8. validate the final directory again and freeze it against overwrite.
 
-The marker inside a temporary directory does not make it published. A model
-file alone is never completion evidence.
+A `COMPLETE` state inside a working directory does not make it published. A
+model file alone is never completion evidence.
 
 On restart:
 
-- validate and skip a final directory only when its marker, manifest, hashes,
-  IDs, history, and probabilities all pass;
-- preserve an interrupted temporary directory as a numbered failed attempt;
-- start a clean temporary directory instead of mixing attempts;
-- resume at the completed run/fold boundary unless the model-specific contract
-  explicitly supports and verifies finer-grained checkpoint recovery;
+- never resume a legacy preprocessor, model, optimizer, or checkpoint;
+- preserve an interrupted working directory as a numbered failed attempt;
+- start the failed stage in a clean directory with fresh fitted state instead
+  of mixing attempts;
+- a completed fold from the same current `run_id` may contribute its validated
+  predictions to OOF aggregation, but its fitted state must not initialize any
+  other fold or the full-Train model;
 - never overwrite a valid published directory.
 
 ## 11. Validation and Test handoff
@@ -298,32 +412,48 @@ python -m src.dataset_b.evaluation.realmlp_test_evaluation validate
 ```
 
 Before opening Validation, hand off the validated full-Train manifest and
-fitted-model hash, split/config/preprocessing identities, ordered Validation
-membership, probability convention, and confirmation that fitting is complete.
+fitted-model location, `run_id`, directly recorded split/config/preprocessing
+fields, ordered Validation membership, probability convention, and confirmation
+that fitting is complete.
 Threshold selection may inspect Validation labels only for the approved
 objective and may not refit preprocessing or model state.
 
 Before opening Test, hand off the validated Validation prediction and threshold
-artifacts and hashes, frozen model/preprocessing/configuration, ordered Test
-membership, and bootstrap identity. Test execution must not fit, change the
-threshold, regenerate shared bootstrap membership, or reopen a research
-decision.
+artifacts, the same `run_id`, frozen model/preprocessing/configuration fields,
+ordered Test membership, and bootstrap replicate identifiers. Test execution
+must not fit, change the threshold, regenerate shared bootstrap membership, or
+reopen a research decision. Directly compare ordered records, threshold,
+prediction values, shapes, dtype, finiteness, ranges, and applicable metric
+tolerances before accepting the Test package.
+
+For PlainMLP, persist the two `float64` columns returned by `predict_proba`
+without rounding, clipping, or reconstructing the denied probability. Require
+shape `(n_rows, 2)`, finite values in `[0, 1]`, and row sums under `rtol = 0`,
+`atol = 1.0e-7`. Validation inference and final Test inference each run once.
+Freeze the Validation-selected threshold before Test. Reuse the existing locked
+bootstrap indices; compare replicate IDs and valid/invalid payloads exactly,
+`calibration_slope` after six-decimal rounding, other bootstrap metrics and CI
+endpoints with `rtol = 0`, `atol = 1.0e-14`, and point metrics with `rtol = 0`,
+`atol = 1.0e-12`. Never use SHA/digest identity for numerical equivalence.
 
 ## 12. Operator handoff checklist
 
 For every transfer between machines, sessions, or operators, provide:
 
 - active authorization envelope and the next permitted stage;
-- repository/source identity and hashes of feature, split, preprocessing,
-  model, and runtime configs;
-- interpreter, library, CUDA, driver, GPU, device, and batch-size identity;
-- latest validated manifest and artifact hashes;
+- repository/source location and directly recorded feature, model, runtime,
+  split, and preprocessing schema/configuration fields;
+- interpreter, library, CUDA, driver, GPU, device, and batch-size fields;
+- `run_id`, latest validated manifest, working/final directory, and direct
+  schema/content validation result;
 - exact partition accessed and confirmation that later partitions remain
   closed;
 - working/final directory, run state, last complete epoch or fold, and any
   retained failed-attempt directory;
 - history extraction method and completeness;
-- locked epoch/stopping decision with its evidence hash;
+- locked epoch/stopping decision with its directly referenced evidence;
+- raw `1111` counts, normalized `Exempt` counts, equality-gate result, and
+  semantic `1111` count;
 - unresolved failure and the gate type it belongs to;
 - the exact validator or next command to run.
 
@@ -340,6 +470,11 @@ below identifies the retained config or artifact for a decision that has
 execution evidence; it does not turn this runbook into an execution-status
 register.
 
+All evidence links in this register predate the final 15-feature retraining
+unless a new `run_id` manifest explicitly records otherwise. They may preserve
+the rationale for a decision, but they are not compatible preprocessing,
+fitted-model, prediction, threshold, or completion evidence for the final run.
+
 | Decision ID | Decision status | Meaning | Retained config or execution evidence |
 | --- | --- | --- | --- |
 | `NEURAL-HOST-01` | `LOCKED` | Prepare locally and execute on a separate local GPU host, without a Colab dependency. | [Runtime manifest](../../../artifacts/dataset_b/realmlp_v1/runtime/runtime_manifest.json) |
@@ -352,10 +487,34 @@ register.
 | `VISUAL-TRAIN-01` | `LOCKED` | Produce the local post-run or post-fold training visuals defined by the runbook. | [Pilot history visual](../../../artifacts/dataset_b/realmlp_v1/pilot_run/plots/pilot_history.svg) |
 | `TRAINING-HISTORY-01` | `LOCKED_OUTPUT_CONTRACT` | Use the callback/backend logger contract for complete per-epoch history; this decision does not imply that a run completed. | [Pilot training history](../../../artifacts/dataset_b/realmlp_v1/pilot_run/training_history.json) |
 | `EARLY-STOPPING-01` | `LOCKED_FIXED_EPOCH_51` | Use 51 fixed epochs and no inner-stop set for CV and full-Train. | [Pilot decision](../../../artifacts/dataset_b/realmlp_v1/pilot_run/decision.json) |
-| `CHECKPOINT-RESUME-01` | `LOCKED` | Resume only at a completed run or fold boundary. | [CV fold 01 run state](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/run_state.json) |
-| `FOLD-ATOMIC-WRITE-01` | `LOCKED` | Validate each fold and publish it with a same-filesystem rename before accepting its artifacts. | [CV fold 01 manifest](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/manifest.json) |
+| `CHECKPOINT-RESUME-01` | `LOCKED` | Do not resume fitted model/preprocessor state; restart a failed stage from fresh state, and use a completed fold from the same current `run_id` only as validated OOF evidence. | [CV fold 01 run state](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/run_state.json) |
+| `FOLD-ATOMIC-WRITE-01` | `LOCKED` | Validate each run-scoped fold directly and publish it with a same-filesystem rename before accepting its artifacts. | [CV fold 01 manifest](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/manifest.json) |
 | `REALMLP-CV-01` | `LOCKED_TRAIN_ONLY_CV` | Use fresh state for each fold in five-fold Train-only CV. | [CV summary manifest](../../../artifacts/dataset_b/realmlp_v1/cv/summary/manifest.json) and [CV results](../../../artifacts/dataset_b/realmlp_v1/cv/summary/cv_results.json) |
 | `TABMMINI-OPEN-01` | `LOCKED_GATE` | Require the RealMLP prerequisite review, separate authorization, and a model-specific configuration before opening TabMmini. | — |
+
+### 13.1 PlainMLP global stop rules
+
+Stop the current PlainMLP stage and do not open the next one when any of the
+following is true:
+
+- required repair falls outside the authorized Write Scope;
+- the quality gate rejects a record, or split membership, order, or cardinality
+  differs from 205,310 / 43,995 / 43,996;
+- the schema differs from 15 raw / 19 semantic / 62 encoded columns;
+- a PlainMLP matrix or model tensor is not `float64`, CUDA is unavailable, or
+  execution silently falls back to CPU;
+- probabilities are rounded, clipped, reconstructed, malformed, non-finite,
+  out of range, or fail the locked row-sum tolerance;
+- project Validation or Test is read before authorization, an inner-stop set
+  contains outer fold-validation or project Validation/Test, or temporary
+  selector state is reused by a final estimator;
+- OOF coverage is not exactly once per Train row, final Test inference occurs
+  more than once, or the threshold changes after Validation;
+- locked bootstrap indices are regenerated or numerical comparison uses
+  SHA/digest identity;
+- a required validation or test fails or remains incomplete;
+- the target working directory already exists and may be overwritten; or
+- the final scope review or hallucination/overclaim review is not `PASS`.
 
 ## 14. Source traceability
 

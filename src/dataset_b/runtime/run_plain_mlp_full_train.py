@@ -1,7 +1,9 @@
-"""Command-line entry point for the PlainMLP full-Train stage."""
+"""Command-line entry point for the PMLP-F04 full-Train stage."""
 
-from .plain_mlp_full_train import main
+import sys
+
+from .plain_mlp_training import main
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main(["full-train", *sys.argv[1:]]))

@@ -10,9 +10,14 @@ from types import SimpleNamespace
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 
 from src.dataset_b.evaluation import plain_mlp_validation as validation
 from src.dataset_b.evaluation import plain_mlp_validation_threshold as threshold
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PRODUCTION_FEATURE_CONTRACT = PROJECT_ROOT / "config/dataset_b/feature_set_v1.yaml"
 
 
 def _setup(tmp_path: Path, monkeypatch, probabilities=None):
@@ -27,7 +32,7 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
     split_dir.mkdir()
     (split_dir / "validation.csv").write_text("record_id\nr1\nr2\nr3\nr4\n", encoding="utf-8")
     feature = tmp_path / "feature.yaml"
-    feature.write_text("feature_version: synthetic\n", encoding="utf-8")
+    feature.write_bytes(PRODUCTION_FEATURE_CONTRACT.read_bytes())
     config = tmp_path / "plain.yaml"
     config.write_text("model_version: plain_mlp_v1\n", encoding="utf-8")
 
@@ -68,7 +73,7 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
     monkeypatch.setattr(validation, "DatasetBSplitLoader", Loader)
     monkeypatch.setattr(
         validation, "validate_plain_mlp_full_train",
-        lambda path: {"contract_id": "PMLP-03", "status": "PASS"},
+        lambda path, **kwargs: {"contract_id": "PMLP-F04-FULL-TRAIN", "status": "PASS"},
     )
     monkeypatch.setattr(
         validation, "load_plain_mlp_bundle",
@@ -77,9 +82,10 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
             estimator,
             {
                 "description": "synthetic",
-                "source_partition": "train",
+                "stage": "full_train_final_estimator",
                 "validation_accessed": False,
                 "test_accessed": False,
+                "temporary_selector_state_reused": False,
             },
         ),
     )
@@ -99,7 +105,7 @@ def test_validation_predicts_once_in_order_without_fit(tmp_path, monkeypatch):
 
     manifest = validation.run_plain_mlp_validation(output, **paths)
 
-    assert manifest["contract_id"] == "PMLP-04A"
+    assert manifest["contract_id"] == "PMLP-F05-VALIDATION"
     assert estimator.predict_calls == 1
     assert preprocessor.transform_calls == 1
     assert loaded == ["validation"]
@@ -139,6 +145,43 @@ def test_validation_rejects_invalid_probabilities_without_publication(tmp_path, 
     assert not output.exists()
 
 
+def test_validation_accepts_complement_rounding_at_locked_tolerance(tmp_path, monkeypatch):
+    paths, _, _, _ = _setup(
+        tmp_path, monkeypatch,
+        probabilities=[[0.2, 0.80000009], [0.8, 0.2], [0.4, 0.6], [0.7, 0.3]],
+    )
+    output = tmp_path / "validation"
+    validation.run_plain_mlp_validation(output, **paths)
+    frame = pd.read_csv(output / "validation_predictions.csv")
+    assert tuple(frame.columns) == validation.PREDICTION_COLUMNS
+    assert frame.loc[0, "p_denied"] == pytest.approx(0.2)
+    assert frame.loc[0, "p_approved"] == pytest.approx(0.80000009)
+
+
+def test_validation_rejects_probability_sum_above_locked_tolerance(tmp_path, monkeypatch):
+    paths, _, _, _ = _setup(
+        tmp_path, monkeypatch,
+        probabilities=[[0.2, 0.80000011], [0.8, 0.2], [0.4, 0.6], [0.7, 0.3]],
+    )
+    with pytest.raises(validation.PlainMLPValidationError, match="probability"):
+        validation.run_plain_mlp_validation(tmp_path / "validation", **paths)
+
+
+def test_validation_accepts_feature_yaml_presentation_drift(tmp_path, monkeypatch):
+    paths, _, _, _ = _setup(tmp_path, monkeypatch)
+    output = tmp_path / "validation"
+    validation.run_plain_mlp_validation(output, **paths)
+    feature = paths["feature_contract_path"]
+    contract = yaml.safe_load(feature.read_text(encoding="utf-8"))
+    feature.write_text(
+        "# presentation-only change\n" + yaml.safe_dump(contract, sort_keys=True),
+        encoding="utf-8",
+        newline="\n",
+    )
+
+    assert validation.validate_plain_mlp_validation(output, **paths)["status"] == "PASS"
+
+
 def test_threshold_is_reproducible_and_does_not_predict_again(tmp_path, monkeypatch):
     paths, loaded, _, estimator = _setup(tmp_path, monkeypatch)
     output = tmp_path / "validation"
@@ -153,7 +196,7 @@ def test_threshold_is_reproducible_and_does_not_predict_again(tmp_path, monkeypa
 
     manifest = threshold.run_plain_mlp_validation_threshold(output)
 
-    assert manifest["contract_id"] == "PMLP-04B"
+    assert manifest["contract_id"] == "PMLP-F05-THRESHOLD"
     assert manifest["candidate_rows"] == 999
     assert estimator.predict_calls == 1
     assert loaded == ["validation"]
@@ -176,3 +219,14 @@ def test_threshold_validator_rejects_tampering(tmp_path, monkeypatch):
         handle.write("1,0.5,0.5,0.5,1,1,1,1\n")
     with pytest.raises(threshold.PlainMLPThresholdError, match="hash mismatch"):
         threshold.validate_plain_mlp_validation_threshold(output)
+
+
+def test_threshold_tie_break_prefers_nearest_to_half_then_lower():
+    rows = [
+        {"threshold": 0.4, "balanced_accuracy": 0.8},
+        {"threshold": 0.6, "balanced_accuracy": 0.8},
+        {"threshold": 0.5, "balanced_accuracy": 0.7},
+    ]
+    selected, maximizing = threshold._select(rows)
+    assert selected["threshold"] == 0.4
+    assert len(maximizing) == 2

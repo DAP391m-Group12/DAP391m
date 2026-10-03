@@ -12,6 +12,11 @@ from typing import Any, Sequence
 
 import numpy as np
 
+from src.dataset_b.contracts import (
+    DatasetBSemanticValidationError,
+    FeatureContractValidation,
+    validate_feature_contract,
+)
 from src.dataset_b.preprocessing import DatasetBSplitLoader
 from src.dataset_b.runtime.plain_mlp_full_train import (
     DEFAULT_FEATURE_CONTRACT_PATH,
@@ -20,6 +25,7 @@ from src.dataset_b.runtime.plain_mlp_full_train import (
     DEFAULT_OUTPUT_DIR as DEFAULT_FULL_TRAIN_DIR,
     _sha256_file,
     _sha256_ids,
+    _lineage_matches_feature_provenance,
     load_plain_mlp_bundle,
     validate_plain_mlp_full_train,
 )
@@ -29,8 +35,9 @@ from src.utils.path import CONFIG_DIR, PROJECT_ROOT
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "artifacts/dataset_b/plain_mlp_v1/validation"
 DEFAULT_CONFIG_PATH = CONFIG_DIR / "dataset_b/plain_mlp_v1.yaml"
 EXPECTED_VALIDATION_ROWS = 43_995
-CONTRACT_ID = "PMLP-04A"
-PREDICTION_COLUMNS = ("record_id", "y_approved", "p_approved")
+CONTRACT_ID = "PMLP-F05-VALIDATION"
+PREDICTION_COLUMNS = ("record_id", "y_approved", "p_denied", "p_approved")
+PROBABILITY_SUM_ATOL = 1e-7
 PAYLOAD_FILES = {"validation_predictions.csv", "validation_result.json"}
 FINAL_FILES = PAYLOAD_FILES | {"run_manifest.json", "COMPLETED"}
 LINEAGE_KEYS = {
@@ -71,8 +78,10 @@ def _write_predictions(
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(PREDICTION_COLUMNS)
-        for record_id, label, probability in zip(ids, labels, probabilities, strict=True):
-            writer.writerow([record_id, int(label), repr(float(probability))])
+        for record_id, label, row in zip(ids, labels, probabilities, strict=True):
+            writer.writerow(
+                [record_id, int(label), repr(float(row[0])), repr(float(row[1]))]
+            )
 
 
 def _read_predictions(path: Path) -> list[dict[str, str]]:
@@ -91,8 +100,8 @@ def _lineage(
     *,
     split_manifest_path: Path,
     validation_csv: Path,
-    feature_contract_path: Path,
     config_path: Path,
+    feature_contract_provenance: str | None = None,
 ) -> dict[str, str]:
     paths = {
         "full_train_manifest_sha256": full_train_dir / "manifest.json",
@@ -100,13 +109,24 @@ def _lineage(
         "fitted_bundle_sha256": full_train_dir / "checkpoints/fitted_bundle.joblib",
         "split_manifest_sha256": split_manifest_path,
         "validation_source_sha256": validation_csv,
-        "feature_contract_sha256": feature_contract_path,
         "plain_mlp_config_sha256": config_path,
     }
     try:
-        return {name: _sha256_file(path) for name, path in paths.items()}
+        lineage = {name: _sha256_file(path) for name, path in paths.items()}
     except OSError as exc:
         raise PlainMLPValidationError("Cannot construct Validation lineage.") from exc
+    if feature_contract_provenance is not None:
+        lineage["feature_contract_sha256"] = feature_contract_provenance
+    return lineage
+
+
+def _semantic_feature_contract(path: Path) -> FeatureContractValidation:
+    try:
+        return validate_feature_contract(path)
+    except DatasetBSemanticValidationError as exc:
+        raise PlainMLPValidationError(
+            "Dataset B semantic feature contract is invalid."
+        ) from exc
 
 
 def run_plain_mlp_validation(
@@ -117,6 +137,7 @@ def run_plain_mlp_validation(
     split_dir: str | Path = DEFAULT_SPLIT_DIR,
     feature_contract_path: str | Path = DEFAULT_FEATURE_CONTRACT_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
+    run_id: str = "plain_mlp_v1",
 ) -> dict[str, Any]:
     """Transform and predict Validation once without exposing any fitting API."""
     destination = Path(output_dir)
@@ -136,7 +157,14 @@ def run_plain_mlp_validation(
             f"Temporary directory already exists and was preserved: {working}"
         )
     try:
-        full_manifest = validate_plain_mlp_full_train(kwargs["full_train_dir"])
+        feature_contract = _semantic_feature_contract(kwargs["feature_contract_path"])
+        full_manifest = validate_plain_mlp_full_train(
+            kwargs["full_train_dir"],
+            split_manifest_path=kwargs["split_manifest_path"],
+            split_dir=kwargs["split_dir"],
+            feature_contract_path=kwargs["feature_contract_path"],
+            config_path=kwargs["config_path"],
+        )
         loader = DatasetBSplitLoader(
             manifest_path=kwargs["split_manifest_path"],
             split_dir=kwargs["split_dir"],
@@ -164,24 +192,32 @@ def run_plain_mlp_validation(
             or positive.shape != (1,)
             or not np.isfinite(probabilities).all()
             or np.any((probabilities < 0.0) | (probabilities > 1.0))
-            or not np.allclose(probabilities.sum(axis=1), 1.0, rtol=0.0, atol=1e-6)
+            or not np.allclose(
+                probabilities.sum(axis=1), 1.0, rtol=0.0, atol=PROBABILITY_SUM_ATOL
+            )
         ):
             raise PlainMLPValidationError("Validation probability matrix is invalid.")
-        approved = probabilities[:, int(positive[0])]
+        approved_index = int(positive[0])
+        denied_index = 1 - approved_index
+        ordered_probabilities = probabilities[:, [denied_index, approved_index]]
+        approved = ordered_probabilities[:, 1]
 
         destination.parent.mkdir(parents=True, exist_ok=True)
         working.mkdir()
-        _write_predictions(working / "validation_predictions.csv", ids, labels, approved)
+        _write_predictions(
+            working / "validation_predictions.csv", ids, labels, ordered_probabilities
+        )
         lineage = _lineage(
             kwargs["full_train_dir"],
             split_manifest_path=kwargs["split_manifest_path"],
             validation_csv=kwargs["split_dir"] / "validation.csv",
-            feature_contract_path=kwargs["feature_contract_path"],
             config_path=kwargs["config_path"],
+            feature_contract_provenance=feature_contract.raw_sha256,
         )
         result = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
             "stage": "validation_prediction",
             "prediction_partition": "validation",
@@ -219,6 +255,7 @@ def run_plain_mlp_validation(
         manifest = {
             "schema_version": 1,
             "contract_id": CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
             "rows": len(ids),
             "unique_record_ids": len(set(ids)),
@@ -276,9 +313,14 @@ def _validate_plain_mlp_validation_artifact(
     if (
         not isinstance(lineage, dict)
         or set(lineage) != LINEAGE_KEYS
-        or (expected_lineage is not None and lineage != expected_lineage)
+        or (
+            expected_lineage is not None
+            and not _lineage_matches_feature_provenance(lineage, expected_lineage)
+        )
         or manifest.get("contract_id") != CONTRACT_ID
         or manifest.get("status") != "PASS"
+        or not isinstance(manifest.get("run_id"), str)
+        or manifest.get("run_id") != result.get("run_id")
         or manifest.get("rows") != EXPECTED_VALIDATION_ROWS
         or manifest.get("unique_record_ids") != EXPECTED_VALIDATION_ROWS
         or manifest.get("source_order_preserved") is not True
@@ -289,7 +331,7 @@ def _validate_plain_mlp_validation_artifact(
         or result.get("prediction_partition") != "validation"
         or result.get("prediction_file") != "validation_predictions.csv"
         or result.get("prediction_columns") != list(PREDICTION_COLUMNS)
-        or result.get("source_full_train_contract_id") != "PMLP-03"
+        or result.get("source_full_train_contract_id") != "PMLP-F04-FULL-TRAIN"
         or result.get("lineage_sha256") != lineage
         or result.get("execution") != {
             "model_fit_calls": 0,
@@ -303,9 +345,10 @@ def _validate_plain_mlp_validation_artifact(
         or result.get("data_boundary", {}).get("project_validation_accessed") is not True
         or result.get("data_boundary", {}).get("model_fit_performed") is not False
         or result.get("data_boundary", {}).get("preprocessing_fit_performed") is not False
-        or result.get("bundle_scope", {}).get("source_partition") != "train"
+        or result.get("bundle_scope", {}).get("stage") != "full_train_final_estimator"
         or result.get("bundle_scope", {}).get("validation_accessed") is not False
         or result.get("bundle_scope", {}).get("test_accessed") is not False
+        or result.get("bundle_scope", {}).get("temporary_selector_state_reused") is not False
     ):
         raise PlainMLPValidationError("Validation status, boundary, or lineage is invalid.")
 
@@ -313,7 +356,10 @@ def _validate_plain_mlp_validation_artifact(
     try:
         observed_ids = tuple(row["record_id"] for row in rows)
         labels = np.asarray([int(row["y_approved"]) for row in rows], dtype=np.int8)
-        probabilities = np.asarray([float(row["p_approved"]) for row in rows], dtype=np.float64)
+        probabilities = np.asarray(
+            [[float(row["p_denied"]), float(row["p_approved"])] for row in rows],
+            dtype=np.float64,
+        )
     except (KeyError, ValueError) as exc:
         raise PlainMLPValidationError("Validation prediction values are invalid.") from exc
     summary = result.get("prediction_summary", {})
@@ -322,17 +368,21 @@ def _validate_plain_mlp_validation_artifact(
         or len(set(observed_ids)) != EXPECTED_VALIDATION_ROWS
         or labels.shape != (EXPECTED_VALIDATION_ROWS,)
         or set(np.unique(labels).tolist()) != {0, 1}
+        or probabilities.shape != (EXPECTED_VALIDATION_ROWS, 2)
         or not np.isfinite(probabilities).all()
         or np.any((probabilities < 0.0) | (probabilities > 1.0))
+        or not np.allclose(
+            probabilities.sum(axis=1), 1.0, rtol=0.0, atol=PROBABILITY_SUM_ATOL
+        )
         or result.get("data_boundary", {}).get("validation_record_ids_sha256")
         != _sha256_ids(observed_ids)
         or summary.get("rows") != EXPECTED_VALIDATION_ROWS
         or summary.get("unique_record_ids") != EXPECTED_VALIDATION_ROWS
         or summary.get("approved_rows") != int(np.count_nonzero(labels == 1))
         or summary.get("denied_rows") != int(np.count_nonzero(labels == 0))
-        or not np.isclose(summary.get("probability_min", np.nan), np.min(probabilities))
-        or not np.isclose(summary.get("probability_max", np.nan), np.max(probabilities))
-        or not np.isclose(summary.get("probability_mean", np.nan), np.mean(probabilities))
+        or not np.isclose(summary.get("probability_min", np.nan), np.min(probabilities[:, 1]))
+        or not np.isclose(summary.get("probability_max", np.nan), np.max(probabilities[:, 1]))
+        or not np.isclose(summary.get("probability_mean", np.nan), np.mean(probabilities[:, 1]))
         or (expected_ids is not None and observed_ids != expected_ids)
         or (expected_labels is not None and not np.array_equal(labels, expected_labels))
     ):
@@ -362,12 +412,18 @@ def validate_plain_mlp_validation(
     split_dir = Path(split_dir)
     feature_contract_path = Path(feature_contract_path)
     config_path = Path(config_path)
-    validate_plain_mlp_full_train(full_train_dir)
+    _semantic_feature_contract(feature_contract_path)
+    validate_plain_mlp_full_train(
+        full_train_dir,
+        split_manifest_path=split_manifest_path,
+        split_dir=split_dir,
+        feature_contract_path=feature_contract_path,
+        config_path=config_path,
+    )
     lineage = _lineage(
         full_train_dir,
         split_manifest_path=split_manifest_path,
         validation_csv=split_dir / "validation.csv",
-        feature_contract_path=feature_contract_path,
         config_path=config_path,
     )
     loader = DatasetBSplitLoader(

@@ -113,8 +113,14 @@ class DatasetBInputQualityGate:
         rejected_positions = tuple(
             position for position, rejected in enumerate(rejected_mask) if rejected
         )
-        if not retained_positions:
-            raise InputQualityError("Dataset B input-quality gate rejected every row.")
+        if rejected_positions:
+            rejected_ids = tuple(
+                partition.record_ids.iloc[list(rejected_positions)].astype(str)
+            )
+            raise InputQualityError(
+                "Dataset B input-quality gate rejected one or more rows; "
+                f"rejected_record_ids={rejected_ids}."
+            )
 
         retained_X = raw_X.iloc[list(retained_positions)].copy(deep=True)
         retained_y = partition.y.iloc[list(retained_positions)].copy()
@@ -152,9 +158,7 @@ class DatasetBInputQualityGate:
             input_rows=len(partition.X),
             retained_rows=len(parsed.cleaned),
             rejected_rows=len(rejected_positions),
-            rejected_record_ids=tuple(
-                partition.record_ids.iloc[list(rejected_positions)].astype(str)
-            ),
+            rejected_record_ids=(),
             blank_counts=blank_counts,
             raw_1111_counts=dict(diagnostics.raw_1111_counts),
             normalized_exempt_counts=dict(diagnostics.normalized_exempt_counts),

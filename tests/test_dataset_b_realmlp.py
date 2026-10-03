@@ -14,7 +14,7 @@ from src.dataset_b.models import (
 )
 from src.dataset_b.preprocessing import make_realmlp_native_preprocessing_pipeline
 from src.dataset_b.preprocessing.categorical_encoder import CATEGORICAL_COLUMNS
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.preprocessing.raw_parser import DatasetBRawParser, FEATURE_COLUMNS
 
 
 class _FakeRealMLPBackend:
@@ -50,6 +50,9 @@ def _row(**changes):
         "loan_to_value_ratio": "75",
         "loan_term": "360",
         "occupancy_type": "1",
+        "preapproval": "1",
+        "interest_only_payment": "2",
+        "balloon_payment": "2",
     }
     row.update(changes)
     return row
@@ -66,7 +69,8 @@ def _native_frame():
         columns=FEATURE_COLUMNS,
         dtype=object,
     )
-    return make_realmlp_native_preprocessing_pipeline().fit_transform(raw)
+    normalized = DatasetBRawParser().parse(raw).cleaned
+    return make_realmlp_native_preprocessing_pipeline().fit_transform(normalized)
 
 
 def _fake_backend(monkeypatch):

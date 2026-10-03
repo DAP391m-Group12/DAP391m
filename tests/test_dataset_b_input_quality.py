@@ -66,7 +66,19 @@ def _partition(rows, *, record_ids=None, actions=None, y=None):
     )
 
 
-def test_gate_rejects_blank_rows_and_preserves_aligned_retained_payload():
+def test_gate_fails_if_any_row_would_be_rejected():
+    partition = _partition(
+        [_row(), _row(income=" nAn ", preapproval="  ")],
+        record_ids=["r1", "r2"],
+        actions=["1", "3"],
+        y=[1, 0],
+    )
+
+    with pytest.raises(InputQualityError, match="rejected one or more rows"):
+        DatasetBInputQualityGate().apply(partition)
+
+
+def test_gate_normalizes_all_rows_once_and_preserves_alignment():
     exempt = _row(
         reverse_mortgage="1111",
         **{
@@ -77,13 +89,12 @@ def test_gate_rejects_blank_rows_and_preserves_aligned_retained_payload():
         interest_only_payment="1111",
         balloon_payment="1111",
     )
-    blank = _row(income=" nAn ", preapproval="  ")
     ordinary = _row(income="250", preapproval="1")
     partition = _partition(
-        [exempt, blank, ordinary],
-        record_ids=["r1", "r2", "r3"],
-        actions=["1", "3", "2"],
-        y=[1, 0, 1],
+        [exempt, ordinary],
+        record_ids=["r1", "r2"],
+        actions=["1", "2"],
+        y=[1, 1],
     )
     original_X = partition.X.copy(deep=True)
     original_ids = partition.record_ids.copy(deep=True)
@@ -92,17 +103,15 @@ def test_gate_rejects_blank_rows_and_preserves_aligned_retained_payload():
 
     pd.testing.assert_frame_equal(partition.X, original_X)
     pd.testing.assert_series_equal(partition.record_ids, original_ids)
-    assert result.record_ids.tolist() == ["r1", "r3"]
+    assert result.record_ids.tolist() == ["r1", "r2"]
     assert result.y.tolist() == [1, 1]
     assert result.action_taken.tolist() == ["1", "2"]
     assert result.quality_audit.status == "PASS"
-    assert result.quality_audit.input_rows == 3
+    assert result.quality_audit.input_rows == 2
     assert result.quality_audit.retained_rows == 2
-    assert result.quality_audit.rejected_rows == 1
-    assert result.quality_audit.rejected_record_ids == ("r2",)
-    assert result.quality_audit.blank_counts["income"] == 1
-    assert result.quality_audit.blank_counts["preapproval"] == 1
-    assert sum(result.quality_audit.blank_counts.values()) == 2
+    assert result.quality_audit.rejected_rows == 0
+    assert result.quality_audit.rejected_record_ids == ()
+    assert sum(result.quality_audit.blank_counts.values()) == 0
     assert result.quality_audit.raw_1111_counts == {
         column: 1 for column in EXEMPTION_FLAG_COLUMNS
     }
@@ -151,6 +160,6 @@ def test_gate_rejects_wrong_schema_and_all_blank_population():
     with pytest.raises(InputQualityError, match="exact final 15-field schema"):
         DatasetBInputQualityGate().apply(wrong)
 
-    all_blank = _partition([_row(income="")])
-    with pytest.raises(InputQualityError, match="rejected every row"):
-        DatasetBInputQualityGate().apply(all_blank)
+    any_blank = _partition([_row(income="")])
+    with pytest.raises(InputQualityError, match="rejected one or more rows"):
+        DatasetBInputQualityGate().apply(any_blank)
