@@ -347,6 +347,30 @@ def test_xgboost_reporting_does_not_change_lr_or_rf_model_keys(tmp_path):
         assert summary["model_key"] == model_key
 
 
+def test_xgboost_notebook_has_complete_non_executing_stage_map():
+    notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/03_xgboost_final.ipynb"
+    notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+    stage_cells = [cell for cell in notebook["cells"] if "xgb-stage-map" in cell.get("metadata", {}).get("tags", [])]
+    assert len(stage_cells) == 1
+
+    stage_map = "".join(stage_cells[0]["source"])
+    expected_stages = {
+        "XGB-07 — training",
+        "XGB-08 — Validation threshold",
+        "XGB-09 — Test evaluation",
+        "XGB-10 — final review",
+        "XGB-11 — reporting",
+        "XGB-12 — publication",
+    }
+    assert all(stage in stage_map for stage in expected_stages)
+
+    code_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"] if cell["cell_type"] == "code")
+    assert "RUN_ID = 'SET_XGBOOST_FINAL_RUN_ID'" in code_source
+    assert all(call not in code_source for call in (".fit(", ".predict(", ".predict_proba("))
+    assert code_source.count("publish_xgboost_final(") == 1
+    assert "artifacts/dataset_b/xgboost/legacy" not in code_source
+
+
 def _publication_function():
     notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/03_xgboost_final.ipynb"
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
