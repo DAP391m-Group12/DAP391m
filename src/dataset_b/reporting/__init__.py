@@ -14,6 +14,7 @@ from .model_reporting import (
     validate_cross_model_summaries,
     validate_model_summary,
     validate_reporting_directory,
+    write_lr_reporting_package,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "validate_cross_model_summaries",
     "validate_model_summary",
     "validate_reporting_directory",
+    "write_lr_reporting_package",
 ]

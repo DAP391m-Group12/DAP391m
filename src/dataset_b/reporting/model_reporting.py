@@ -464,6 +464,109 @@ def write_xgboost_reporting_package(summary: Mapping[str, Any], *, run_dir: str 
     return validate_reporting_directory(reporting_dir)
 
 
+def write_lr_reporting_package(summary: Mapping[str, Any], *, run_dir: str | Path) -> dict[str, Any]:
+    """Write the common reporting package from a completed direct LR review."""
+
+    validate_model_summary(summary, require_complete=True)
+    _require(summary.get("model_key") == "lr", "Expected completed LR evidence.")
+    root = Path(run_dir).resolve(strict=True)
+    _require(root.name == summary["run_id"], "LR reporting run_dir does not match run_id.")
+    cv_source = Path(str(summary.get("artifact_sources", {}).get("cv_results", ""))).resolve(strict=True)
+    _require(cv_source.parent == root, "LR CV reporting source is outside the reviewed run.")
+    cv_results = _load_json_object(cv_source)
+    folds = cv_results.get("folds")
+    _require(isinstance(folds, list) and len(folds) == 5, "LR reporting requires exactly five CV folds.")
+
+    cv_frame = pd.DataFrame(
+        [
+            {
+                "model_key": "lr",
+                "run_id": summary["run_id"],
+                "feature_version": summary["feature_version"],
+                "split_version": summary["split_version"],
+                "fold": int(fold["fold"]),
+                "roc_auc": float(fold["roc_auc"]),
+                "fit_seconds": float(fold["fit_seconds"]),
+                "predict_seconds": 0.0,
+                "warning_count": int(fold.get("convergence_warning_count", 0)),
+            }
+            for fold in folds
+        ],
+        columns=REPORTING_CSV_COLUMNS["cv_fold_metrics.csv"],
+    )
+    test = summary["test"]
+    metric_rows = []
+    for name in sorted(REQUIRED_RQ1_METRICS):
+        interval = test["confidence_intervals_95_percentile"][name]
+        metric_rows.append(
+            {
+                "model_key": "lr",
+                "run_id": summary["run_id"],
+                "feature_version": summary["feature_version"],
+                "split_version": summary["split_version"],
+                "partition": "test",
+                "metric": name,
+                "estimate": float(test["point_metrics"][name]),
+                "ci_low": interval["lower_2_5"],
+                "ci_high": interval["upper_97_5"],
+                "unit": "coefficient" if name.startswith("calibration_") else "rate",
+                "higher_is_better": name not in {"brier_score_approved", "calibration_intercept", "calibration_slope"},
+                "valid_replicates": int(interval["valid_replicates"]),
+            }
+        )
+    metric_frame = pd.DataFrame(metric_rows, columns=REPORTING_CSV_COLUMNS["rq1_metrics_long.csv"])
+    cells = (
+        ("approved", "approved", "tp_approved"),
+        ("approved", "denied", "fn_approved"),
+        ("denied", "approved", "fp_denied"),
+        ("denied", "denied", "tn_denied"),
+    )
+    confusion_frame = pd.DataFrame(
+        [
+            {"model_key": "lr", "run_id": summary["run_id"], "actual_class": actual, "predicted_class": predicted, "count": int(test["counts"][key])}
+            for actual, predicted, key in cells
+        ],
+        columns=REPORTING_CSV_COLUMNS["confusion_matrix.csv"],
+    )
+    calibration_frame = pd.DataFrame(
+        [{"model_key": "lr", "run_id": summary["run_id"], **dict(row)} for row in test["calibration_curve"]],
+        columns=REPORTING_CSV_COLUMNS["calibration_curve.csv"],
+    )
+    reporting_dir = root / "reporting"
+    temporary_dir = root / ".reporting.tmp"
+    _require(not reporting_dir.exists(), "LR reporting package already exists.")
+    _require(not temporary_dir.exists(), "LR temporary reporting package already exists.")
+    temporary_dir.mkdir()
+    try:
+        (temporary_dir / "model_summary.json").write_text(json.dumps(dict(summary), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        for filename, frame in {
+            "cv_fold_metrics.csv": cv_frame,
+            "rq1_metrics_long.csv": metric_frame,
+            "confusion_matrix.csv": confusion_frame,
+            "calibration_curve.csv": calibration_frame,
+        }.items():
+            frame.to_csv(temporary_dir / filename, index=False)
+        artifacts = []
+        for name, value in sorted(summary["artifact_sources"].items()):
+            source = Path(str(value)).resolve(strict=True)
+            try:
+                relative = source.relative_to(root)
+                indexed_path = str(Path("..") / relative)
+            except ValueError:
+                indexed_path = str(source)
+            artifacts.append({"name": name, "path": indexed_path})
+        (temporary_dir / "artifact_index.json").write_text(
+            json.dumps({"schema_version": REPORTING_SCHEMA_VERSION, "model_key": "lr", "run_id": summary["run_id"], "artifacts": artifacts}, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        validate_reporting_directory(temporary_dir)
+        temporary_dir.replace(reporting_dir)
+    except Exception:
+        shutil.rmtree(temporary_dir, ignore_errors=True)
+        raise
+    return validate_reporting_directory(reporting_dir)
+
+
 def validate_model_summary(summary: Mapping[str, Any], *, require_complete: bool) -> None:
     """Validate the stable model-level summary consumed by notebook 07."""
 
