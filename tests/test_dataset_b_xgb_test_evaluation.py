@@ -54,6 +54,29 @@ def test_confidence_interval_comparison_uses_locked_endpoint_tolerance():
     assert not evaluation._intervals_match(wrong_counts, baseline)
 
 
+def test_fixed_probability_sum_tolerance_accepts_complement_error_without_changing_probabilities():
+    approved = np.asarray([0.0001, 0.8], dtype=np.float32)
+    raw_probabilities = np.column_stack((np.float32(1.0) - approved, approved))
+
+    class Pipeline:
+        def predict_proba(self, _frame):
+            return raw_probabilities
+
+    assert abs(float(raw_probabilities[0, 0]) + float(raw_probabilities[0, 1]) - 1.0) > 1e-12
+    values = evaluation._predict_test_once(Pipeline(), pd.DataFrame({"x": [1, 2]}))
+    assert values.dtype == np.float64
+    assert np.array_equal(values, raw_probabilities[:, 1].astype(np.float64))
+
+
+def test_materially_invalid_probability_sum_is_rejected():
+    class Pipeline:
+        def predict_proba(self, _frame):
+            return np.asarray([[0.5, 0.6]], dtype=np.float32)
+
+    with pytest.raises(evaluation.XGBTestEvaluationError, match="do not sum to one"):
+        evaluation._predict_test_once(Pipeline(), pd.DataFrame({"x": [1]}))
+
+
 def _synthetic_state(tmp_path, monkeypatch):
     run_id = "xgb_test_run"
     run_dir = tmp_path / run_id

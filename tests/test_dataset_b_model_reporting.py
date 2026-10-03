@@ -365,7 +365,8 @@ def test_xgboost_notebook_has_complete_non_executing_stage_map():
     assert all(stage in stage_map for stage in expected_stages)
 
     code_source = "\n".join("".join(cell.get("source", [])) for cell in notebook["cells"] if cell["cell_type"] == "code")
-    assert "RUN_ID = 'SET_XGBOOST_FINAL_RUN_ID'" in code_source
+    assert "RUN_ID = 'xgb_final_15f_20261003_01'" in code_source
+    assert "SET_XGBOOST_FINAL_RUN_ID" not in code_source
     assert all(call not in code_source for call in (".fit(", ".predict(", ".predict_proba("))
     assert code_source.count("publish_xgboost_final(") == 1
     assert "artifacts/dataset_b/xgboost/legacy" not in code_source

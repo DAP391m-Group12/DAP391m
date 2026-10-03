@@ -134,7 +134,7 @@ def _predict_test_once(pipeline: Any, frame: Any) -> np.ndarray:
         np.isfinite(probabilities).all() and np.all((probabilities >= 0) & (probabilities <= 1)),
         "Test probabilities are invalid.",
     )
-    _require(np.allclose(probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-12), "Test probability rows do not sum to one.")
+    _require(np.allclose(probabilities.sum(axis=1), 1.0, rtol=0, atol=1e-7), "Test probability rows do not sum to one.")
     return probabilities[:, 1]
 
 
