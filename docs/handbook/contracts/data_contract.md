@@ -346,8 +346,8 @@ contextual geography remains excluded under this contract.
 - Model-input and audit-only columns must not overlap.
 - Target source, derived target, identifiers, and audit-only fields must not
   enter the main-model predictor matrix.
-- A candidate becomes a model input only through feature governance and a
-  versioned machine-readable feature contract.
+- A candidate becomes a model input only through feature governance and the
+  active machine-readable feature contract.
 - A model-input decision does not change the underlying 99-column role
   reconciliation.
 
@@ -357,8 +357,8 @@ contextual geography remains excluded under this contract.
   prediction-time availability assessment.
 - Information formed after or because of the approval decision is prohibited
   from predictor use.
-- Raw tokens must remain traceable through `record_id` and versioned downstream
-  artifacts.
+- Raw tokens must remain traceable through `record_id` and the `run_id` of each
+  downstream execution.
 - Holdout outcomes must not be used to decide candidate roles, repair timing
   violations, or reopen excluded leakage fields.
 
@@ -382,6 +382,102 @@ Quality review must cover valid domains, units, coverage, rare categories,
 class-conditional missingness, organization concentration, and robust outlier
 diagnostics where applicable. High missingness alone neither keeps nor excludes
 a candidate.
+
+#### 10.5.1 Final model-input quality boundary
+
+[Feature governance](feature_governance.md) publishes the feature-selection
+decision. This data contract imports, but does not reopen, its ordered 15-field
+`FINAL_MODEL_FEATURES` interface for the final input-quality gate:
+
+1. `loan_type`
+2. `loan_purpose`
+3. `lien_status`
+4. `reverse_mortgage`
+5. `open-end_line_of_credit`
+6. `business_or_commercial_purpose`
+7. `income`
+8. `debt_to_income_ratio`
+9. `loan_amount`
+10. `loan_to_value_ratio`
+11. `loan_term`
+12. `occupancy_type`
+13. `preapproval`
+14. `interest_only_payment`
+15. `balloon_payment`
+
+The gate must receive exactly these fields in this order. Target source,
+derived target, `record_id`, protected attributes, and audit-only fields remain
+outside model `X`.
+
+#### 10.5.2 Blank-row gate
+
+For the 15 final model inputs, a blank is any null value, empty string,
+whitespace-only string, or case-insensitive textual `nan` after surrounding
+whitespace is removed. Before model preprocessing begins:
+
+- reject the affected row from the model-input population when any one of the
+  15 fields is blank;
+- record the input row count, retained row count, rejected `record_id`, total
+  rejected count, and per-column blank counts;
+- do not impute a blank or convert it to a `MISSING` category;
+- preserve the frozen raw source unchanged.
+
+Row rejection is a data-quality action, not a new target, feature-selection, or
+modeling rule. If a controlled dataset has zero blank final inputs, this gate
+must preserve all rows and their order.
+
+#### 10.5.3 Raw exemption-code normalization
+
+Raw HMDA token `1111` is a valid reporting-exemption code only in the five
+final categorical flags listed below. After raw-domain validation and before
+any encoder or native model adapter, deterministically normalize it to the
+model-facing category `Exempt`:
+
+| Raw fields | Accepted raw tokens | Model-facing semantic tokens |
+| --- | --- | --- |
+| `reverse_mortgage`, `open-end_line_of_credit`, `business_or_commercial_purpose` | `1`, `2`, `1111` | `1`, `2`, `Exempt` |
+| `interest_only_payment` | `1`, `2`, `1111` | `1`, `2`, `Exempt` |
+| `balloon_payment` | `1`, `2`, `1111` | `1`, `2`, `Exempt` |
+
+This mapping is field-specific, not a global replacement rule:
+
+- numeric `income = 1111` remains the observed numeric value `1111`;
+- literal `NA` remains `NA` where its field schema permits it;
+- literal `Exempt` remains `Exempt` in fields whose raw schema uses that
+  literal, including `loan_to_value_ratio` and `loan_term`;
+- literal `Exempt` is not a valid raw-source substitute for `1111` in the five
+  exemption-coded flags, although `Exempt` is their required semantic output;
+- `1111` in another field is handled by that field's own schema and is invalid
+  unless the schema explicitly permits it.
+
+The raw audit must preserve `raw_1111_count` by field. The normalized audit
+must preserve `normalized_exempt_count` by field. For each of the five flags,
+these counts must be equal, the normalization must not change row count or
+order, and no semantic/model-facing `1111` value may remain. `Exempt` must not
+be merged with code `2`, `NA`, a blank, or any missing state.
+
+#### 10.5.4 Final input-quality PASS/FAIL gate
+
+Downstream preprocessing or training may begin only when all applicable checks
+pass:
+
+1. the ordered 15-field schema and predictor/audit/target separation are exact;
+2. `record_id` is non-empty and unique within the controlled input, and its row
+   alignment is preserved through validation and normalization;
+3. the blank-row audit is complete and no retained row contains a blank final
+   input;
+4. every raw category is valid for its field and every invalid or unknown token
+   causes failure rather than coercion;
+5. numeric values parse under their field rules and are finite;
+6. target values and `y_approved` mapping satisfy §10.2;
+7. raw `1111` and normalized `Exempt` counts agree for all five exemption-coded
+   flags, with no model-facing `1111` remaining;
+8. normalization preserves retained row count, order, target alignment, and
+   `record_id` alignment.
+
+The gate returns `PASS` only when every applicable check succeeds. Any failed
+check returns `FAIL`, stops the run before fitted preprocessing or model state
+is created, and reports the failed rule with affected columns and row counts.
 
 ### 10.6 Conditional applicability
 
@@ -414,10 +510,14 @@ Project sources used to reconstruct this contract:
 - [Documentation migration record](../archive/documentation_migration_2026-09.md)
   — identifies `Dataset_B_Data_Selection.md` as a former source and records
   how its role inventory and gate narrative were incorporated here;
+- [Feature governance](feature_governance.md) §§9 and 11 — publishes the final
+  15-field model-input list and 12-player explanation mapping imported by the
+  final input-quality gate;
 - `data/raw/state_NY_2024.csv` — frozen 99-column raw header used for exact role
   reconciliation;
-- `config/dataset_b/feature_set_v1.yaml` — machine-readable target, active-view
-  model-input, and audit separation;
+- `config/dataset_b/feature_set_v1.yaml` — `legacy evidence only` for the
+  historical machine-readable target, 12-input view, and audit separation
+  pending the separately scoped final configuration update;
 - `src/dataset_b/preparation/dataset_view.py` — cohort filtering, target mapping,
   record-ID generation, and controlled-view construction;
 - `src/dataset_b/preprocessing/split_inputs.py` — enforced model/audit/target

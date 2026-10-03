@@ -12,7 +12,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import RobustScaler
 from sklearn.utils.validation import check_is_fitted
 
-from .categorical_encoder import DatasetBOneHotEncoder
+from .categorical_encoder import ENCODED_FEATURE_COUNT, DatasetBOneHotEncoder
+from .lr_log_transformer import DatasetBLRSelectiveLog1pTransformer
 from .numeric_two_channel import DatasetBNumericTwoChannel
 from .raw_parser import DatasetBRawParser, FEATURE_COLUMNS
 
@@ -65,6 +66,7 @@ class DatasetBNumericValueRobustScaler(TransformerMixin, BaseEstimator):
             raise ValueError("Dataset B encoded feature count differs from fitted scaler input.")
         values = csr_matrix(self.scaler_.transform(X[:, :_NUMERIC_VALUE_COUNT].toarray()))
         result = hstack((values, X[:, _NUMERIC_VALUE_COUNT:]), format="csr")
+        result = result.astype(np.float64, copy=False)
         _LOGGER.info("Transformed Dataset B numeric RobustScaler rows=%d columns=%d", *result.shape)
         return result
 
@@ -79,8 +81,8 @@ class DatasetBNumericValueRobustScaler(TransformerMixin, BaseEstimator):
 
     @staticmethod
     def _validate_matrix(X: csr_matrix) -> None:
-        if not issparse(X) or X.ndim != 2 or X.shape[1] < _NUMERIC_VALUE_COUNT:
-            raise ValueError("Dataset B numeric scaler expects a sparse encoded feature matrix.")
+        if not issparse(X) or X.ndim != 2 or X.shape[1] != ENCODED_FEATURE_COUNT:
+            raise ValueError("Dataset B numeric scaler expects the 62-column sparse encoded matrix.")
         if not np.isfinite(X.data).all():
             raise ValueError("Dataset B encoded matrix contains non-finite values.")
 
@@ -89,12 +91,13 @@ def make_preprocessing_pipeline(profile: str) -> Pipeline:
     """Build a fresh fold-local pipeline; no class weighting is applied here."""
     if profile not in {"lr", "rf", "xgb"}:
         raise ValueError("Dataset B profile must be lr, rf or xgb.")
+    selective_log = DatasetBLRSelectiveLog1pTransformer() if profile == "lr" else "passthrough"
     scale = DatasetBNumericValueRobustScaler() if profile == "lr" else "passthrough"
     _LOGGER.info("Created Dataset B preprocessing profile=%s numeric_scaler=%s", profile, "RobustScaler" if profile == "lr" else "none")
     return Pipeline(
         [
-            ("parse", DatasetBRawParserStep()),
             ("two_channel", DatasetBNumericTwoChannel()),
+            ("selective_log1p", selective_log),
             ("encode", DatasetBOneHotEncoder()),
             ("scale_numeric", scale),
         ]

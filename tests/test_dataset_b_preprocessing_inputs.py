@@ -7,14 +7,14 @@ import logging
 import pytest
 import yaml
 
-from src.dataset_b.preprocessing import DatasetBRawParser, DatasetBSplitLoader, SplitInputError
+from src.dataset_b.preprocessing import DatasetBSplitLoader, SplitInputError
 
 
 FEATURES = [
     "loan_type", "loan_purpose", "lien_status", "reverse_mortgage",
     "open-end_line_of_credit", "business_or_commercial_purpose", "income",
     "debt_to_income_ratio", "loan_amount", "loan_to_value_ratio", "loan_term",
-    "occupancy_type",
+    "occupancy_type", "preapproval", "interest_only_payment", "balloon_payment",
 ]
 AUDIT = [
     "lei", "county_code", "applicant_race-1", "applicant_race-2",
@@ -41,6 +41,9 @@ def _row(record_id, action):
         loan_to_value_ratio="Exempt",
         loan_term="360",
         occupancy_type="1",
+        preapproval="2",
+        interest_only_payment="2",
+        balloon_payment="2",
         lei="example-lei",
     )
     return row
@@ -81,7 +84,7 @@ def _inputs(tmp_path):
     feature_path.write_text(
         yaml.safe_dump(
             {
-                "dataset": "dataset_b", "feature_version": "temporary_training_lock_v0_2",
+                "dataset": "dataset_b", "feature_version": "feature_set_v1",
                 "target": {
                     "name": "y_approved", "source_column": "action_taken",
                     "eligible_values": [1, 2, 3], "positive_values": [1, 2],
@@ -130,17 +133,14 @@ def test_loader_rejects_manifest_order_or_target_corruption(tmp_path):
         loader.load("train")
 
 
-def test_unseen_nan_in_validation_uses_predeclared_missing_state(tmp_path):
+def test_loader_preserves_textual_nan_for_downstream_quality_gate(tmp_path):
     manifest, split_dir, feature_contract, rows = _inputs(tmp_path)
     rows["validation"][0]["income"] = "NaN"
     _write_csv(split_dir / "validation.csv", rows["validation"])
 
     validation = DatasetBSplitLoader(manifest, split_dir, feature_contract).load("validation")
-    parsed = DatasetBRawParser().parse(validation.X)
 
     assert validation.X.loc[0, "income"] == "NaN"
-    assert parsed.cleaned.loc[0, "income"] == "MISSING"
-    assert parsed.diagnostics.nan_to_missing["income"] == 1
 
 
 def test_loader_rejects_unexpected_schema_and_partition(tmp_path):

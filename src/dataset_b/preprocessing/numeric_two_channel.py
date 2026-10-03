@@ -14,14 +14,23 @@ from .raw_parser import FEATURE_COLUMNS
 
 
 _LOGGER = logging.getLogger(__name__)
+TWO_CHANNEL_COLUMNS = tuple(
+    field
+    for column in FEATURE_COLUMNS
+    for field in (
+        (f"{column}_value", f"{column}_status")
+        if column in NUMERIC_COLUMNS else (column,)
+    )
+)
+NUMERIC_VALUE_COLUMNS = tuple(f"{column}_value" for column in NUMERIC_COLUMNS)
 
 
 class DatasetBNumericTwoChannel(TransformerMixin, BaseEstimator):
     """Produce numeric ``_value`` and categorical ``_status`` channels.
 
-    Fit only on parsed fold-train rows. ``NA`` and ``Exempt`` retain their
+    Fit only on quality-gated semantic fold-train rows. ``NA`` and ``Exempt`` retain their
     meanings in the status channel; the fitted median is only a numeric
-    placeholder for their value channel and for genuine ``MISSING`` values.
+    placeholder for their value channel.
     Other categorical features pass through unchanged for later encoding.
     """
 
@@ -53,6 +62,8 @@ class DatasetBNumericTwoChannel(TransformerMixin, BaseEstimator):
             status_counts[column] = status.value_counts().to_dict()
 
         result = pd.DataFrame(output, index=X.index)
+        if tuple(result.columns) != TWO_CHANNEL_COLUMNS:
+            raise RuntimeError("Dataset B semantic feature contract must contain 19 columns in order.")
         _LOGGER.info(
             "Transformed Dataset B numeric two-channel rows=%d status_counts=%s",
             len(result), status_counts,
@@ -63,9 +74,4 @@ class DatasetBNumericTwoChannel(TransformerMixin, BaseEstimator):
         check_is_fitted(self, "imputer_")
         if input_features is not None and tuple(input_features) != FEATURE_COLUMNS:
             raise ValueError("Input feature names differ from Dataset B raw columns.")
-        names = [
-            field
-            for column in FEATURE_COLUMNS
-            for field in ((f"{column}_value", f"{column}_status") if column in NUMERIC_COLUMNS else (column,))
-        ]
-        return np.asarray(names, dtype=object)
+        return np.asarray(TWO_CHANNEL_COLUMNS, dtype=object)

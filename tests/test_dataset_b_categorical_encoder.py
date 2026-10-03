@@ -11,7 +11,7 @@ from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 
 from src.dataset_b.preprocessing import (
-    DatasetBOneHotEncoder, DatasetBNumericTwoChannel, DatasetBRawParser,
+    CATEGORICAL_SCHEMA, DatasetBOneHotEncoder, DatasetBNumericTwoChannel, DatasetBRawParser,
 )
 from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
 
@@ -23,7 +23,8 @@ def _row(**changes):
         "business_or_commercial_purpose": "2", "income": "100",
         "debt_to_income_ratio": "42", "loan_amount": "200",
         "loan_to_value_ratio": "75", "loan_term": "360",
-        "occupancy_type": "1",
+        "occupancy_type": "1", "preapproval": "2",
+        "interest_only_payment": "2", "balloon_payment": "2",
     }
     row.update(changes)
     return row
@@ -46,10 +47,10 @@ def _column_position(encoder, input_column, category):
 def test_ohe_preserves_special_categories_unseen_in_fold_train(caplog):
     train = _parsed(_row(), _row(income="NA", loan_to_value_ratio="NA", loan_term="Exempt"))
     held_out = _parsed(
-        _row(loan_type="", reverse_mortgage="1111", income="", loan_amount=" ",
+        _row(reverse_mortgage="1111", income="NA", loan_amount="300",
              loan_to_value_ratio="Exempt", loan_term="NA", debt_to_income_ratio="Exempt"),
-        _row(loan_type="4", reverse_mortgage="", income="1111", loan_to_value_ratio="NaN",
-             loan_term="", debt_to_income_ratio="NA"),
+        _row(loan_type="4", reverse_mortgage="1", income="1111", loan_to_value_ratio="NA",
+             loan_term="Exempt", debt_to_income_ratio="NA", interest_only_payment="1111"),
     )
     two_channel = DatasetBNumericTwoChannel().fit(train)
     train_channels = two_channel.transform(train)
@@ -61,38 +62,44 @@ def test_ohe_preserves_special_categories_unseen_in_fold_train(caplog):
         result = encoder.transform(held_out_channels)
 
     assert isinstance(result, csr_matrix)
-    assert result.shape == (2, 66)
+    assert result.shape == (2, 62)
     assert np.isfinite(result.data).all()
-    assert len(encoder.feature_names_out_) == len(encoder.feature_sources_) == len(encoder.feature_categories_) == 66
+    assert len(encoder.feature_names_out_) == len(encoder.feature_sources_) == len(encoder.feature_categories_) == 62
     assert all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) for name in encoder.get_feature_names_out())
-    assert len(set(encoder.get_feature_names_out())) == 66
+    assert len(set(encoder.get_feature_names_out())) == 62
     assert "OBSERVED" not in encoder.feature_categories_
-    assert encoder.feature_categories_.count("MISSING") == 12
-    assert encoder.feature_sources_[_column_position(encoder, "income_status", "MISSING")] == "income"
+    assert "MISSING" not in encoder.feature_categories_
+    assert "1111" not in encoder.feature_categories_
     assert encoder.feature_sources_[_column_position(encoder, "loan_to_value_ratio_status", "Exempt")] == "loan_to_value_ratio"
     assert encoder.feature_sources_[_column_position(encoder, "lien_status", "1")] == "lien_status"
     assert set(encoder.feature_sources_) == set(FEATURE_COLUMNS)
     assert encoder.feature_categories_[:4] == (None, None, None, None)
-    assert encoder.transform(train_channels.iloc[[0]])[:, 4:].sum() == 8.0
-    assert result[:, 4:].sum(axis=1).A1.tolist() == [12.0, 10.0]
+    assert encoder.transform(train_channels.iloc[[0]])[:, 4:].sum() == 11.0
+    assert result[:, 4:].sum(axis=1).A1.tolist() == [14.0, 13.0]
+    status_categorical = [
+        "income_status", "loan_amount_status",
+        "loan_to_value_ratio_status", "loan_term_status",
+    ]
+    raw_categorical = [column for column in CATEGORICAL_SCHEMA if column not in status_categorical]
+    assert sum(len(CATEGORICAL_SCHEMA[column]) for column in raw_categorical) == 53
+    assert sum(len(CATEGORICAL_SCHEMA[column]) - 1 for column in status_categorical) == 5
     for row, column, category in (
-        (0, "loan_type", "MISSING"),
-        (0, "reverse_mortgage", "1111"),
-        (0, "income_status", "MISSING"),
-        (0, "loan_amount_status", "MISSING"),
+        (0, "reverse_mortgage", "Exempt"),
+        (0, "income_status", "NA"),
         (0, "loan_to_value_ratio_status", "Exempt"),
         (0, "loan_term_status", "NA"),
         (0, "debt_to_income_ratio", "Exempt"),
         (1, "loan_type", "4"),
-        (1, "reverse_mortgage", "MISSING"),
-        (1, "loan_to_value_ratio_status", "MISSING"),
+        (1, "reverse_mortgage", "1"),
+        (1, "loan_to_value_ratio_status", "NA"),
         (1, "debt_to_income_ratio", "NA"),
+        (1, "interest_only_payment", "Exempt"),
     ):
         assert result[row, _column_position(encoder, column, category)] == 1.0
     assert result[1, 0] == 1111.0
     pd.testing.assert_frame_equal(held_out_channels, before)
     assert "Fitted Dataset B OHE rows=2" in caplog.text
-    assert "Transformed Dataset B OHE rows=2 columns=66" in caplog.text
+    assert "Transformed Dataset B OHE rows=2 columns=62" in caplog.text
 
 
 def test_ohe_columns_remain_identical_across_fold_fits():
@@ -105,7 +112,7 @@ def test_ohe_columns_remain_identical_across_fold_fits():
     second_encoder = clone(template).fit(second)
 
     assert first_encoder.get_feature_names_out().tolist() == second_encoder.get_feature_names_out().tolist()
-    assert first_encoder.transform(first).shape == second_encoder.transform(second).shape == (1, 66)
+    assert first_encoder.transform(first).shape == second_encoder.transform(second).shape == (1, 62)
     assert not hasattr(template, "encoder_")
 
 
@@ -138,5 +145,5 @@ def test_ohe_rejects_unknown_codes_nonfinite_values_and_wrong_schema():
     with pytest.raises(ValueError, match="finite numbers"):
         encoder.transform(nonfinite)
 
-    with pytest.raises(ValueError, match="16 two-channel columns"):
+    with pytest.raises(ValueError, match="19 two-channel columns"):
         encoder.transform(channels.drop(columns="loan_type"))

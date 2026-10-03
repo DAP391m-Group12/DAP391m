@@ -1,12 +1,12 @@
 schema_version: 1
 dataset: dataset_b
-feature_version: temporary_training_lock_v0_2
-status: temporary_training_lock
-purpose: rq1_cv
+feature_version: feature_set_v1
+status: final_feature_lock
+purpose: final_model_retraining
 
 source_of_truth:
   document: docs/handbook/contracts/feature_governance.md
-  section: 6
+  section: 11
 
 target:
   name: y_approved
@@ -29,6 +29,9 @@ model_input_raw_columns:
   - loan_to_value_ratio
   - loan_term
   - occupancy_type
+  - preapproval
+  - interest_only_payment
+  - balloon_payment
 
 audit_only_columns:
   - lei
@@ -54,8 +57,10 @@ protected_attributes:
 
 constraints:
   audit_columns_are_model_inputs: false
-  temporary_lock_is_final_model_features: false
+  final_model_features: true
+  raw_feature_count: 15
+  semantic_feature_count: 19
   preprocessing_profile: dataset_b_preprocessing_v2
-  encoded_feature_count: 66
+  encoded_feature_count: 62
   numeric_status_reference_category: OBSERVED
-  missing_category_retained: true
+  missing_category_retained: false

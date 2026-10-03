@@ -11,6 +11,7 @@ RQ1 and the gates that must pass before RQ2 or RQ3 can begin. It owns:
 - Validation-only threshold selection;
 - Test-only final evaluation;
 - RQ1 metrics, bootstrap, and cross-model comparison boundaries;
+- run-level lineage from preprocessing through Test evaluation;
 - the conditions for opening RQ2 and RQ3.
 
 It does not own feature decisions, preprocessing semantics, model parameters, or
@@ -43,6 +44,14 @@ Consumers must preserve the manifest's listed order. A changed membership,
 order, seed, stratification rule, or grouping rule requires a new split version;
 it must not overwrite or be presented as `split_v1`.
 
+The final 15-feature benchmark retains this exact `split_v1` membership, order,
+and row count. Every benchmark model family must be retrained against the same
+Train, Validation, and Test records. The final input-quality gate must therefore
+PASS without removing a `split_v1` record. If it rejects any current member,
+the retraining run stops for data-quality resolution; a runner must not silently
+drop the record, change the partition counts, or regenerate the split while
+continuing to identify it as `split_v1`.
+
 ## 3. Train-only cross-validation
 
 Cross-validation is restricted to the Train partition:
@@ -71,6 +80,24 @@ Validation and Test identifiers must not appear in a CV fit or fold-validation
 set. Out-of-fold predictions must retain the ordered Train `record_id` and
 cover each Train row exactly once.
 
+### 3.1 Fixed class-imbalance handling
+
+Random Forest uses sklearn `class_weight="balanced"`. The class weights are
+derived independently from the labels in each CV fold-train population. For
+the fresh full-Train fit, they are derived again from full Train. Validation
+and Test labels are excluded from all weighting calculations.
+
+The XGBoost weighting rule is executable policy:
+`scale_pos_weight = n_denied / n_approved`, calculated from the population
+being fitted. It must be calculated separately from each CV fold-train
+population and again from full Train for the fresh full-Train fit. It is not a
+fixed entry in `models.xgb.parameters`, and Validation and Test labels must not
+contribute to the calculation.
+
+Both rules are fixed fit-time policy, not hyperparameter tuning. The protocol
+continues to require `sample_weight: false`, `resampling: false`, and
+`hyperparameter_search: false`.
+
 ## 4. Full-Train refit boundary
 
 After one configuration has been selected for a model family:
@@ -79,8 +106,8 @@ After one configuration has been selected for a model family:
 2. fit all learned preprocessing state on the complete Train partition;
 3. fit the model on that same complete Train partition;
 4. freeze the fitted preprocessing, fitted model, configuration, feature
-   version, split version, and runtime identity before reading Validation for
-   threshold selection.
+   contract, split version, runtime settings, and `run_id` before reading
+   Validation for threshold selection.
 
 Fold-fitted preprocessing or a fold-fitted model is a CV artifact and cannot be
 reused as the full-Train fitted state. The full-Train fit must not receive an
@@ -97,9 +124,9 @@ the threshold-selection stage.
 Each model selects its own threshold by maximizing Balanced Accuracy on
 Validation. The threshold-selection artifact must identify:
 
-- the model and run version;
+- the model and `run_id`;
 - the feature, split, preprocessing, and fitted-model versions;
-- the ordered Validation prediction artifact and its objective values;
+- the ordered Validation `record_id`, prediction values, and objective values;
 - the selected threshold and any approved tie rule.
 
 Validation must not refit preprocessing or the model, update a vocabulary,
@@ -112,6 +139,11 @@ Test is opened only after the preceding configuration, full-Train fitted state,
 and Validation threshold have been frozen. The frozen pipeline produces Test
 probabilities without calling `fit`, `partial_fit`, `fit_transform`, or an
 equivalent backend update.
+
+The Test prediction package must use the same `run_id` as its preprocessing,
+fresh full-Train model, and Validation threshold package. Ordered Test
+`record_id`, prediction values, and the locked threshold are checked directly
+before metrics are accepted.
 
 The required RQ1 outputs are:
 
@@ -141,10 +173,18 @@ The following rules are mandatory:
 - fitted preprocessing, fitted models, and locked thresholds remain fixed;
 - no model is retrained inside a replicate;
 - each replicate recomputes only the metric from the resampled Test records;
-- the bootstrap record identifies its seed, the `split_v1` Test partition,
-  index dimensions, replicate count, and applicable validity rules;
+- the bootstrap record identifies its `run_id`, seed, the `split_v1` Test
+  partition, index dimensions, replicate count, and applicable validity rules;
 - point estimates and interval summaries remain linked to the prediction and
-  threshold artifacts from which they were calculated.
+  threshold artifacts from which they were calculated;
+- an independent recomputation compares replicate identifiers and each
+  replicate's valid/invalid payload directly;
+- ordered Test `record_id`, the locked threshold, and prediction values are
+  compared directly against the values recorded for the same `run_id`;
+- `calibration_slope` is compared after rounding both stored and recomputed
+  values to six decimal places; the other metrics and all interval endpoints
+  use their approved numerical tolerance policy. No other metric uses decimal
+  rounding.
 
 The detailed confidence-interval method for between-model metric differences
 and the rule for declaring statistical significance are still open in the Set B
@@ -156,7 +196,7 @@ not authorize a claim that one model significantly outperforms another.
 An RQ1 comparison is valid only when the compared runs use:
 
 - the same Dataset B cohort and `split_v1` Test membership;
-- the same approved raw feature information;
+- the same final ordered 15-feature raw information;
 - family-appropriate preprocessing fitted within the same data boundaries;
 - a threshold selected separately for each model on Validation;
 - the same required metric definitions;
@@ -164,8 +204,10 @@ An RQ1 comparison is valid only when the compared runs use:
 
 Encoded widths may differ across model families only when their approved
 preprocessing route preserves the same raw business information. A comparison
-must not mix a temporary feature version with a final feature version, different
-Test memberships, or thresholds selected on Test.
+must not mix results from the superseded 12-feature benchmark with results from
+the final 15-feature benchmark, different Test memberships, or thresholds
+selected on Test. Superseded runs remain historical evidence and must not be
+pooled, ranked, or used as substitutes for a final benchmark run.
 
 ## 9. Required evaluation lineage
 
@@ -174,14 +216,30 @@ manifest, all of the following:
 
 | Lineage item | Required content |
 | --- | --- |
+| Run | One unique `run_id` used by preprocessing, fitted model, Validation predictions and threshold, Test predictions, and evaluation outputs |
 | Dataset | Dataset/view version and target mapping |
-| Features | Feature version and ordered raw inputs |
+| Features | Final feature contract and ordered 15 raw inputs |
 | Split | `split_v1`, partition, and ordered `record_id` |
-| Preprocessing | Version, profile, fitted scope, and schema/order |
-| Model | Family, exact configuration, fitted-state identifier, and runtime versions |
-| Prediction | `record_id`, target when permitted, `p_approved`, model/run identifier, and partition |
-| Threshold | Validation selection objective, selected value, and source prediction artifact |
-| Evaluation | Metric definitions, point estimates, bootstrap identity, and interval method |
+| Input normalization | Per-field raw `1111` counts, normalized `Exempt` counts, and PASS/FAIL equality result for all five exemption-coded flags |
+| Preprocessing | Version, profile, fitted scope, ordered schema, category lists, and transformation settings |
+| Model | Family, exact configuration fields, fresh-fit status, and runtime versions |
+| Prediction | Ordered `record_id`, target when permitted, `p_approved` values, `run_id`, and partition |
+| Threshold | Validation selection objective, selected value, tie rule, and ordered source predictions |
+| Evaluation | Metric definitions, point estimates, replicate identifiers, validity payloads, numerical-comparison rules, and interval method |
+
+For each `run_id`, preprocessing must record the raw `1111` and normalized
+`Exempt` counts directly for `reverse_mortgage`,
+`open-end_line_of_credit`, `business_or_commercial_purpose`,
+`interest_only_payment`, and `balloon_payment`. The equality gate passes only
+when each pair of field counts is equal, no semantic `1111` remains, and row
+count, order, and `record_id` alignment are preserved.
+
+Acceptance is based on these directly recorded schemas, settings, identifiers,
+counts, ordered values, and numerical checks. The same `run_id` must provide an
+unbroken link from preprocessing through the model, Validation predictions and
+threshold, Test predictions, and final evaluation. A `run_id` is a
+cross-reference, not a substitute for the direct checks required by this
+contract.
 
 Audit metadata stays outside predictor input and is joined to predictions only
 through `record_id` for downstream analysis.
@@ -190,32 +248,38 @@ through `record_id` for downstream analysis.
 
 RQ2 may begin only when:
 
-1. RQ1 artifacts required for the selected comparison models are complete and
-   independently verified;
-2. Dataset B and the final feature lock, including final explanation groups,
-   are versioned;
-3. the representative neural model is selected under an approved rule;
-4. fitted models, preprocessing, ordered predictions, and `record_id` lineage
+1. RQ1 artifacts required for the selected comparison models come from
+   complete, independently verified, and frozen final 15-feature benchmark
+   runs;
+2. each selected run has complete `run_id` lineage across preprocessing,
+   model, Validation threshold, Test predictions, and evaluation;
+3. Dataset B and the final feature lock, including final explanation groups,
+   are recorded;
+4. the representative neural model is selected under an approved rule;
+5. fitted models, preprocessing, ordered predictions, and `record_id` lineage
    required for explanation are preserved;
-5. the RQ2 protocol has approved its explanation observations, background,
+6. the RQ2 protocol has approved its explanation observations, background,
    baseline/value-function semantics, dependence treatment, approximation
    budget, Top-k and tie rules, bootstrap validity rules, and CI method.
 
 RQ2 reads frozen RQ1 artifacts. It must not retrain a model, recreate the split,
-or infer unapproved GSV or Shapley-Lorenz settings from an example.
+mix in a superseded 12-feature run, or infer unapproved GSV or Shapley-Lorenz
+settings from an example.
 
 ## 11. Conditions for opening RQ3
 
 RQ3 may begin only when:
 
-1. frozen RQ1 predictions for all six required model families are available on
-   the same ordered Test records;
-2. prediction rows can be joined one-to-one by `record_id` to the preserved
+1. frozen RQ1 predictions from final 15-feature benchmark runs for all six
+   required model families are available on the same ordered Test records;
+2. each model's predictions have complete `run_id` lineage from preprocessing
+   through Test evaluation;
+3. prediction rows can be joined one-to-one by `record_id` to the preserved
    audit metadata without placing protected attributes in predictor input;
-3. `applicant_sex` raw-code handling, missing/unknown handling, reference-group
+4. `applicant_sex` raw-code handling, missing/unknown handling, reference-group
    direction, minimum denominators, undefined-result rules, calibration
    residual definition, and CI procedure are approved;
-4. the audit remains descriptive and does not introduce group-specific model
+5. the audit remains descriptive and does not introduce group-specific model
    thresholds unless a new research decision explicitly authorizes them.
 
 Preserving race fields as audit metadata does not automatically expand the
@@ -230,7 +294,11 @@ and denominator decisions.
 - Do not choose or revise a threshold on Test.
 - Do not retrain inside a Test bootstrap replicate.
 - Do not describe a per-model Test result as a paired cross-model comparison.
-- Do not open RQ2 or RQ3 from temporary feature-lock evidence alone.
+- Do not mix superseded 12-feature results with final 15-feature benchmark
+  results in a comparison, ranking, bootstrap summary, or RQ2/RQ3 input.
+- Do not break one model run across unrelated preprocessing, Validation,
+  threshold, Test, or evaluation lineages; the same `run_id` must connect them.
+- Do not open RQ2 or RQ3 from legacy or non-frozen benchmark evidence.
 
 ## 13. Source traceability
 

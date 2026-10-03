@@ -18,7 +18,8 @@ def _row(**changes):
         "business_or_commercial_purpose": "2", "income": "100",
         "debt_to_income_ratio": "42", "loan_amount": "200",
         "loan_to_value_ratio": "75", "loan_term": "360",
-        "occupancy_type": "1",
+        "occupancy_type": "1", "preapproval": "2",
+        "interest_only_payment": "2", "balloon_payment": "2",
     }
     row.update(changes)
     return row
@@ -32,12 +33,11 @@ def test_medians_fit_only_on_fold_train_and_do_not_change_on_held_out_transform(
     fold_train = _parsed(
         _row(income="-5", loan_amount="100", loan_to_value_ratio="50", loan_term="120"),
         _row(income="100", loan_amount="200", loan_to_value_ratio="NA", loan_term="Exempt"),
-        _row(income="NA", loan_amount="", loan_to_value_ratio="100", loan_term="240", loan_type=" "),
-        _row(income=" ", loan_amount="300", loan_to_value_ratio="Exempt", loan_term="NA"),
+        _row(income="NA", loan_amount="250", loan_to_value_ratio="100", loan_term="240"),
+        _row(income="NA", loan_amount="300", loan_to_value_ratio="Exempt", loan_term="NA"),
     )
     validation = _parsed(_row(income="999999", loan_amount="999999", loan_to_value_ratio="999999", loan_term="999999"))
-    test = _parsed(_row(income="", loan_amount=" ", loan_to_value_ratio="NaN", loan_term=None,
-                        debt_to_income_ratio=" "))
+    test = _parsed(_row(income="NA", loan_amount="400", loan_to_value_ratio="NA", loan_term="Exempt"))
     train_before = fold_train.copy(deep=True)
     test_before = test.copy(deep=True)
 
@@ -48,21 +48,20 @@ def test_medians_fit_only_on_fold_train_and_do_not_change_on_held_out_transform(
         test_result = imputer.transform(test)
 
     assert imputer.medians_ == {
-        "income": 50.0, "loan_amount": 200.0,
+        "income": 50.0, "loan_amount": 225.0,
         "loan_to_value_ratio": 75.0, "loan_term": 180.0,
     }
     assert imputer.observed_counts_ == {
-        "income": 2, "loan_amount": 3, "loan_to_value_ratio": 2, "loan_term": 2,
+        "income": 2, "loan_amount": 4, "loan_to_value_ratio": 2, "loan_term": 2,
     }
     assert test_result.loc[0, ["income", "loan_amount", "loan_to_value_ratio", "loan_term"]].tolist() == [
-        50.0, 200.0, 75.0, 180.0,
+        "NA", 400.0, "NA", "Exempt",
     ]
     assert train_result.loc[2, "income"] == "NA"
     assert train_result.loc[1, "loan_to_value_ratio"] == "NA"
     assert train_result.loc[3, "loan_to_value_ratio"] == "Exempt"
     assert train_result.loc[1, "loan_term"] == "Exempt"
-    assert train_result.loc[2, "loan_type"] == "MISSING"
-    assert test_result.loc[0, "debt_to_income_ratio"] == "MISSING"
+    assert tuple(train_result.columns) == FEATURE_COLUMNS
     assert validation_result.loc[0, "income"] == 999999.0
     assert imputer.medians_["income"] == 50.0
     pd.testing.assert_frame_equal(fold_train, train_before)
@@ -84,8 +83,15 @@ def test_each_fold_uses_fresh_fitted_state():
 
 
 def test_rejects_unfitted_transform_and_fold_without_numeric_observations():
-    missing = _parsed(_row(income="NA"), _row(income=" "))
+    missing = _parsed(_row(income="NA"), _row(income="NA"))
     with pytest.raises(NotFittedError):
         DatasetBNumericMedianImputer().transform(missing)
     with pytest.raises(ValueError, match="no observed numeric values"):
         DatasetBNumericMedianImputer().fit(missing)
+
+
+def test_rejects_model_facing_missing_token():
+    semantic = _parsed(_row())
+    semantic.loc[0, "income"] = "MISSING"
+    with pytest.raises(ValueError, match="Invalid parsed numeric income"):
+        DatasetBNumericMedianImputer().fit(semantic)

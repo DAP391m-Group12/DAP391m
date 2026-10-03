@@ -22,7 +22,17 @@ _CATEGORICAL_DOMAINS = {
     "open-end_line_of_credit": frozenset({"1", "2", "1111"}),
     "business_or_commercial_purpose": frozenset({"1", "2", "1111"}),
     "occupancy_type": frozenset({"1", "2", "3"}),
+    "preapproval": frozenset({"1", "2"}),
+    "interest_only_payment": frozenset({"1", "2", "1111"}),
+    "balloon_payment": frozenset({"1", "2", "1111"}),
 }
+EXEMPTION_FLAG_COLUMNS = (
+    "reverse_mortgage",
+    "open-end_line_of_credit",
+    "business_or_commercial_purpose",
+    "interest_only_payment",
+    "balloon_payment",
+)
 _DTI_DOMAIN = frozenset(
     {"<20%", "20%-<30%", "30%-<36%", "50%-60%", ">60%", "NA", "Exempt"}
     | {str(value) for value in range(36, 50)}
@@ -37,21 +47,18 @@ FEATURE_COLUMNS = (
     "loan_type", "loan_purpose", "lien_status", "reverse_mortgage",
     "open-end_line_of_credit", "business_or_commercial_purpose", "income",
     "debt_to_income_ratio", "loan_amount", "loan_to_value_ratio", "loan_term",
-    "occupancy_type",
+    "occupancy_type", "preapproval", "interest_only_payment", "balloon_payment",
 )
 
 
 @dataclass(frozen=True)
 class ParseDiagnostics:
     rows: int
-    values_to_missing: Mapping[str, int]
+    raw_1111_counts: Mapping[str, int]
+    normalized_exempt_counts: Mapping[str, int]
+    semantic_1111_count: int
     income_negative_to_zero: int
     ltv_gt_1000: int
-
-    @property
-    def nan_to_missing(self) -> Mapping[str, int]:
-        """Compatibility alias; counts now include blanks and whitespace."""
-        return self.values_to_missing
 
 
 @dataclass
@@ -71,27 +78,32 @@ class DatasetBRawParser:
 
     def parse(self, X: pd.DataFrame) -> ParsedFeatures:
         if not isinstance(X, pd.DataFrame) or tuple(X.columns) != FEATURE_COLUMNS:
-            raise RawFeatureError("Raw Dataset B input must contain the 12 locked features in order.")
+            raise RawFeatureError("Raw Dataset B input must contain the 15 final features in order.")
 
         raw = X.copy(deep=True)
         cleaned = raw.copy(deep=True)
-        missing_counts: dict[str, int] = {}
+        raw_1111_counts = {column: 0 for column in EXEMPTION_FLAG_COLUMNS}
+        normalized_exempt_counts = {column: 0 for column in EXEMPTION_FLAG_COLUMNS}
         income_negative = 0
         ltv_extreme = 0
         for column in FEATURE_COLUMNS:
             output: list[str | float] = []
-            missing_count = 0
             for row_number, value in enumerate(raw[column].tolist(), start=1):
-                if self._is_missing(value):
-                    output.append("MISSING")
-                    missing_count += 1
-                    continue
+                if self.is_blank(value):
+                    raise RawFeatureError(
+                        f"Blank {column} at row {row_number}; run the input-quality gate first."
+                    )
                 if not isinstance(value, str):
                     raise RawFeatureError(f"Invalid type in {column} at row {row_number}.")
                 if column in _CATEGORICAL_DOMAINS:
                     if value not in _CATEGORICAL_DOMAINS[column]:
                         raise RawFeatureError(f"Invalid {column} code at row {row_number}: {value!r}.")
-                    output.append(value)
+                    if column in EXEMPTION_FLAG_COLUMNS and value == "1111":
+                        raw_1111_counts[column] += 1
+                        normalized_exempt_counts[column] += 1
+                        output.append("Exempt")
+                    else:
+                        output.append(value)
                     continue
                 if column == "debt_to_income_ratio":
                     if value not in _DTI_DOMAIN:
@@ -118,26 +130,35 @@ class DatasetBRawParser:
                     ltv_extreme += 1
                 output.append(number)
             cleaned[column] = pd.Series(output, index=raw.index, dtype=object)
-            missing_counts[column] = missing_count
+
+        semantic_1111_count = sum(
+            int(cleaned[column].eq("1111").sum())
+            for column in EXEMPTION_FLAG_COLUMNS
+        )
+        if raw_1111_counts != normalized_exempt_counts or semantic_1111_count:
+            raise RawFeatureError("Dataset B exemption normalization audit failed.")
 
         diagnostics = ParseDiagnostics(
             rows=len(raw),
-            values_to_missing=missing_counts,
+            raw_1111_counts=raw_1111_counts,
+            normalized_exempt_counts=normalized_exempt_counts,
+            semantic_1111_count=semantic_1111_count,
             income_negative_to_zero=income_negative,
             ltv_gt_1000=ltv_extreme,
         )
         self._logger.info(
-            "Parsed Dataset B raw features rows=%d income_negative_to_zero=%d values_to_missing=%d",
+            "Parsed Dataset B raw features rows=%d income_negative_to_zero=%d raw_1111=%d",
             len(raw),
             income_negative,
-            sum(missing_counts.values()),
+            sum(raw_1111_counts.values()),
         )
         if ltv_extreme:
             self._logger.warning("Dataset B LTV >1000%% retained for %d rows", ltv_extreme)
         return ParsedFeatures(raw=raw, cleaned=cleaned, diagnostics=diagnostics)
 
     @staticmethod
-    def _is_missing(value: object) -> bool:
+    def is_blank(value: object) -> bool:
+        """Return whether a raw scalar is blank under the final data contract."""
         if isinstance(value, str):
             return value.strip() == "" or value.strip().lower() == "nan"
         return value is None or bool(pd.isna(value))

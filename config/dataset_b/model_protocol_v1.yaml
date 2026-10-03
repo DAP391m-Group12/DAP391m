@@ -23,8 +23,25 @@ cross_validation:
 class_handling:
   sample_weight: false
   resampling: false
-  class_weight_balanced: false
-  scale_pos_weight_from_class_ratio: false
+  class_weight_balanced: true
+  scale_pos_weight_from_class_ratio: true
+  rf_balanced_weighting:
+    implementation: sklearn_class_weight_balanced
+    fit_populations:
+      - cv_fold_train
+      - full_train
+    may_use_validation_or_test_labels: false
+    hyperparameter_tuning: false
+  xgb_weighting_policy:
+    status: executable
+    parameter: scale_pos_weight
+    formula: n_denied / n_approved
+    population: fit_population
+    fit_populations:
+      - cv_fold_train
+      - full_train
+    may_use_validation_or_test_labels: false
+    hyperparameter_tuning: false
 
 models:
   lr:
@@ -36,7 +53,7 @@ models:
       solver: lbfgs
       max_iter: 1000
       fit_intercept: true
-      class_weight: null
+      class_weight: balanced
   rf:
     estimator: sklearn.ensemble.RandomForestClassifier
     preprocessing_profile: tree
@@ -47,11 +64,14 @@ models:
       min_samples_leaf: 1
       max_features: sqrt
       bootstrap: true
-      class_weight: null
+      class_weight: balanced
       random_state: 42
   xgb:
     estimator: xgboost.XGBClassifier
     preprocessing_profile: tree
+    reporting_key: xgboost
+    artifact_root: artifacts/dataset_b/xgboost
+    source_module_prefix: xgb_
     parameters:
       n_estimators: 100
       max_depth: 6
@@ -61,7 +81,6 @@ models:
       objective: binary:logistic
       tree_method: hist
       eval_metric: logloss
-      scale_pos_weight: 1.0
       random_state: 42
 
 refit:

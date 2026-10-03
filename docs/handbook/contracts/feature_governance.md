@@ -7,9 +7,9 @@ within the Dataset B predictor-candidate universe. It owns:
 
 - the feature-screening sequence and evidence requirements;
 - decisions for priority candidates and review candidates;
-- the temporary training feature lock;
+- the historical temporary training lock and the final active feature lock;
 - raw-versus-derived representation decisions;
-- open decision gates and the conditions for a final feature lock;
+- completed decision gates and the conditions supporting the final feature lock;
 - the supported business-player mapping for future GSV/Shapley–Lorenz work.
 
 The complete 99-column inventory, cohort, target, exclusions, and audit roles
@@ -28,16 +28,22 @@ The data contract defines 35 predictor candidates in three governance layers:
 | Alternative representations | 2 | Compete with related raw representations; they are not additive features by default |
 | **Total** | **35** | **Candidate universe, not a model-input list** |
 
-Four counts must remain distinct:
+The completed governance decision reconciles the candidate universe as follows:
 
-- **35 candidates:** the complete governance universe;
-- **15 priority candidates:** the first screened block;
-- **12 `keep` decisions:** the priority fields admitted to the temporary lock;
-- **12 raw model inputs:** the machine-readable implementation of that
-  temporary lock.
+| Governance layer | Keep | Exclude | Total |
+| --- | ---: | ---: | ---: |
+| Business-priority candidates | 12 | 3 | 15 |
+| Evidence-required candidates | 3 | 15 | 18 |
+| Alternative representations | 0 | 2 | 2 |
+| **Total** | **15** | **20** | **35** |
 
-Equality between the last two counts is intentional for the temporary lock. It
-must not be generalized into a final feature-selection result.
+The 15 kept raw fields are the active governance-approved feature set. The
+earlier 12-field `temporary_training_lock_v0_2` remains an immutable lineage
+label for artifacts already produced from that machine-readable contract; it
+is not the current feature-selection state. This contract publishes the
+approved 15 fields as the final feature lock by updating the current governance
+state in place. No new feature-selection version or technical identifier is
+required for that decision.
 
 ## 3. Evidence authority and interpretation
 
@@ -50,7 +56,7 @@ The saved evidence is divided across two notebooks:
 - `notebooks/eda_datasetB/04_feature_selection.ipynb` contains the executed
   audit and decision outputs for priority groups 4.1–4.6;
 - `notebooks/eda_datasetB/05_feature_selction.ipynb` contains the executed
-  checkpoint work for review groups 5.1–5.3.
+  full-cohort screening and final reconciliation for review groups 5.1–5.5.
 
 The second notebook does not replace the first. Its initial schema table for
 group 5.1 contains an intermediate failed mapping check; later reviewed cells
@@ -63,6 +69,15 @@ be described as model-based validation or as a final feature lock.
 
 ## 4. Governance sequence
 
+The completed review-candidate screening is a full-cohort descriptive
+governance review over all 293,301 eligible records. It does not create or use
+Train/Validation/Test partitions, and it must not use or reconcile `record_id`.
+This scope excludes feature importance, model fitting, prediction,
+hyperparameter tuning, and model-performance comparison. Candidate decisions
+may use only business meaning, prediction-time timing/leakage, schema, coverage,
+applicability, rarity, targeted redundancy, LEI/reporting-process
+concentration, and descriptive protected-group coverage.
+
 Candidate decisions follow this order:
 
 1. confirm business meaning and prediction-time availability;
@@ -70,13 +85,17 @@ Candidate decisions follow this order:
 3. inspect predefined redundancy and association blocks;
 4. inspect organization/protected-group coverage when proxy risk is relevant;
 5. exclude fields that fail timing, leakage, quality, or defensible-scope gates;
-6. send unresolved but eligible blocks to an explicitly approved comparison;
+6. send unresolved but eligible blocks to an explicitly approved data-level
+   closure comparison within the descriptive screening scope above;
 7. resolve raw-versus-derived representation choices;
 8. version the final raw feature list and business-player mapping;
 9. only then permit final downstream deliverables to rely on the final lock.
 
-Association, rarity, missingness, or one model importance score is not sufficient
-on its own to keep or exclude a candidate.
+A candidate may be kept only if it passes every mandatory gate applicable to
+its field or coherent business block. A field with unconfirmed prediction-time
+timing, or one that operates mainly as a reporting-process or organization
+proxy, must be excluded. Association, rarity, or missingness alone is not
+sufficient to keep or exclude a candidate.
 
 ### 4.1 Metadata roles and protected-group diagnostics
 
@@ -86,7 +105,7 @@ predictor or a GSV/Shapley–Lorenz business player:
 | Role | Columns | Permitted use in this contract |
 | --- | --- | --- |
 | Protected metadata — 6 columns | `applicant_sex`, `applicant_race-1` through `applicant_race-5` | Treat the five race slots as one multi-valued `applicant_race` group; inspect valid codes, slot consistency, group size, coverage, missing/special states, and whether candidate coverage or redundancy conclusions vary by group. |
-| Reference/audit metadata — 3 columns | `lei`, `county_code`, `applicant_age` | Preserve for traceability or a separately scoped robustness/audit analysis; do not use these fields to decide whether a predictor is kept in the current screening contract. |
+| Reference/audit metadata — 3 columns | `lei`, `county_code`, `applicant_age` | Use `lei` only for descriptive organization/reporting-process concentration checks; preserve `county_code` and `applicant_age` for traceability or a separately scoped robustness/audit analysis. None may become a predictor or decide keep/exclude by itself. |
 
 For protected metadata, the minimum descriptive audit records group counts and
 shares, special/missing-state rates, candidate-feature coverage by group, and
@@ -109,9 +128,10 @@ the model preprocessing pipeline:
 - overlap with related candidates or competing representations.
 
 Do not impute, one-hot encode, scale, or fit a model as part of this descriptive
-screening audit. Any target/protected-group association must use only the
-approved analysis/train scope; the held-out Test partition is not available for
-feature decisions.
+screening audit. Descriptive target/protected-group association, when used, is
+computed on the full 293,301-record cohort without split membership or
+`record_id`; it is supporting evidence only and cannot decide keep/exclude by
+itself.
 
 ### 4.3 Predefined redundancy and association blocks
 
@@ -132,27 +152,22 @@ overlap/co-occurrence or group-level association for multi-valued blocks.
 Association measures overlap, not predictive importance or causality, and do
 not alone determine keep/exclude.
 
-### 4.4 Sensitivity and grouped-validation gate
+### 4.4 Data-level comparison and closure gate
 
-Use sensitivity analysis only for decisions that remain ambiguous after
-business meaning, timing, data quality, and redundancy review. Candidate
-comparisons include `loan_amount + loan_to_value_ratio` versus
+Use data-level comparison only for decisions that remain ambiguous after
+business meaning, timing, data quality, and targeted redundancy review.
+Candidate comparisons include `loan_amount + loan_to_value_ratio` versus
 `loan_amount + property_value`, presence/absence of the
 `transaction_characteristics` block, and each raw-versus-derived pair.
-Prefer data-level and association sensitivity. If model-based evidence is
-necessary, the described narrow protocol is one Logistic Regression and one
-Random Forest comparison on Train/Validation; it is not a six-model run or a
-GSV/Shapley–Lorenz run.
 
-Any later grouped validation requires its own approved protocol. Compare
-business-block addition/ablation and raw/derived alternatives on matched data
-boundaries and hyperparameter budgets; do not add individual slots from one
-business concept as if independent. Where required by that protocol, report
-variation across seeds/folds, `Δ ROC-AUC`, `Δ PR-AUC` with Denied as the
-priority class, a locked calibration measure such as `Δ Brier score`, and
-uncertainty for paired differences. Feature importance alone is insufficient.
-No model-based sensitivity or grouped-validation result is implied by the
-screening evidence summarized in this contract.
+The closure comparison must remain on the full cohort and evaluate only the
+approved governance evidence: schema and raw-state semantics, coverage and
+applicability, rarity, targeted redundancy/association, LEI or reporting-process
+concentration, descriptive protected-group coverage, business distinctness,
+and prediction-time timing/leakage. It must not use model training, feature
+importance, hyperparameter tuning, prediction, model metrics, or resampling of
+model results. Model comparison is outside the scope of feature-screening
+closure.
 
 ## 5. Priority-candidate evidence — 15 fields
 
@@ -166,19 +181,18 @@ All 15 priority candidates have recorded
 | Decision state | Count | Fields |
 | --- | ---: | --- |
 | `keep` | 12 | `loan_type`, `loan_purpose`, `lien_status`, `reverse_mortgage`, `open-end_line_of_credit`, `business_or_commercial_purpose`, `income`, `debt_to_income_ratio`, `loan_amount`, `loan_to_value_ratio`, `loan_term`, `occupancy_type` |
-| `exclude_from_main` | 1 | `property_value` |
-| `keep_for_representation_comparison` | 2 | `construction_method`, `total_units` |
+| `exclude` | 3 | `property_value`, `construction_method`, `total_units` |
 
 ### 5.1 Evidence summary by business block
 
 | Block | Saved evidence | Governance outcome |
 | --- | --- | --- |
-| Loan structure and purpose | Three fields have valid-code coverage recorded as 100%; each represents a distinct business concept | Keep `loan_type`, `loan_purpose`, and `lien_status`; the product representation comparison remains open |
+| Loan structure and purpose | Three fields have valid-code coverage recorded as 100%; each represents a distinct business concept | Keep `loan_type`, `loan_purpose`, and `lien_status`; exclude the redundant derived product representation |
 | Transaction characteristics | Three flags have valid-code coverage recorded as 100%; rare valid codes are preserved and the fields are not deterministic copies of one another | Keep all three raw flags and map them to one shared business player |
 | Financial capacity | `income` and `debt_to_income_ratio` retain different scale-versus-burden meanings despite association | Keep both as separate raw fields and separate players |
 | Loan and collateral scale | Reported LTV is not an exact arithmetic duplicate of `loan_amount` and `property_value`; retaining all three would preserve overlapping scale information | Keep `loan_amount` and `loan_to_value_ratio`; exclude `property_value` from the main set |
 | Loan term | Valid-domain and distribution evidence supports a distinct contract-duration concept | Keep `loan_term` |
-| Property characteristics | `occupancy_type` has a completed keep decision; `construction_method` and `total_units` pass quality screening but participate in an unresolved representation choice | Keep `occupancy_type`; hold the other two for comparison |
+| Property characteristics | `occupancy_type` has a completed keep decision; `construction_method` is outside the intended general approval scope; `total_units` is dominated by one unit with sparse large-unit tails | Keep `occupancy_type`; exclude `construction_method`, `total_units`, and the derived dwelling representation |
 
 These are data-quality, distribution, business-timing, and targeted-redundancy
 decisions. The notebook does not establish incremental predictive performance or
@@ -195,9 +209,9 @@ The saved priority-screening output records these distributions:
 | `lien_status` | First lien 204,431 (69.70%); subordinate lien 88,870 (30.30%) | `keep` |
 
 These fields passed the recorded valid-code checks. Rare valid categories were
-retained. The three fields represent distinct concepts; the raw
-`loan_type`/`lien_status` versus `derived_loan_product_type` comparison remains
-open.
+retained. The three fields represent distinct concepts. The raw
+`loan_type`/`lien_status` representation is selected, and
+`derived_loan_product_type` is excluded as a redundant composite.
 
 The transaction flags have valid raw states `1`, `2`, and `1111` (`Exempt`).
 The saved output records:
@@ -324,8 +338,8 @@ The saved output records the following distributions:
 | Feature | Raw categories | Observed distribution | State |
 | --- | ---: | --- | --- |
 | `occupancy_type` | 3 | Principal residence 257,433 (87.77%); investment property 28,768 (9.81%); second residence 7,100 (2.42%) | `keep` |
-| `construction_method` | 2 | Site-built 286,486 (97.68%); manufactured home 6,815 (2.32%) | `keep_for_representation_comparison` |
-| `total_units` | 9 | 1 unit 259,784 (88.57%); 2 units 23,905 (8.15%); 3 units 4,534 (1.55%); 5–24 units 2,091 (0.71%); 4 units 1,971 (0.67%); 25–49 units 405 (0.14%); 50–99 units 333 (0.11%); >149 units 170 (0.06%); 100–149 units 108 (0.04%) | `keep_for_representation_comparison` |
+| `construction_method` | 2 | Site-built 286,486 (97.68%); manufactured home 6,815 (2.32%) | `exclude` |
+| `total_units` | 9 | 1 unit 259,784 (88.57%); 2 units 23,905 (8.15%); 3 units 4,534 (1.55%); 5–24 units 2,091 (0.71%); 4 units 1,971 (0.67%); 25–49 units 405 (0.14%); 50–99 units 333 (0.11%); >149 units 170 (0.06%); 100–149 units 108 (0.04%) | `exclude` |
 
 The screening preserved `total_units` as schema-defined categorical values; it
 did not parse the ranges as continuous numbers. The saved cross-tabulation of
@@ -339,22 +353,27 @@ uneven:
 
 The largest cell contains 253,039 records and the smallest contains 2. Having
 all combinations present does not establish stable support, so the screening
-does not propose an interaction. `occupancy_type` remains `keep`; the choice
-between the raw `construction_method`/`total_units` pair and
-`derived_dwelling_category` remains open.
+does not propose an interaction. `occupancy_type` remains `keep`.
+`construction_method` is excluded because it would narrow the intended general
+loan-approval problem toward construction/property-type segmentation.
+`total_units` is excluded because 88.57% of records are in the one-unit class
+and the larger-unit tail has sparse support. `derived_dwelling_category` is
+also excluded so that the intentionally removed dwelling/construction
+dimension is not reintroduced through a composite.
 
 ### 5.7 Limits of the priority screening
 
 Across the 15 priority fields, the saved output records 100% schema-valid
 coverage, while informative coverage is lower for fields with valid special
-states. Category imbalance and numeric tails are diagnostics for preprocessing,
-not automatic rules to drop rows or fields. The only priority field excluded
-from the main set is `property_value`; the two dwelling fields remain in a
-representation comparison. These results do not establish target association,
-model performance, protected-group sensitivity, causality, or final feature
-importance.
+states. Category imbalance and numeric tails are diagnostics rather than
+automatic row-removal rules. The completed priority decision keeps 12 fields
+and excludes three: `property_value` for overlapping scale information,
+`construction_method` for business-scope alignment, and `total_units` for its
+highly imbalanced distribution and sparse tail. These results do not establish
+target association, model performance, protected-group sensitivity, causality,
+or final feature importance.
 
-## 6. Temporary training feature lock v0.2
+## 6. Historical temporary training feature lock v0.2
 
 `config/dataset_b/feature_set_v1.yaml` publishes the priority block's 12 `keep`
 fields as `temporary_training_lock_v0_2` for `rq1_cv`:
@@ -372,127 +391,132 @@ fields as `temporary_training_lock_v0_2` for `rq1_cv`:
 11. `loan_term`
 12. `occupancy_type`
 
-The lock is versioned and machine-readable, but its status remains temporary.
-It supports the bounded RQ1/CV work already configured for those inputs; it does
-not resolve the remaining 23 candidates and must not be renamed or interpreted
-as the final feature set.
+This identifier is retained only for the lineage of the bounded RQ1/CV work and
+other artifacts already produced from those 12 inputs. It is not the active
+governance feature set, must not be renamed or reinterpreted as the approved
+15-field set, and its fitted preprocessors or trained models must not be reused
+for the new feature set.
 
-`config/features.yaml` delegates Dataset B model inputs to this versioned
-contract and likewise labels the Dataset B state as
-`temporary_training_lock_v0_2`.
+`config/features.yaml` still delegates Dataset B model inputs to this historical
+contract and labels that configured state as `temporary_training_lock_v0_2`.
+Those configuration files are unchanged by this governance update. They remain
+historical implementation state until the approved 15-field list is applied by
+the separately scoped configuration and preprocessing update.
 
-## 7. Current screening state of the 18 review candidates
+### 6.1 Machine validation and run identity
 
-The review notebook has 24 executed code cells with contiguous execution counts
-`1–24` and no stored runtime error. It contains completed checkpoint evidence for
-groups 5.1 and 5.2, a deliberately failed timing gate for group 5.3, and no
-implementation for groups 5.4 or 5.5.
+The acceptance gate for a structured feature-contract YAML is its parsed
+meaning, schema, ordered interfaces, and data-quality invariants. Presentation
+differences such as LF versus CRLF line endings, comments, indentation, and
+mapping-key order do not change the contract. List order remains meaningful
+where this contract defines an ordered interface, including
+`model_input_raw_columns`, `audit_only_columns`, and protected-attribute source
+lists.
 
-| Candidate or block | Fields | Evidence state | Governance state |
+Semantic validation must reject a changed or invalid dataset/version/status,
+target mapping, ordered model-input list, audit role, protected-attribute
+mapping, or constraint. It must also enforce uniqueness and separation of
+model, target, identifier, and audit fields and validate the active split
+against the declared schema, target rule, record membership, uniqueness, and
+order.
+
+Every final retraining execution must use one unique `run_id` to link its
+preprocessing evidence, fitted model, Validation predictions, threshold
+decision, Test predictions, metrics, and review result. The `run_id` is a
+cross-reference, not proof of content integrity. Acceptance depends on direct
+checks of schema, values, row counts, ordered `record_id`, fitted-state
+boundaries, finite outputs, and the applicable metric or tolerance rules.
+Previously recorded integrity metadata is retained as `legacy evidence only`;
+it does not create an acceptance requirement for the final retraining workflow.
+
+## 7. Completed screening of the 18 review candidates
+
+Notebook `05_feature_selction.ipynb` was executed from a clean kernel over the
+full 293,301-record cohort. Its 33 code cells have contiguous execution counts
+`1–33`, every code cell has output, and no stored runtime error is present. The
+execution does not create or read split membership and does not use or reconcile
+`record_id`. The final saved outputs are `review_feature_audit`,
+`review_feature_decision_table`, `review_feature_reconciliation`, and
+`review_screening_completion_gate`.
+
+All 18 raw fields reconcile exactly once across 10 business blocks. Every field
+has a non-null `block_id`, explicit `keep` or `exclude`, decision reason, and
+`gsv_player`. The completion gate records
+`ready_to_close_review_screening=True`.
+
+| Decision | Field count | Fields | Player mapping |
+| --- | ---: | --- | --- |
+| `keep` | 1 | `preapproval` | `preapproval` |
+| `keep` — joint block | 2 | `interest_only_payment`, `balloon_payment` | shared `special_repayment_structure` |
+| `exclude` | 15 | All remaining review fields | `not_applicable` |
+| **Total** | **18** | **No missing or duplicate raw field** | **No missing player** |
+
+### 7.1 Application and repayment decisions
+
+The four 5.1 fields have 100% valid-code coverage after preserving
+not-applicable and exemption states. `preapproval` is kept as a distinct
+conditional application concept. `submission_of_application` and
+`initially_payable_to_institution` are excluded as one application-process and
+institutional-relationship block. Their saved Cramér's V is 0.7178 on the full
+cohort and **0.1735** on informative-only codes `1` and `2`. The shared special
+states are not treated as evidence that one field duplicates the other.
+`conforming_loan_limit` remains excluded because its reported loan-amount basis
+is not consistently pre-decision safe.
+
+For 5.2, `1111` remains a reporting exemption rather than “No.”
+`negative_amortization` and `other_nonamortizing_features` remain excluded for
+extreme rarity and LEI concentration. `interest_only_payment` and
+`balloon_payment` are kept as one contractual special-repayment block; their
+maximum informative-only association is 0.1701 and both map to the same player.
+
+### 7.2 Manufactured-home, multifamily, and credit-score-model decisions
+
+The three 5.3 fields reconcile to the full cohort with no blank or invalid
+tokens. Their schema, applicability, numeric, redundancy, LEI, and descriptive
+protected-group checks are complete. They are excluded because reporting-domain
+definitions do not establish local availability at the approval prediction
+point. Timing is resolved by explicit exclusion, not by converting missing
+lineage into a passed timing claim.
+
+The two 5.4 credit-score-model-type fields were reviewed as one joint block.
+Codes for not applicable, no co-applicant, exemption, and other model remain
+separate. The conditional free-form dependency for “other model” is recorded
+but is not admitted as a model field. Both raw fields are excluded because they
+primarily encode scoring/reporting process, local prediction-time lineage is
+not established, and the block has material institutional concentration.
+
+### 7.3 AUS multi-valued block and reconciliation controls
+
+The five 5.5 AUS slots were audited as one multi-valued concept. Raw token
+states, later-slot blanks, not applicable, exemption, other-system codes,
+slot gaps, duplicate systems, system counts, and slot order were checked. The
+canonical unordered set is retained for audit/redundancy only and is not a
+derived model feature. AUS result is outside scope. All five slots are excluded
+because AUS type mainly describes underwriting technology and institutional
+process; their player is `not_applicable`.
+
+Special states remain separate from “No” and numeric zero. LEI and protected-
+group columns remain diagnostic/descriptive metadata and are not predictors or
+business players. No feature decision in this 18-field review uses model
+training, feature importance, tuning, prediction, model performance, or model
+resampling.
+
+## 8. Resolved alternative representations — 2 fields
+
+Both raw-versus-derived choices are closed:
+
+| Concept | Raw representation | Derived representation | Governance decision |
 | --- | --- | --- | --- |
-| Conditional preapproval | `preapproval` | Schema, timing, applicability, redundancy, and LEI diagnostics recorded | `advance_to_grouped_validation`; no final decision or player |
-| Submission/institution joint block | `submission_of_application`, `initially_payable_to_institution` | Final reviewed schema/timing gate passes; informative-only association recorded | `advance_to_grouped_validation_as_joint_block`; no final decision or player |
-| Conforming-loan-limit flag | `conforming_loan_limit` | Public-derived basis differs by action outcome | `exclude_from_further_review`; decision `exclude`; player `not_applicable` |
-| Rare special-repayment flags | `negative_amortization`, `other_nonamortizing_features` | Valid schema, but code-1 observations are extremely rare and concentrated in few LEIs | `exclude_from_further_review`; decision `exclude`; player `not_applicable` |
-| Interest-only/balloon joint block | `interest_only_payment`, `balloon_payment` | Timing, coverage, informative-only overlap, LEI, and descriptive protected-metadata checks recorded | `advance_to_grouped_validation_as_joint_block`; no final decision or player |
-| Manufactured-home/multifamily block | `manufactured_home_secured_property_type`, `manufactured_home_land_property_interest`, `multifamily_affordable_units` | Schema, applicability, redundancy, numeric, LEI, and descriptive protected checks recorded; local prediction-time lineage is not established | `hold_for_timing_lineage_confirmation`; decision and player remain unset |
-| Credit-score model types | `applicant_credit_score_type`, `co-applicant_credit_score_type` | No saved screening implementation | Open; no decision or player |
-| AUS slots | `aus-1` through `aus-5` | No saved slot-order, schema/timing, or grouped-redundancy implementation | Open; no decision or player |
+| Loan product | `loan_type` + `lien_status` | `derived_loan_product_type` | Keep the two distinct, traceable raw fields; exclude the redundant derived composite |
+| Dwelling | `construction_method` + `total_units` | `derived_dwelling_category` | Exclude both raw fields and the derived representation because the construction dimension is outside the intended general approval scope and the unit-count distribution is highly imbalanced with a sparse tail |
 
-The 18-field reconciliation is:
-
-| State | Field count |
-| --- | ---: |
-| Excluded from further review | 3 |
-| Advanced to a future approved comparison | 5 |
-| Held for timing-lineage confirmation | 3 |
-| Not yet screened | 7 |
-| **Total** | **18** |
-
-### 7.1 Submission and institutional-relationship block
-
-The saved checkpoint records 100% valid-code coverage for `preapproval`,
-`submission_of_application`, `initially_payable_to_institution`, and
-`conforming_loan_limit` after treating `NA` for the last field as a valid
-not-applicable state. `preapproval` is conditional on home-purchase scope; the
-saved output records 9,516 records with requested preapproval, about 6.84% of
-home-purchase records.
-
-`submission_of_application` and `initially_payable_to_institution` are advanced
-as one joint candidate block. Their saved Cramér's V is 0.7178 on the full
-cohort and about 0.1744 on informative-only codes `1` and `2`; the shared
-`1111` state materially raises the full-cohort association. The saved LEI
-dominance uplift is about 12.60 percentage points for `submission_of_application`
-and 4.52 points for `initially_payable_to_institution`; LEI is a diagnostic,
-not a predictor.
-
-`conforming_loan_limit` is excluded from further review because its public-
-derived flag uses reported loan amount on a basis that differs by action
-outcome, so the field is not established as consistently pre-decision safe.
-It remains in source/audit; its screening decision is `exclude` and its player
-is `not_applicable`.
-
-### 7.2 Special repayment block
-
-All four fields have 100% recorded valid-code coverage; `1111` is a reporting
-exemption, not “No.” The saved checkpoint records 8,644 shared `1111` rows and
-full-cohort pairwise Cramér's V values around 0.71. On informative-only
-records, the highest pairwise value is 0.1701 for
-`interest_only_payment` × `balloon_payment`.
-
-The saved output records 401 code-`1` rows for `negative_amortization`, across
-four LEIs with 392 rows at one LEI, and 411 code-`1` rows for
-`other_nonamortizing_features`, across 18 LEIs. Both are excluded from further
-review because of rarity and institutional concentration. The
-`interest_only_payment`/`balloon_payment` block advances jointly; its final
-keep/exclude decision and business player remain unset.
-
-### 7.3 Manufactured-home and multifamily block
-
-The saved checkpoint reconciles all three fields to 293,301 rows without blank
-or invalid tokens. Informative counts are 6,262 for
-`manufactured_home_secured_property_type`, 6,258 for
-`manufactured_home_land_property_interest`, and 2,434 for
-`multifamily_affordable_units`. The context-specific `Not Applicable` counts
-are 26, 28, and 163; the corresponding `Exempt` counts are 527, 529, and 510.
-These states remain distinct and are not imputed to zero.
-
-For the two manufactured-home fields, saved Cramér's V is 0.9809 for status
-within the manufactured-home context and 0.8393 on informative-only values;
-they are therefore considered only as a joint business block. All 2,434
-informative multifamily values parse as non-negative integers, including 2,091
-zeros. The saved LEI row-weighted dominance uplifts over global dominance are
-37.3441, 41.1445, and 21.6286 percentage points, respectively. These figures
-are proxy-risk diagnostics, not automatic exclusion rules. Protected metadata
-checks describe coverage/status only.
-
-HMDA Filing Instructions Guide fields 89, 90, and 92 establish reporting
-domains but do not establish local availability at the project's approval
-prediction point. Therefore `timing_gate = False`; the three fields remain
-`hold_for_timing_lineage_confirmation` with decision and player unset, and
-checkpoint 5.3 does not open 5.4.
-
-“Advance” is not a keep decision. No advanced block may enter the main feature
-set until its required comparison has been authorized, executed, reviewed, and
-recorded.
-
-## 8. Alternative representations — 2 fields
-
-Two raw-versus-derived choices remain open:
-
-| Concept | Raw representation | Derived representation | State |
-| --- | --- | --- | --- |
-| Loan product | `loan_type` + `lien_status` | `derived_loan_product_type` | Temporary lock uses the raw fields; final representation decision remains open |
-| Dwelling | `construction_method` + `total_units` | `derived_dwelling_category` | Both raw fields passed quality screening, but neither raw nor derived representation is final |
-
-Related raw and derived representations must not enter the same main model by
-default. A final choice requires comparable data boundaries and an approved,
-documented comparison. Preference for interpretability is a decision rule, not
-evidence that a comparison has already run.
+No raw and derived representation of the same concept coexists in the approved
+set. These decisions close the representation gate without using model
+performance as evidence.
 
 ## 9. Business-player mapping supported by current evidence
 
-The 12 fields in the temporary lock map to 10 documented business players:
+The governance-approved 15 raw fields map to 12 documented business players:
 
 | Business player | Raw field or fields |
 | --- | --- |
@@ -506,11 +530,13 @@ The 12 fields in the temporary lock map to 10 documented business players:
 | `loan_to_value_ratio` | `loan_to_value_ratio` |
 | `loan_term` | `loan_term` |
 | `occupancy_type` | `occupancy_type` |
+| `preapproval` | `preapproval` |
+| `special_repayment_structure` | `interest_only_payment`, `balloon_payment` |
 
-This mapping is evidence for how the temporary fields can be grouped; it is not
-a final `EXPLANATION_GROUPS` artifact and does not establish that GSV/SL has
-been executed. Players for unresolved review blocks and dwelling/product
-alternatives remain unset.
+This table is the final `EXPLANATION_GROUPS` mapping published with the
+15-field final feature lock. It defines 12 business players for downstream
+implementation and explanation work; it does not establish that GSV/SL has
+been executed. No representation choice remains unresolved.
 
 ## 10. Decision rules
 
@@ -530,7 +556,7 @@ An evidence-required candidate remains outside the main set unless it:
 - has interpretable applicability and raw-state semantics;
 - does not operate mainly as reporting-process, missingness, or organization
   proxy;
-- provides stable value under an approved comparison;
+- passes the approved full-cohort data-level closure comparison;
 - justifies the additional business-player complexity.
 
 ### 10.3 Representation choices
@@ -539,6 +565,11 @@ Choose one representation for each raw-versus-derived concept. Prefer the raw
 representation when evidence is equivalent and the raw fields are easier to
 trace. Choose a derived representation only when the supported benefit is
 stable and the concept remains interpretable for downstream explanation.
+
+For the completed decision, the raw `loan_type` and `lien_status` fields are
+selected over `derived_loan_product_type`. The dwelling raw fields and
+`derived_dwelling_category` are all excluded. The representation gate is
+therefore resolved without a model-performance comparison.
 
 ### 10.4 Audit metadata
 
@@ -555,20 +586,64 @@ A final lock may be created only after all of the following are satisfied:
 2. prediction-time lineage for the manufactured-home/multifamily block is
    resolved, with unresolved fields excluded rather than silently advanced;
 3. every field or block advanced from groups 5.1 and 5.2 receives its approved
-   comparison and an explicit keep/exclude decision;
+   full-cohort data-level closure comparison and an explicit keep/exclude
+   decision;
 4. both raw-versus-derived representation choices are resolved;
 5. decision records include business reason, timing, quality, redundancy,
-   applicable protected/organization diagnostics, comparison evidence when
-   required, decision, reason, and player mapping;
-6. the resulting raw feature list and business-player mapping are versioned and
-   reviewed together;
-7. the final configuration is published under a new identifier rather than by
-   relabeling or overwriting `temporary_training_lock_v0_2`;
-8. holdout data reserved for final evaluation has not been used to make the
-   feature decisions.
+   applicable protected/organization diagnostics, data-level comparison
+   evidence when required, decision, reason, and player mapping;
+6. the resulting raw feature list and business-player mapping are reviewed and
+   published together in the current governance contract;
+7. the current contract clearly separates the final 15-field decision from the
+   historical `temporary_training_lock_v0_2` artifact lineage without requiring
+   a new feature-selection version or technical identifier;
+8. the screening record confirms use of the full 293,301-record cohort without
+   data splitting or `record_id`, and confirms that no model performance was
+   used to make feature decisions.
 
-Until every condition passes, `FINAL_MODEL_FEATURES` and final
-`EXPLANATION_GROUPS` do not exist for Dataset B.
+All eight conditions are satisfied by the saved screening evidence and the
+governance decisions recorded here. `FINAL_MODEL_FEATURES` is complete and its
+ordered raw feature set is:
+
+1. `loan_type`
+2. `loan_purpose`
+3. `lien_status`
+4. `reverse_mortgage`
+5. `open-end_line_of_credit`
+6. `business_or_commercial_purpose`
+7. `income`
+8. `debt_to_income_ratio`
+9. `loan_amount`
+10. `loan_to_value_ratio`
+11. `loan_term`
+12. `occupancy_type`
+13. `preapproval`
+14. `interest_only_payment`
+15. `balloon_payment`
+
+The 20 exclusions reconcile as follows:
+
+| Exclusion basis | Count | Fields |
+| --- | ---: | --- |
+| Redundant scale | 1 | `property_value` |
+| Business-scope mismatch | 1 | `construction_method` |
+| Imbalanced property scale | 1 | `total_units` |
+| Application/process proxy | 2 | `submission_of_application`, `initially_payable_to_institution` |
+| Timing/outcome risk | 1 | `conforming_loan_limit` |
+| Extreme rarity and LEI concentration | 2 | `negative_amortization`, `other_nonamortizing_features` |
+| Prediction-time lineage not locally confirmed | 3 | `manufactured_home_secured_property_type`, `manufactured_home_land_property_interest`, `multifamily_affordable_units` |
+| Scoring/reporting process | 2 | `applicant_credit_score_type`, `co-applicant_credit_score_type` |
+| Underwriting-system process | 5 | `aus-1`, `aus-2`, `aus-3`, `aus-4`, `aus-5` |
+| Redundant derived representation | 1 | `derived_loan_product_type` |
+| Excluded dwelling representation | 1 | `derived_dwelling_category` |
+| **Total** | **20** |  |
+
+The ordered 15-field `FINAL_MODEL_FEATURES` list above and the 12-player
+`EXPLANATION_GROUPS` mapping in §9 are the final governance contract. The
+machine-readable configuration, preprocessing contracts, and implementation
+still require their separately scoped update before retraining. The historical
+12-field preprocessors and trained models must not be reused for the final
+feature set.
 
 ## 12. Required decision-record shape
 
@@ -584,8 +659,8 @@ least:
 | `redundancy_evidence` | Related fields or competing representations |
 | `organization_proxy_evidence` | LEI/process concentration evidence when relevant |
 | `protected_group_sensitivity` | Descriptive coverage/sensitivity evidence when applicable |
-| `validation_evidence` | Approved comparison evidence, or an explicit not-run state |
-| `stability_evidence` | Variation across the approved resampling scope, when required |
+| `validation_evidence` | Approved full-cohort data-level closure evidence, or an explicit not-run state |
+| `stability_evidence` | Whether the data-level conclusion is robust to relevant applicability, rarity, concentration, redundancy, and protected-group coverage checks, when required |
 | `decision` | `keep`, `exclude`, or unresolved |
 | `decision_reason` | Short evidence-based rationale |
 | `gsv_player` | Business player or `not_applicable`; unresolved while the decision is open |
@@ -603,15 +678,16 @@ outputs for:
 - `protected_metadata_audit` for `applicant_sex` and the grouped race slots;
 - `redundancy_evidence` for the predefined blocks that were actually screened;
 - `feature_decision_table` with evidence, decision, reason, and player mapping;
-- `FINAL_MODEL_FEATURES`: the versioned raw columns only after the final-lock
-  conditions in §11 pass;
-- `EXPLANATION_GROUPS`: the versioned encoded-column-to-business-player map
-  only after the same decision process is complete;
+- `FINAL_MODEL_FEATURES`: the ordered 15 raw columns published in §11;
+- `EXPLANATION_GROUPS`: the final raw-field-to-business-player mapping
+  published in §9; the later encoded-column map must preserve this grouping;
 - `AUDIT_COLUMNS` and `REFERENCE_METADATA`, retaining their distinct roles.
 
-These are required deliverables, not claims that all outputs already exist.
-At the current temporary-lock stage, the saved notebooks do not establish
-`FINAL_MODEL_FEATURES` or final `EXPLANATION_GROUPS`.
+The saved notebooks and this contract establish the completed 15-field
+`FINAL_MODEL_FEATURES` decision and the final 12-player `EXPLANATION_GROUPS`
+mapping. Machine-readable configuration and encoded-column implementation are
+downstream tasks and must reproduce these published governance outputs without
+reopening feature selection.
 
 ## 13. Source traceability
 
@@ -624,9 +700,10 @@ Sources used to reconstruct this governance contract:
 - `docs/handbook/contracts/data_contract.md` — canonical handbook data roles;
 - `notebooks/eda_datasetB/04_feature_selection.ipynb` — executed evidence for
   priority groups 4.1–4.6;
-- `notebooks/eda_datasetB/05_feature_selction.ipynb` — executed checkpoint
-  evidence for review groups 5.1–5.3;
-- `config/dataset_b/feature_set_v1.yaml` — versioned temporary 12-input lock;
+- `notebooks/eda_datasetB/05_feature_selction.ipynb` — clean-kernel executed
+  evidence, decisions, and 18-field reconciliation for review groups 5.1–5.5;
+- `config/dataset_b/feature_set_v1.yaml` — `legacy evidence only` for the
+  versioned temporary 12-input lock;
 - `config/features.yaml` — Dataset B delegation to the versioned feature
   contract.
 

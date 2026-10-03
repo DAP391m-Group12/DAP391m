@@ -6,7 +6,7 @@ import csv
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Mapping
 
 import pandas as pd
 import yaml
@@ -14,12 +14,20 @@ import yaml
 from src.dataset_b.splits import DatasetBSplitter, SplitManifestError
 from src.utils.path import CONFIG_DIR, DATASET_B_DIR, PROJECT_ROOT
 
+from .raw_parser import DatasetBRawParser, FEATURE_COLUMNS, RawFeatureError
+
 
 PartitionName = Literal["train", "validation", "test"]
+FINAL_MODEL_INPUT_COUNT = 15
+AUDIT_COLUMN_COUNT = 9
 
 
 class SplitInputError(ValueError):
     """Raised when an existing split does not match its manifest or feature contract."""
+
+
+class InputQualityError(ValueError):
+    """Raised when a loaded partition fails the final input-quality contract."""
 
 
 @dataclass
@@ -32,6 +40,172 @@ class DatasetBPartition:
     record_ids: pd.Series
     audit: pd.DataFrame
     action_taken: pd.Series
+
+
+@dataclass(frozen=True)
+class DatasetBInputQualityAudit:
+    """Direct evidence that one partition passed the final input-quality gate."""
+
+    status: str
+    input_rows: int
+    retained_rows: int
+    rejected_rows: int
+    rejected_record_ids: tuple[str, ...]
+    blank_counts: Mapping[str, int]
+    raw_1111_counts: Mapping[str, int]
+    normalized_exempt_counts: Mapping[str, int]
+    semantic_1111_count: int
+    row_count_preserved_after_normalization: bool
+    row_order_preserved: bool
+    target_alignment_preserved: bool
+    record_id_alignment_preserved: bool
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "status": self.status,
+            "input_rows": self.input_rows,
+            "retained_rows": self.retained_rows,
+            "rejected_rows": self.rejected_rows,
+            "rejected_record_ids": list(self.rejected_record_ids),
+            "blank_counts": dict(self.blank_counts),
+            "raw_1111_counts": dict(self.raw_1111_counts),
+            "normalized_exempt_counts": dict(self.normalized_exempt_counts),
+            "semantic_1111_count": self.semantic_1111_count,
+            "row_count_preserved_after_normalization": (
+                self.row_count_preserved_after_normalization
+            ),
+            "row_order_preserved": self.row_order_preserved,
+            "target_alignment_preserved": self.target_alignment_preserved,
+            "record_id_alignment_preserved": self.record_id_alignment_preserved,
+        }
+
+
+@dataclass
+class DatasetBQualityGatedPartition:
+    """Retained, normalized model inputs with aligned partition metadata."""
+
+    name: PartitionName
+    X: pd.DataFrame
+    y: pd.Series
+    record_ids: pd.Series
+    audit: pd.DataFrame
+    action_taken: pd.Series
+    quality_audit: DatasetBInputQualityAudit
+
+
+class DatasetBInputQualityGate:
+    """Reject blank rows, validate domains, and normalize exemption flags."""
+
+    def __init__(self, *, logger: logging.Logger | None = None) -> None:
+        self._logger = logger or logging.getLogger(__name__)
+
+    def apply(self, partition: DatasetBPartition) -> DatasetBQualityGatedPartition:
+        self._validate_partition_alignment(partition)
+        raw_X = partition.X.copy(deep=True)
+        blank_frame = raw_X.apply(lambda column: column.map(DatasetBRawParser.is_blank))
+        blank_counts = {
+            column: int(blank_frame[column].sum()) for column in FEATURE_COLUMNS
+        }
+        rejected_mask = blank_frame.any(axis=1).to_numpy(dtype=bool)
+        retained_positions = tuple(
+            position for position, rejected in enumerate(rejected_mask) if not rejected
+        )
+        rejected_positions = tuple(
+            position for position, rejected in enumerate(rejected_mask) if rejected
+        )
+        if not retained_positions:
+            raise InputQualityError("Dataset B input-quality gate rejected every row.")
+
+        retained_X = raw_X.iloc[list(retained_positions)].copy(deep=True)
+        retained_y = partition.y.iloc[list(retained_positions)].copy()
+        retained_ids = partition.record_ids.iloc[list(retained_positions)].copy()
+        retained_audit = partition.audit.iloc[list(retained_positions)].copy(deep=True)
+        retained_action = partition.action_taken.iloc[list(retained_positions)].copy()
+        try:
+            parsed = DatasetBRawParser(logger=self._logger).parse(retained_X)
+        except RawFeatureError as exc:
+            raise InputQualityError(f"Dataset B input-quality gate failed: {exc}") from exc
+
+        if parsed.cleaned.astype(str).eq("MISSING").to_numpy().any():
+            raise InputQualityError("Dataset B semantic inputs must not contain MISSING.")
+        diagnostics = parsed.diagnostics
+        if diagnostics.raw_1111_counts != diagnostics.normalized_exempt_counts:
+            raise InputQualityError("Dataset B raw and normalized exemption counts differ.")
+        if diagnostics.semantic_1111_count != 0:
+            raise InputQualityError("Dataset B semantic exemption flags retain raw 1111.")
+
+        row_order_preserved = parsed.cleaned.index.equals(retained_X.index)
+        record_id_alignment_preserved = retained_ids.index.equals(retained_X.index)
+        target_alignment_preserved = (
+            retained_y.index.equals(retained_X.index)
+            and retained_action.index.equals(retained_X.index)
+        )
+        if not (
+            row_order_preserved
+            and record_id_alignment_preserved
+            and target_alignment_preserved
+        ):
+            raise InputQualityError("Dataset B retained row alignment changed during gating.")
+
+        audit = DatasetBInputQualityAudit(
+            status="PASS",
+            input_rows=len(partition.X),
+            retained_rows=len(parsed.cleaned),
+            rejected_rows=len(rejected_positions),
+            rejected_record_ids=tuple(
+                partition.record_ids.iloc[list(rejected_positions)].astype(str)
+            ),
+            blank_counts=blank_counts,
+            raw_1111_counts=dict(diagnostics.raw_1111_counts),
+            normalized_exempt_counts=dict(diagnostics.normalized_exempt_counts),
+            semantic_1111_count=diagnostics.semantic_1111_count,
+            row_count_preserved_after_normalization=(
+                len(parsed.raw) == len(parsed.cleaned) == len(retained_X)
+            ),
+            row_order_preserved=row_order_preserved,
+            target_alignment_preserved=target_alignment_preserved,
+            record_id_alignment_preserved=record_id_alignment_preserved,
+        )
+        self._logger.info(
+            "Dataset B input-quality gate status=PASS partition=%s input_rows=%d retained_rows=%d rejected_rows=%d",
+            partition.name,
+            audit.input_rows,
+            audit.retained_rows,
+            audit.rejected_rows,
+        )
+        return DatasetBQualityGatedPartition(
+            name=partition.name,
+            X=parsed.cleaned,
+            y=retained_y,
+            record_ids=retained_ids,
+            audit=retained_audit,
+            action_taken=retained_action,
+            quality_audit=audit,
+        )
+
+    @staticmethod
+    def _validate_partition_alignment(partition: DatasetBPartition) -> None:
+        if not isinstance(partition.X, pd.DataFrame) or tuple(partition.X.columns) != FEATURE_COLUMNS:
+            raise InputQualityError("Dataset B quality gate requires the exact final 15-field schema.")
+        rows = len(partition.X)
+        aligned = (
+            len(partition.y) == rows
+            and len(partition.record_ids) == rows
+            and len(partition.audit) == rows
+            and len(partition.action_taken) == rows
+            and partition.y.index.equals(partition.X.index)
+            and partition.record_ids.index.equals(partition.X.index)
+            and partition.audit.index.equals(partition.X.index)
+            and partition.action_taken.index.equals(partition.X.index)
+        )
+        if not aligned:
+            raise InputQualityError("Dataset B partition rows or indexes are misaligned.")
+        record_ids = partition.record_ids.astype(str)
+        if record_ids.map(DatasetBRawParser.is_blank).any() or not record_ids.is_unique:
+            raise InputQualityError("Dataset B record_id values must be nonblank and unique.")
+        expected_y = partition.action_taken.astype(str).map({"1": 1, "2": 1, "3": 0})
+        if expected_y.isna().any() or not partition.y.astype(int).eq(expected_y.astype(int)).all():
+            raise InputQualityError("Dataset B target alignment or mapping is invalid.")
 
 
 class DatasetBSplitLoader:
@@ -66,8 +240,16 @@ class DatasetBSplitLoader:
         if not isinstance(contract, dict) or contract.get("dataset") != "dataset_b":
             raise SplitInputError("Invalid Dataset B feature contract.")
         self.feature_version = contract.get("feature_version")
-        self.feature_columns = self._columns(contract, "model_input_raw_columns", 12)
-        self.audit_columns = self._columns(contract, "audit_only_columns", 9)
+        self.feature_columns = self._columns(
+            contract,
+            "model_input_raw_columns",
+            FINAL_MODEL_INPUT_COUNT,
+        )
+        self.audit_columns = self._columns(
+            contract,
+            "audit_only_columns",
+            AUDIT_COLUMN_COUNT,
+        )
         if set(self.feature_columns) & set(self.audit_columns):
             raise SplitInputError("Model and audit columns must not overlap.")
         if any(name in self.feature_columns for name in ("record_id", "action_taken", "y_approved")):
