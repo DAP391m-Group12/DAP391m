@@ -96,34 +96,43 @@ def review_plain_mlp_f05(
     metric_report = pd.read_csv(report_path / "rq1_metrics_long.csv")
     confusion_report = pd.read_csv(report_path / "confusion_matrix.csv")
     calibration_report = pd.read_csv(report_path / "calibration_curve.csv")
-    if metric_report.metric.tolist() != list(METRIC_NAMES):
+    canonical_names = sorted(
+        "brier_score_approved" if name == "brier_approved" else name
+        for name in METRIC_NAMES
+    )
+    if metric_report.metric.tolist() != canonical_names:
         raise PlainMLPFinalReviewError("Reported metric order differs.")
     for row in metric_report.itertuples(index=False):
-        expected = result["confidence_intervals_95_percentile"][row.metric]
+        source_name = "brier_approved" if row.metric == "brier_score_approved" else row.metric
+        expected = result["confidence_intervals_95_percentile"][source_name]
         if (
-            not np.isclose(row.point_estimate, point[row.metric], rtol=0, atol=1e-14)
-            or not np.isclose(row.ci_lower_2_5, expected["lower_2_5"], rtol=0, atol=1e-14)
-            or not np.isclose(row.ci_upper_97_5, expected["upper_97_5"], rtol=0, atol=1e-14)
+            not np.isclose(row.estimate, point[source_name], rtol=0, atol=1e-14)
+            or not np.isclose(row.ci_low, expected["lower_2_5"], rtol=0, atol=1e-14)
+            or not np.isclose(row.ci_high, expected["upper_97_5"], rtol=0, atol=1e-14)
             or row.valid_replicates != expected["valid_replicates"]
-            or row.invalid_replicates != expected["invalid_replicates"]
         ):
             raise PlainMLPFinalReviewError(f"Reported metric differs: {row.metric}")
     expected_confusion = [
         ("approved", "approved", counts["tp_approved"]),
         ("approved", "denied", counts["fn_approved"]),
-        ("denied", "denied", counts["tn_denied"]),
         ("denied", "approved", counts["fp_denied"]),
+        ("denied", "denied", counts["tn_denied"]),
     ]
     observed_confusion = list(
-        confusion_report[["actual", "predicted", "count"]].itertuples(index=False, name=None)
+        confusion_report[["actual_class", "predicted_class", "count"]].itertuples(index=False, name=None)
     )
     if observed_confusion != expected_confusion:
         raise PlainMLPFinalReviewError("Reported confusion matrix differs.")
-    expected_curve = pd.DataFrame(result["calibration_curve"])[calibration_report.columns]
-    if set(calibration_report.columns) != set(expected_curve.columns):
+    curve_columns = [
+        "bin", "lower_edge", "upper_edge", "count",
+        "mean_p_approved", "observed_approval_rate",
+    ]
+    expected_curve = pd.DataFrame(result["calibration_curve"])[curve_columns]
+    observed_curve = calibration_report[curve_columns]
+    if list(expected_curve.columns) != list(observed_curve.columns):
         raise PlainMLPFinalReviewError("Reported calibration schema differs.")
     for column in expected_curve.columns:
-        left, right = calibration_report[column], expected_curve[column]
+        left, right = observed_curve[column], expected_curve[column]
         if left.dtype.kind in "if" and right.dtype.kind in "if":
             if not np.allclose(left, right, rtol=0, atol=1e-14):
                 raise PlainMLPFinalReviewError(f"Reported calibration differs: {column}")

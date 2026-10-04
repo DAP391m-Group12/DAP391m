@@ -17,7 +17,11 @@ from src.dataset_b.contracts import (
     FeatureContractValidation,
     validate_feature_contract,
 )
-from src.dataset_b.preprocessing import DatasetBSplitLoader
+from src.dataset_b.preprocessing import (
+    DatasetBInputQualityGate,
+    DatasetBSplitLoader,
+    InputQualityError,
+)
 from src.dataset_b.runtime.plain_mlp_full_train import (
     DEFAULT_FEATURE_CONTRACT_PATH,
     DEFAULT_SPLIT_DIR,
@@ -137,7 +141,7 @@ def run_plain_mlp_validation(
     split_dir: str | Path = DEFAULT_SPLIT_DIR,
     feature_contract_path: str | Path = DEFAULT_FEATURE_CONTRACT_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
-    run_id: str = "plain_mlp_v1",
+    run_id: str,
 ) -> dict[str, Any]:
     """Transform and predict Validation once without exposing any fitting API."""
     destination = Path(output_dir)
@@ -165,12 +169,33 @@ def run_plain_mlp_validation(
             feature_contract_path=kwargs["feature_contract_path"],
             config_path=kwargs["config_path"],
         )
+        if full_manifest.get("run_id") != run_id:
+            raise PlainMLPValidationError("Full-Train and Validation run_id differ.")
         loader = DatasetBSplitLoader(
             manifest_path=kwargs["split_manifest_path"],
             split_dir=kwargs["split_dir"],
             feature_contract_path=kwargs["feature_contract_path"],
         )
-        partition = loader.load("validation")
+        try:
+            partition = DatasetBInputQualityGate().apply(loader.load("validation"))
+        except InputQualityError as exc:
+            raise PlainMLPValidationError(
+                f"Validation input quality gate failed: {exc}"
+            ) from exc
+        quality_audit = partition.quality_audit.as_dict()
+        if (
+            quality_audit.get("status") != "PASS"
+            or quality_audit.get("input_rows") != EXPECTED_VALIDATION_ROWS
+            or quality_audit.get("retained_rows") != EXPECTED_VALIDATION_ROWS
+            or quality_audit.get("rejected_rows") != 0
+            or quality_audit.get("rejected_record_ids") != []
+            or quality_audit.get("semantic_1111_count") != 0
+            or quality_audit.get("row_count_preserved_after_normalization") is not True
+            or quality_audit.get("row_order_preserved") is not True
+            or quality_audit.get("target_alignment_preserved") is not True
+            or quality_audit.get("record_id_alignment_preserved") is not True
+        ):
+            raise PlainMLPValidationError("Validation input quality gate did not pass exactly.")
         ids = tuple(partition.record_ids.astype(str).tolist())
         labels = partition.y.to_numpy(dtype=np.int8)
         if (
@@ -247,6 +272,7 @@ def run_plain_mlp_validation(
                 "project_test_accessed": False,
                 "model_fit_performed": False,
                 "preprocessing_fit_performed": False,
+                "quality_gate": quality_audit,
             },
             "bundle_scope": scope,
             "lineage_sha256": lineage,
@@ -345,6 +371,28 @@ def _validate_plain_mlp_validation_artifact(
         or result.get("data_boundary", {}).get("project_validation_accessed") is not True
         or result.get("data_boundary", {}).get("model_fit_performed") is not False
         or result.get("data_boundary", {}).get("preprocessing_fit_performed") is not False
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("status") != "PASS"
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("input_rows")
+        != EXPECTED_VALIDATION_ROWS
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("retained_rows")
+        != EXPECTED_VALIDATION_ROWS
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("rejected_rows") != 0
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("rejected_record_ids") != []
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("semantic_1111_count") != 0
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("row_count_preserved_after_normalization")
+        is not True
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("row_order_preserved")
+        is not True
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("target_alignment_preserved")
+        is not True
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("record_id_alignment_preserved")
+        is not True
         or result.get("bundle_scope", {}).get("stage") != "full_train_final_estimator"
         or result.get("bundle_scope", {}).get("validation_accessed") is not False
         or result.get("bundle_scope", {}).get("test_accessed") is not False
@@ -405,6 +453,7 @@ def validate_plain_mlp_validation(
     split_dir: str | Path = DEFAULT_SPLIT_DIR,
     feature_contract_path: str | Path = DEFAULT_FEATURE_CONTRACT_PATH,
     config_path: str | Path = DEFAULT_CONFIG_PATH,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Deep-validate saved predictions against the protected source exactly once."""
     full_train_dir = Path(full_train_dir)
@@ -413,7 +462,7 @@ def validate_plain_mlp_validation(
     feature_contract_path = Path(feature_contract_path)
     config_path = Path(config_path)
     _semantic_feature_contract(feature_contract_path)
-    validate_plain_mlp_full_train(
+    full_manifest = validate_plain_mlp_full_train(
         full_train_dir,
         split_manifest_path=split_manifest_path,
         split_dir=split_dir,
@@ -431,7 +480,10 @@ def validate_plain_mlp_validation(
         split_dir=split_dir,
         feature_contract_path=feature_contract_path,
     )
-    partition = loader.load("validation")
+    try:
+        partition = DatasetBInputQualityGate().apply(loader.load("validation"))
+    except InputQualityError as exc:
+        raise PlainMLPValidationError(f"Validation input quality gate failed: {exc}") from exc
     expected_ids = tuple(partition.record_ids.astype(str).tolist())
     expected_labels = partition.y.to_numpy(dtype=np.int8)
     if (
@@ -441,12 +493,16 @@ def validate_plain_mlp_validation(
         or set(np.unique(expected_labels).tolist()) != {0, 1}
     ):
         raise PlainMLPValidationError("Validation IDs or labels violate split_v1.")
-    return _validate_plain_mlp_validation_artifact(
+    manifest = _validate_plain_mlp_validation_artifact(
         Path(output_dir),
         expected_lineage=lineage,
         expected_ids=expected_ids,
         expected_labels=expected_labels,
     )
+    expected_run_id = run_id or full_manifest.get("run_id")
+    if manifest.get("run_id") != expected_run_id:
+        raise PlainMLPValidationError("Full-Train and Validation run_id differ.")
+    return manifest
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -456,6 +512,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         sub = subparsers.add_parser(command)
         sub.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
         sub.add_argument("--full-train-dir", type=Path, default=DEFAULT_FULL_TRAIN_DIR)
+        if command == "run":
+            sub.add_argument("--run-id", required=True)
     return parser.parse_args(argv)
 
 
@@ -463,7 +521,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         value = (
-            run_plain_mlp_validation(args.output_dir, full_train_dir=args.full_train_dir)
+            run_plain_mlp_validation(
+                args.output_dir,
+                full_train_dir=args.full_train_dir,
+                run_id=args.run_id,
+            )
             if args.command == "run"
             else validate_plain_mlp_validation(args.output_dir, full_train_dir=args.full_train_dir)
         )

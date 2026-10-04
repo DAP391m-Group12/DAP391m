@@ -385,6 +385,7 @@ def _artifact_manifest(
     *,
     contract_id: str,
     result_file: str,
+    run_id: str,
 ) -> dict[str, Any]:
     payload_files = sorted(
         path.relative_to(working).as_posix()
@@ -394,6 +395,7 @@ def _artifact_manifest(
     manifest = {
         "schema_version": 1,
         "contract_id": contract_id,
+        "run_id": run_id,
         "status": "PASS",
         "source_partition": "train",
         "project_validation_accessed": False,
@@ -412,6 +414,8 @@ def _validate_artifact_set(directory: Path, contract_id: str) -> dict[str, Any]:
     manifest = _read_json(directory / "manifest.json")
     if (
         manifest.get("contract_id") != contract_id
+        or not isinstance(manifest.get("run_id"), str)
+        or not manifest.get("run_id")
         or manifest.get("status") != "PASS"
         or manifest.get("source_partition") != "train"
         or manifest.get("project_validation_accessed") is not False
@@ -442,6 +446,7 @@ def run_plain_mlp_cv(
     batch_size: int = DEFAULT_BATCH_SIZE,
     dependencies: PlainMLPRunnerDependencies | None = None,
     expected_train_rows: int = EXPECTED_TRAIN_ROWS,
+    run_id: str,
 ) -> dict[str, Any]:
     """Run five Train-only outer folds and publish exact-once OOF evidence."""
     if batch_size not in BATCH_FALLBACK_SEQUENCE:
@@ -508,6 +513,7 @@ def run_plain_mlp_cv(
             scope = {
                 "description": CHECKPOINT_SCOPE,
                 "stage": "outer_cv_final_estimator",
+                "run_id": run_id,
                 "fold": fold_number,
                 "fit_rows": len(fit_positions),
                 "fold_validation_rows": len(valid_positions),
@@ -553,6 +559,7 @@ def run_plain_mlp_cv(
         result = {
             "schema_version": 1,
             "contract_id": CV_CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
             "train_rows": expected_train_rows,
             "unique_record_ids": len(set(train.record_ids)),
@@ -573,7 +580,10 @@ def run_plain_mlp_cv(
         }
         _write_json(working / "cv_result.json", result)
         _artifact_manifest(
-            working, contract_id=CV_CONTRACT_ID, result_file="cv_result.json"
+            working,
+            contract_id=CV_CONTRACT_ID,
+            result_file="cv_result.json",
+            run_id=run_id,
         )
         _validate_plain_mlp_cv(working, expected_train_rows, deps.checkpoint_loader)
         os.replace(working, destination)
@@ -599,6 +609,7 @@ def _validate_plain_mlp_cv(
         coverage = payload["coverage"]
     if (
         result.get("status") != "PASS"
+        or result.get("run_id") != manifest.get("run_id")
         or result.get("outer_folds") != 5
         or result.get("train_rows") != expected_rows
         or result.get("unique_record_ids") != expected_rows
@@ -617,7 +628,11 @@ def _validate_plain_mlp_cv(
             directory / f"fold_{fold_number:02d}" / "final_bundle.joblib",
             checkpoint_loader,
         )
-        if scope.get("fold") != fold_number or scope.get("temporary_selector_state_reused"):
+        if (
+            scope.get("fold") != fold_number
+            or scope.get("run_id") != manifest.get("run_id")
+            or scope.get("temporary_selector_state_reused")
+        ):
             raise PlainMLPTrainingError("PlainMLP CV final bundle scope is invalid.")
     return manifest
 
@@ -638,6 +653,7 @@ def run_plain_mlp_full_train(
     batch_size: int = DEFAULT_BATCH_SIZE,
     dependencies: PlainMLPRunnerDependencies | None = None,
     expected_train_rows: int = EXPECTED_TRAIN_ROWS,
+    run_id: str,
     **_: Any,
 ) -> dict[str, Any]:
     """Select an epoch on Train-only inner rows, then refit fresh on all Train."""
@@ -674,6 +690,7 @@ def run_plain_mlp_full_train(
         scope = {
             "description": CHECKPOINT_SCOPE,
             "stage": "full_train_final_estimator",
+            "run_id": run_id,
             "train_rows": expected_train_rows,
             "best_epoch": selector.best_epoch,
             "validation_accessed": False,
@@ -697,6 +714,7 @@ def run_plain_mlp_full_train(
         result = {
             "schema_version": 1,
             "contract_id": FULL_TRAIN_CONTRACT_ID,
+            "run_id": run_id,
             "status": "PASS",
             "train_rows": expected_train_rows,
             "unique_record_ids": len(set(train.record_ids)),
@@ -738,6 +756,7 @@ def run_plain_mlp_full_train(
             working,
             contract_id=FULL_TRAIN_CONTRACT_ID,
             result_file="full_train_result.json",
+            run_id=run_id,
         )
         _validate_plain_mlp_full_train(working, expected_train_rows, deps.checkpoint_loader)
         os.replace(working, destination)
@@ -762,12 +781,14 @@ def _validate_plain_mlp_full_train(
     )
     if (
         result.get("status") != "PASS"
+        or result.get("run_id") != manifest.get("run_id")
         or result.get("train_rows") != expected_rows
         or result.get("unique_record_ids") != expected_rows
         or result.get("final_evidence_estimators") != 1
         or result.get("historical_artifacts_used") is not False
         or result.get("checkpoint_reload", {}).get("predictions_exactly_equal") is not True
         or scope.get("train_rows") != expected_rows
+        or scope.get("run_id") != manifest.get("run_id")
         or scope.get("temporary_selector_state_reused") is not False
         or len(estimator.training_history_) != result.get("final_estimator", {}).get("best_epoch")
     ):
@@ -793,6 +814,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("stage", choices=("cv", "full-train"))
     parser.add_argument("command", choices=("run", "validate"))
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--run-id")
     return parser.parse_args(argv)
 
 
@@ -802,11 +824,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         DEFAULT_CV_OUTPUT_DIR if args.stage == "cv" else DEFAULT_OUTPUT_DIR
     )
     try:
+        if args.command == "run" and not args.run_id:
+            raise PlainMLPTrainingError("--run-id is required for a production run.")
         if args.stage == "cv":
-            value = run_plain_mlp_cv(output) if args.command == "run" else validate_plain_mlp_cv(output)
+            value = (
+                run_plain_mlp_cv(output, run_id=args.run_id)
+                if args.command == "run"
+                else validate_plain_mlp_cv(output)
+            )
         else:
             value = (
-                run_plain_mlp_full_train(output)
+                run_plain_mlp_full_train(output, run_id=args.run_id)
                 if args.command == "run"
                 else validate_plain_mlp_full_train(output)
             )

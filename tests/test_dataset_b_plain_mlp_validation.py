@@ -42,6 +42,7 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
         record_ids=pd.Series(["r1", "r2", "r3", "r4"]),
     )
     loaded = []
+    quality_gate_calls = []
 
     class Loader:
         def __init__(self, **kwargs): pass
@@ -49,6 +50,32 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
             loaded.append(name)
             assert name == "validation"
             return partition
+
+    class QualityGate:
+        def apply(self, raw_partition):
+            quality_gate_calls.append("validation")
+            return SimpleNamespace(
+                X=raw_partition.X,
+                y=raw_partition.y,
+                record_ids=raw_partition.record_ids,
+                quality_audit=SimpleNamespace(
+                    as_dict=lambda: {
+                        "status": "PASS",
+                        "input_rows": 4,
+                        "retained_rows": 4,
+                        "rejected_rows": 0,
+                        "rejected_record_ids": [],
+                        "blank_counts": {},
+                        "raw_1111_counts": {},
+                        "normalized_exempt_counts": {},
+                        "semantic_1111_count": 0,
+                        "row_count_preserved_after_normalization": True,
+                        "row_order_preserved": True,
+                        "target_alignment_preserved": True,
+                        "record_id_alignment_preserved": True,
+                    }
+                ),
+            )
 
     class Preprocessor:
         def __init__(self): self.transform_calls = 0
@@ -69,11 +96,17 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
             ])
 
     preprocessor, estimator = Preprocessor(), Estimator()
+    estimator.quality_gate_calls = quality_gate_calls
     monkeypatch.setattr(validation, "EXPECTED_VALIDATION_ROWS", 4)
     monkeypatch.setattr(validation, "DatasetBSplitLoader", Loader)
+    monkeypatch.setattr(validation, "DatasetBInputQualityGate", QualityGate)
     monkeypatch.setattr(
         validation, "validate_plain_mlp_full_train",
-        lambda path, **kwargs: {"contract_id": "PMLP-F04-FULL-TRAIN", "status": "PASS"},
+        lambda path, **kwargs: {
+            "contract_id": "PMLP-F04-FULL-TRAIN",
+            "run_id": "plain_mlp_test_run",
+            "status": "PASS",
+        },
     )
     monkeypatch.setattr(
         validation, "load_plain_mlp_bundle",
@@ -95,6 +128,7 @@ def _setup(tmp_path: Path, monkeypatch, probabilities=None):
         "split_dir": split_dir,
         "feature_contract_path": feature,
         "config_path": config,
+        "run_id": "plain_mlp_test_run",
     }
     return paths, loaded, preprocessor, estimator
 
@@ -108,6 +142,7 @@ def test_validation_predicts_once_in_order_without_fit(tmp_path, monkeypatch):
     assert manifest["contract_id"] == "PMLP-F05-VALIDATION"
     assert estimator.predict_calls == 1
     assert preprocessor.transform_calls == 1
+    assert estimator.quality_gate_calls == ["validation"]
     assert loaded == ["validation"]
     with (output / "validation_predictions.csv").open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
@@ -116,6 +151,28 @@ def test_validation_predicts_once_in_order_without_fit(tmp_path, monkeypatch):
     assert result["execution"]["model_fit_calls"] == 0
     assert result["execution"]["preprocessing_fit_calls"] == 0
     assert result["data_boundary"]["project_test_accessed"] is False
+    assert result["data_boundary"]["quality_gate"]["status"] == "PASS"
+    assert result["data_boundary"]["quality_gate"]["rejected_rows"] == 0
+    assert result["data_boundary"]["quality_gate"]["row_order_preserved"] is True
+    assert result["data_boundary"]["quality_gate"]["target_alignment_preserved"] is True
+
+
+def test_validation_stops_before_transform_when_quality_gate_rejects(tmp_path, monkeypatch):
+    paths, _, preprocessor, estimator = _setup(tmp_path, monkeypatch)
+
+    class RejectingQualityGate:
+        def apply(self, partition):
+            raise validation.InputQualityError("synthetic rejection")
+
+    monkeypatch.setattr(validation, "DatasetBInputQualityGate", RejectingQualityGate)
+    output = tmp_path / "validation"
+
+    with pytest.raises(validation.PlainMLPValidationError, match="quality gate failed"):
+        validation.run_plain_mlp_validation(output, **paths)
+
+    assert preprocessor.transform_calls == 0
+    assert estimator.predict_calls == 0
+    assert not output.exists()
 
 
 def test_artifact_only_validator_does_not_reopen_sources(tmp_path, monkeypatch):
@@ -143,6 +200,25 @@ def test_validation_rejects_invalid_probabilities_without_publication(tmp_path, 
     with pytest.raises(validation.PlainMLPValidationError, match="probability"):
         validation.run_plain_mlp_validation(output, **paths)
     assert not output.exists()
+
+
+def test_validation_preserves_float64_probability_buffer(tmp_path, monkeypatch):
+    probabilities = np.asarray(
+        [[0.2, 0.8], [0.8, 0.2], [0.4, 0.6], [0.7, 0.3]], dtype=np.float64
+    )
+    original = probabilities.copy()
+    paths, _, _, _ = _setup(tmp_path, monkeypatch, probabilities=probabilities)
+    output = tmp_path / "validation"
+
+    validation.run_plain_mlp_validation(output, **paths)
+
+    assert probabilities.dtype == np.float64
+    np.testing.assert_array_equal(probabilities, original)
+    frame = pd.read_csv(output / "validation_predictions.csv")
+    assert frame[["p_denied", "p_approved"]].dtypes.tolist() == [
+        np.dtype("float64"),
+        np.dtype("float64"),
+    ]
 
 
 def test_validation_accepts_complement_rounding_at_locked_tolerance(tmp_path, monkeypatch):

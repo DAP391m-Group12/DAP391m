@@ -16,6 +16,7 @@ from src.dataset_b.reporting.plain_mlp_reporting import (
     REPORT_FILES,
     generate_plain_mlp_reporting,
 )
+from src.dataset_b.reporting import model_reporting
 from src.dataset_b.review.plain_mlp_final_review import review_plain_mlp_f05
 
 
@@ -30,12 +31,12 @@ def _setup(tmp_path: Path, monkeypatch):
     (full / "manifest.json").write_text("{}\n", encoding="utf-8")
     (full / "checkpoints/fitted_bundle.joblib").write_bytes(b"bundle")
     (full / "full_train_result.json").write_text(
-        '{"execution":{"elapsed_seconds":1.25}}\n', encoding="utf-8"
+        '{"timing_seconds":{"selector":0.5,"final_fit":0.75}}\n', encoding="utf-8"
     )
     validation = tmp_path / "validation"
     (validation / "threshold_selection").mkdir(parents=True)
     (validation / "threshold_selection/threshold_selection.json").write_text(
-        '{"selected_threshold":0.5,"run_id":"plain_mlp_v1"}\n', encoding="utf-8"
+        '{"selected_threshold":0.5,"run_id":"plain_mlp_test_run"}\n', encoding="utf-8"
     )
     split_manifest = tmp_path / "split_v1.json"
     split_manifest.write_text("{}\n", encoding="utf-8")
@@ -73,6 +74,7 @@ def _setup(tmp_path: Path, monkeypatch):
         record_ids=pd.Series(ids),
     )
     loaded = []
+    quality_gate_calls = []
 
     class Loader:
         def __init__(self, **kwargs): pass
@@ -80,6 +82,32 @@ def _setup(tmp_path: Path, monkeypatch):
             loaded.append(name)
             assert name == "test"
             return partition
+
+    class QualityGate:
+        def apply(self, raw_partition):
+            quality_gate_calls.append("test")
+            return SimpleNamespace(
+                X=raw_partition.X,
+                y=raw_partition.y,
+                record_ids=raw_partition.record_ids,
+                quality_audit=SimpleNamespace(
+                    as_dict=lambda: {
+                        "status": "PASS",
+                        "input_rows": 4,
+                        "retained_rows": 4,
+                        "rejected_rows": 0,
+                        "rejected_record_ids": [],
+                        "blank_counts": {},
+                        "raw_1111_counts": {},
+                        "normalized_exempt_counts": {},
+                        "semantic_1111_count": 0,
+                        "row_count_preserved_after_normalization": True,
+                        "row_order_preserved": True,
+                        "target_alignment_preserved": True,
+                        "record_id_alignment_preserved": True,
+                    }
+                ),
+            )
 
     class Preprocessor:
         def __init__(self): self.transform_calls = 0
@@ -99,12 +127,18 @@ def _setup(tmp_path: Path, monkeypatch):
             return np.column_stack((1 - approved, approved))
 
     preprocessor, estimator = Preprocessor(), Estimator()
+    estimator.quality_gate_calls = quality_gate_calls
     monkeypatch.setattr(evaluation, "EXPECTED_TEST_ROWS", 4)
     monkeypatch.setattr(evaluation, "BOOTSTRAP_REPLICATES", synthetic_replicates)
     monkeypatch.setattr(evaluation, "DatasetBSplitLoader", Loader)
+    monkeypatch.setattr(evaluation, "DatasetBInputQualityGate", QualityGate)
     monkeypatch.setattr(
         evaluation, "validate_plain_mlp_full_train",
-        lambda path, **kwargs: {"contract_id": "PMLP-F04-FULL-TRAIN", "status": "PASS"},
+        lambda path, **kwargs: {
+            "contract_id": "PMLP-F04-FULL-TRAIN",
+            "run_id": "plain_mlp_test_run",
+            "status": "PASS",
+        },
     )
     monkeypatch.setattr(
         evaluation, "validate_plain_mlp_validation_threshold", lambda path: {"status": "PASS"}
@@ -122,6 +156,7 @@ def _setup(tmp_path: Path, monkeypatch):
         "config_path": config,
         "bootstrap_indices_path": bootstrap_indices,
         "bootstrap_manifest_path": bootstrap_manifest,
+        "run_id": "plain_mlp_test_run",
     }
     return paths, loaded, preprocessor, estimator
 
@@ -137,6 +172,7 @@ def test_test_runner_uses_frozen_state_and_shared_bootstrap(tmp_path, monkeypatc
     assert manifest["status"] == "PASS"
     assert estimator.predict_calls == 1
     assert preprocessor.transform_calls == 1
+    assert estimator.quality_gate_calls == ["test"]
     assert loaded == ["test"]
     metrics = json.loads((output / "rq1_test_metrics.json").read_text(encoding="utf-8"))
     assert metrics["evaluation_status"] == evaluation.EVALUATION_STATUS
@@ -147,11 +183,65 @@ def test_test_runner_uses_frozen_state_and_shared_bootstrap(tmp_path, monkeypatc
     assert metrics["execution"]["preprocessing_fit_calls"] == 0
     assert metrics["data_boundary"]["threshold_changed"] is False
     assert metrics["data_boundary"]["shared_bootstrap_regenerated"] is False
+    assert metrics["data_boundary"]["quality_gate"]["status"] == "PASS"
+    assert metrics["data_boundary"]["quality_gate"]["rejected_rows"] == 0
+    assert metrics["data_boundary"]["quality_gate"]["row_order_preserved"] is True
+    assert metrics["data_boundary"]["quality_gate"]["target_alignment_preserved"] is True
     bootstrap = pd.read_csv(output / "rq1_bootstrap_metrics.csv")
     assert len(bootstrap) == 25
     predictions = pd.read_csv(output / "test_predictions.csv")
     assert predictions.loc[0, "p_denied"] == pytest.approx(0.8)
     assert predictions.loc[0, "p_approved"] == pytest.approx(0.2)
+
+
+def test_test_runner_stops_before_transform_when_quality_gate_rejects(tmp_path, monkeypatch):
+    paths, _, preprocessor, estimator = _setup(tmp_path, monkeypatch)
+
+    class RejectingQualityGate:
+        def apply(self, partition):
+            raise evaluation.InputQualityError("synthetic rejection")
+
+    monkeypatch.setattr(evaluation, "DatasetBInputQualityGate", RejectingQualityGate)
+    output = tmp_path / "test_evaluation"
+
+    with pytest.raises(evaluation.PlainMLPTestEvaluationError, match="quality gate failed"):
+        evaluation.run_plain_mlp_test_evaluation(output, **paths)
+
+    assert preprocessor.transform_calls == 0
+    assert estimator.predict_calls == 0
+    assert not output.exists()
+
+
+def test_test_runner_rejects_full_train_schema_before_test_load(tmp_path, monkeypatch):
+    paths, loaded, preprocessor, estimator = _setup(tmp_path, monkeypatch)
+    paths["full_train_dir"].joinpath("full_train_result.json").write_text(
+        '{"execution":{"elapsed_seconds":1.25}}\n', encoding="utf-8"
+    )
+
+    with pytest.raises(evaluation.PlainMLPTestEvaluationError, match="timing schema"):
+        evaluation.run_plain_mlp_test_evaluation(
+            tmp_path / "test_evaluation", **paths
+        )
+
+    assert loaded == []
+    assert preprocessor.transform_calls == 0
+    assert estimator.predict_calls == 0
+
+
+def test_test_runner_persists_exact_boundary_probabilities(tmp_path, monkeypatch):
+    paths, _, _, estimator = _setup(tmp_path, monkeypatch)
+    estimator.predict_proba = lambda frame: np.asarray(
+        [[1.0, 0.0], [0.8, 0.2], [0.2, 0.8], [0.0, 1.0]], dtype=np.float64
+    )
+    output = tmp_path / "test_evaluation"
+
+    evaluation.run_plain_mlp_test_evaluation(output, **paths)
+
+    predictions = pd.read_csv(output / "test_predictions.csv")
+    assert predictions.p_approved.tolist() == [0.0, 0.2, 0.8, 1.0]
+    assert predictions.p_denied.tolist() == [1.0, 0.8, 0.2, 0.0]
+    metrics = json.loads((output / "rq1_test_metrics.json").read_text(encoding="utf-8"))
+    assert "logit-only clipping" in metrics["methods"]["calibration_intercept"]
 
 
 def test_test_validator_rejects_tampered_predictions(tmp_path, monkeypatch):
@@ -209,6 +299,19 @@ def test_metric_orientation_uses_approved_probability_and_denied_complement():
     assert values["recall_denied"] == 0.5
 
 
+def test_calibration_stabilizes_exact_zero_and_one_without_mutation():
+    labels = np.asarray([0, 0, 1, 1], dtype=np.int8)
+    probabilities = np.asarray([0.0, 0.2, 0.8, 1.0], dtype=np.float64)
+    original = probabilities.copy()
+
+    intercept, slope, invalid = evaluation._calibration(labels, probabilities)
+
+    assert np.isfinite(intercept)
+    assert np.isfinite(slope)
+    assert invalid == {}
+    np.testing.assert_array_equal(probabilities, original)
+
+
 def test_bootstrap_recomputation_rounds_only_calibration_slope_to_six_decimals():
     stored = np.asarray([0.9485581697164446, np.nan])
     recomputed = np.asarray([0.9485581553894016, np.nan])
@@ -230,6 +333,7 @@ def test_reporting_and_final_review_are_read_only_and_digest_free(tmp_path, monk
     evaluation.run_plain_mlp_test_evaluation(output, **paths)
     metrics = json.loads((output / "rq1_test_metrics.json").read_text(encoding="utf-8"))
     cv_result = {
+        "train_rows": 4,
         "folds": [
             {
                 "fold": fold,
@@ -242,20 +346,66 @@ def test_reporting_and_final_review_are_read_only_and_digest_free(tmp_path, monk
             for fold in range(1, 6)
         ]
     }
+    monkeypatch.setattr(model_reporting, "EXPECTED_TRAIN_ROWS", 4)
+    monkeypatch.setattr(model_reporting, "EXPECTED_VALIDATION_ROWS", 4)
+    monkeypatch.setattr(model_reporting, "EXPECTED_TEST_ROWS", 4)
     reporting_dir = tmp_path / "reporting"
     generate_plain_mlp_reporting(
         reporting_dir,
-        run_id="plain_mlp_v1",
+        run_id="plain_mlp_test_run",
         cv_result=cv_result,
+        cv_metrics={
+            "fold_roc_auc": [0.70, 0.71, 0.72, 0.73, 0.74],
+            "mean_roc_auc": 0.72,
+            "std_roc_auc": 0.01414213562373095,
+            "oof_roc_auc": 0.72,
+        },
+        full_train_result={
+            "final_estimator": {"fit_rows": 4, "best_epoch": 2},
+            "timing_seconds": {"final_fit": 0.2},
+            "warnings": [],
+        },
+        validation_result={
+            "prediction_summary": {
+                "rows": 4,
+                "unique_record_ids": 4,
+                "probability_min": 0.2,
+                "probability_max": 0.8,
+            },
+            "data_boundary": {
+                "quality_gate": {
+                    "row_order_preserved": True,
+                    "record_id_alignment_preserved": True,
+                }
+            },
+        },
+        threshold_selection={
+            "selected_threshold": 0.5,
+            "selected_metrics": {
+                "balanced_accuracy": 1.0,
+                "recall_approved": 1.0,
+                "recall_denied": 1.0,
+            },
+        },
         test_metrics=metrics,
         artifact_paths={"test_metrics": output / "rq1_test_metrics.json"},
+        bootstrap_indices_path=paths["bootstrap_indices_path"],
+        test_predictions_path=output / "test_predictions.csv",
     )
     assert {path.name for path in reporting_dir.iterdir()} == REPORT_FILES
+    assert json.loads(
+        (reporting_dir / "model_summary.json").read_text(encoding="utf-8")
+    )["reporting_key"] == "plain_mlp"
+    assert json.loads(
+        (reporting_dir / "artifact_index.json").read_text(encoding="utf-8")
+    )["reporting_key"] == "plain_mlp"
     assert "sha256" not in (reporting_dir / "artifact_index.json").read_text(encoding="utf-8").lower()
     validation_result = paths["validation_dir"] / "validation_result.json"
-    validation_result.write_text('{"run_id":"plain_mlp_v1"}\n', encoding="utf-8")
+    validation_result.write_text(
+        '{"run_id":"plain_mlp_test_run"}\n', encoding="utf-8"
+    )
     review = review_plain_mlp_f05(
-        run_id="plain_mlp_v1",
+        run_id="plain_mlp_test_run",
         validation_result_path=validation_result,
         threshold_selection_path=paths["validation_dir"] / "threshold_selection/threshold_selection.json",
         test_dir=output,

@@ -25,7 +25,11 @@ from src.dataset_b.evaluation.plain_mlp_validation_threshold import (
     DEFAULT_VALIDATION_DIR,
     validate_plain_mlp_validation_threshold,
 )
-from src.dataset_b.preprocessing import DatasetBSplitLoader
+from src.dataset_b.preprocessing import (
+    DatasetBInputQualityGate,
+    DatasetBSplitLoader,
+    InputQualityError,
+)
 from src.dataset_b.runtime.plain_mlp_full_train import (
     DEFAULT_FEATURE_CONTRACT_PATH,
     DEFAULT_SPLIT_DIR,
@@ -50,6 +54,7 @@ BOOTSTRAP_REPLICATES = 1_000
 CALIBRATION_SLOPE_DECIMALS = 6
 BOOTSTRAP_RECOMPUTATION_ATOL = 1e-14
 PROBABILITY_SUM_ATOL = 1e-7
+CALIBRATION_LOGIT_EPSILON = 1e-15
 CONTRACT_ID = "PMLP-05"
 FEATURE_VERSION = "final_feature_lock"
 EVALUATION_STATUS = "complete_rq1_evaluation_final_feature_lock"
@@ -93,16 +98,13 @@ def _write_json(path: str | Path, value: dict[str, Any]) -> None:
 def _calibration(
     labels: np.ndarray, probabilities: np.ndarray
 ) -> tuple[float, float, dict[str, str]]:
-    logits = logit(probabilities)
+    logits = logit(
+        np.clip(probabilities, CALIBRATION_LOGIT_EPSILON, 1.0 - CALIBRATION_LOGIT_EPSILON)
+    )
     targets = labels.astype(np.float64)
     invalid: dict[str, str] = {}
     intercept = float("nan")
     slope = float("nan")
-    if not np.isfinite(logits).all():
-        return intercept, slope, {
-            "calibration_intercept": "nonfinite_unmodified_probability_logit",
-            "calibration_slope": "nonfinite_unmodified_probability_logit",
-        }
     try:
         intercept = float(
             brentq(lambda value: float(np.mean(expit(logits + value) - targets)), -80, 80)
@@ -211,10 +213,34 @@ def _methods() -> dict[str, str]:
         "predicted_approved": "p_approved >= locked Validation threshold",
         "brier_approved": "mean((p_approved-y_approved)^2)",
         "calibration_curve": "10 Test-probability quantile bins; duplicate edges collapsed",
-        "calibration_intercept": "logistic offset recalibration with slope fixed at 1",
-        "calibration_slope": "unpenalized logistic recalibration with free intercept and slope",
+        "calibration_intercept": (
+            "logistic offset recalibration with slope fixed at 1; logit-only clipping "
+            "to [1e-15, 1-1e-15]; persisted probabilities unchanged"
+        ),
+        "calibration_slope": (
+            "unpenalized logistic recalibration with free intercept and slope; logit-only "
+            "clipping to [1e-15, 1-1e-15]; persisted probabilities unchanged"
+        ),
         "bootstrap": "1,000 shared stratified Test row-index replicates; no refit; percentile CI",
     }
+
+
+def _full_train_elapsed_seconds(result_path: Path) -> float:
+    """Validate the production full-Train timing schema before Test inference."""
+    result = _read_full_train_json(result_path)
+    timing = result.get("timing_seconds")
+    if not isinstance(timing, dict) or set(timing) != {"selector", "final_fit"}:
+        raise PlainMLPTestEvaluationError("Full-Train timing schema is invalid.")
+    values = (timing.get("selector"), timing.get("final_fit"))
+    if any(
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not np.isfinite(value)
+        or value < 0
+        for value in values
+    ):
+        raise PlainMLPTestEvaluationError("Full-Train timing values are invalid.")
+    return float(sum(values))
 
 
 def _paths(
@@ -480,7 +506,7 @@ def run_plain_mlp_test_evaluation(
     config_path: str | Path = DEFAULT_CONFIG_PATH,
     bootstrap_indices_path: str | Path = DEFAULT_BOOTSTRAP_INDICES,
     bootstrap_manifest_path: str | Path = DEFAULT_BOOTSTRAP_MANIFEST,
-    run_id: str = "plain_mlp_v1",
+    run_id: str,
 ) -> dict[str, Any]:
     """Predict Test once, compute RQ1 metrics, and reuse the frozen bootstrap."""
     destination = Path(output_dir)
@@ -508,6 +534,13 @@ def run_plain_mlp_test_evaluation(
         validate_plain_mlp_validation_threshold(paths["validation_dir"])
         selection_path = paths["validation_dir"] / "threshold_selection/threshold_selection.json"
         selection = _read_json(selection_path)
+        if full_manifest.get("run_id") != run_id or selection.get("run_id") != run_id:
+            raise PlainMLPTestEvaluationError(
+                "Full-Train, Validation threshold, and Test run_id differ."
+            )
+        full_train_elapsed = _full_train_elapsed_seconds(
+            paths["full_train_dir"] / "full_train_result.json"
+        )
         threshold = selection.get("selected_threshold")
         if not isinstance(threshold, (int, float)) or isinstance(threshold, bool) or not 0 < threshold < 1:
             raise PlainMLPTestEvaluationError("Locked Validation threshold is invalid.")
@@ -516,7 +549,26 @@ def run_plain_mlp_test_evaluation(
             split_dir=paths["split_dir"],
             feature_contract_path=paths["feature_contract_path"],
         )
-        partition = loader.load("test")
+        try:
+            partition = DatasetBInputQualityGate().apply(loader.load("test"))
+        except InputQualityError as exc:
+            raise PlainMLPTestEvaluationError(
+                f"Test input quality gate failed: {exc}"
+            ) from exc
+        quality_audit = partition.quality_audit.as_dict()
+        if (
+            quality_audit.get("status") != "PASS"
+            or quality_audit.get("input_rows") != EXPECTED_TEST_ROWS
+            or quality_audit.get("retained_rows") != EXPECTED_TEST_ROWS
+            or quality_audit.get("rejected_rows") != 0
+            or quality_audit.get("rejected_record_ids") != []
+            or quality_audit.get("semantic_1111_count") != 0
+            or quality_audit.get("row_count_preserved_after_normalization") is not True
+            or quality_audit.get("row_order_preserved") is not True
+            or quality_audit.get("target_alignment_preserved") is not True
+            or quality_audit.get("record_id_alignment_preserved") is not True
+        ):
+            raise PlainMLPTestEvaluationError("Test input quality gate did not pass exactly.")
         ids = tuple(partition.record_ids.astype(str).tolist())
         labels = partition.y.to_numpy(dtype=np.int8)
         if (
@@ -625,9 +677,7 @@ def run_plain_mlp_test_evaluation(
             "confidence_intervals_95_percentile": intervals,
             "calibration_curve": curve,
             "computational_metrics_seconds": {
-                "full_train_runner_elapsed": _read_full_train_json(
-                    paths["full_train_dir"] / "full_train_result.json"
-                )["execution"]["elapsed_seconds"],
+                "full_train_runner_elapsed": full_train_elapsed,
                 "test_inference_including_preprocessing": inference_seconds,
             },
             "methods": _methods(),
@@ -644,6 +694,7 @@ def run_plain_mlp_test_evaluation(
                 "preprocessing_fit_performed": False,
                 "threshold_changed": False,
                 "shared_bootstrap_regenerated": False,
+                "quality_gate": quality_audit,
             },
             "full_train_source_status": full_manifest.get("status"),
         }
@@ -704,7 +755,7 @@ def validate_plain_mlp_test_evaluation_artifact(
     )
     directory = Path(output_dir)
     _semantic_feature_contract(paths["feature_contract_path"])
-    validate_plain_mlp_full_train(
+    full_manifest = validate_plain_mlp_full_train(
         paths["full_train_dir"],
         split_manifest_path=paths["split_manifest_path"],
         split_dir=paths["split_dir"],
@@ -801,6 +852,7 @@ def validate_plain_mlp_test_evaluation_artifact(
         or manifest.get("status") != "PASS"
         or manifest.get("run_id") != result.get("run_id")
         or result.get("run_id") != selection.get("run_id")
+        or result.get("run_id") != full_manifest.get("run_id")
         or manifest.get("rows") != EXPECTED_TEST_ROWS
         or manifest.get("threshold") != threshold
         or manifest.get("lineage_sha256") != result.get("lineage_sha256")
@@ -818,12 +870,40 @@ def validate_plain_mlp_test_evaluation_artifact(
             "preprocessing_transform_calls": 1,
             "predict_proba_calls": 1,
         }
-        or result.get("data_boundary") != {
-            "source_partition": "test",
-            "model_fit_performed": False,
-            "preprocessing_fit_performed": False,
-            "threshold_changed": False,
-            "shared_bootstrap_regenerated": False,
+        or result.get("data_boundary", {}).get("source_partition") != "test"
+        or result.get("data_boundary", {}).get("model_fit_performed") is not False
+        or result.get("data_boundary", {}).get("preprocessing_fit_performed") is not False
+        or result.get("data_boundary", {}).get("threshold_changed") is not False
+        or result.get("data_boundary", {}).get("shared_bootstrap_regenerated") is not False
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("status") != "PASS"
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("input_rows")
+        != EXPECTED_TEST_ROWS
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("retained_rows")
+        != EXPECTED_TEST_ROWS
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("rejected_rows") != 0
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("rejected_record_ids") != []
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("semantic_1111_count") != 0
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("row_count_preserved_after_normalization")
+        is not True
+        or result.get("data_boundary", {}).get("quality_gate", {}).get("row_order_preserved")
+        is not True
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("target_alignment_preserved")
+        is not True
+        or result.get("data_boundary", {})
+        .get("quality_gate", {})
+        .get("record_id_alignment_preserved")
+        is not True
+        or set(result.get("data_boundary", {})) != {
+            "source_partition",
+            "model_fit_performed",
+            "preprocessing_fit_performed",
+            "threshold_changed",
+            "shared_bootstrap_regenerated",
+            "quality_gate",
         }
     ):
         raise PlainMLPTestEvaluationError("Test order, boundary, threshold, or lineage is invalid.")
@@ -851,7 +931,10 @@ def validate_plain_mlp_test_evaluation(
         split_dir=paths["split_dir"],
         feature_contract_path=paths["feature_contract_path"],
     )
-    partition = loader.load("test")
+    try:
+        partition = DatasetBInputQualityGate().apply(loader.load("test"))
+    except InputQualityError as exc:
+        raise PlainMLPTestEvaluationError(f"Test input quality gate failed: {exc}") from exc
     expected_ids = tuple(partition.record_ids.astype(str).tolist())
     expected_labels = partition.y.to_numpy(dtype=np.int8)
     _validate_bootstrap(paths, expected_labels, expected_ids)
@@ -871,6 +954,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     for command in ("run", "validate"):
         sub = subparsers.add_parser(command)
         sub.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+        if command == "run":
+            sub.add_argument("--run-id", required=True)
     return parser.parse_args(argv)
 
 
@@ -878,7 +963,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     try:
         value = (
-            run_plain_mlp_test_evaluation(args.output_dir)
+            run_plain_mlp_test_evaluation(args.output_dir, run_id=args.run_id)
             if args.command == "run"
             else validate_plain_mlp_test_evaluation(args.output_dir)
         )

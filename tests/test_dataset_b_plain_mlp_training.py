@@ -156,14 +156,17 @@ def test_cv_and_full_train_accounting_state_isolation_and_oof(tmp_path):
         cv_dir,
         dependencies=dependencies,
         expected_train_rows=50,
+        run_id="plain_mlp_test_run",
     )
     full_manifest = training.run_plain_mlp_full_train(
         full_dir,
         dependencies=dependencies,
         expected_train_rows=50,
+        run_id="plain_mlp_test_run",
     )
 
     assert cv_manifest["status"] == full_manifest["status"] == "PASS"
+    assert cv_manifest["run_id"] == full_manifest["run_id"] == "plain_mlp_test_run"
     assert trace["load_train_calls"] == 2
     assert len(trace["selector_calls"]) == 6
     assert len(trace["final_estimators"]) == 6
@@ -187,6 +190,7 @@ def test_cv_and_full_train_accounting_state_isolation_and_oof(tmp_path):
         "temporary_selectors": 5,
         "final_estimators": 5,
     }
+    assert cv_result["run_id"] == full_result["run_id"] == "plain_mlp_test_run"
     assert cv_result["fit_call_accounting"] == {
         "selector_preprocessing_fit": 5,
         "selector_model_fit": 5,
@@ -246,7 +250,12 @@ def test_incomplete_working_state_is_preserved_and_never_resumed(tmp_path, stage
     )
 
     with pytest.raises(training.PlainMLPTrainingError, match="preserved"):
-        runner(destination, dependencies=dependencies, expected_train_rows=50)
+        runner(
+            destination,
+            dependencies=dependencies,
+            expected_train_rows=50,
+            run_id="plain_mlp_test_run",
+        )
 
     assert stale.read_bytes() == b"preserve"
     assert trace["load_train_calls"] == 0
@@ -268,7 +277,12 @@ def test_existing_destination_is_never_overwritten_or_used_as_history(tmp_path, 
     )
 
     with pytest.raises(training.PlainMLPTrainingError, match="historical destination"):
-        runner(destination, dependencies=dependencies, expected_train_rows=50)
+        runner(
+            destination,
+            dependencies=dependencies,
+            expected_train_rows=50,
+            run_id="plain_mlp_test_run",
+        )
 
     assert marker.read_text(encoding="utf-8") == "preserve\n"
     assert trace["load_train_calls"] == 0
@@ -278,7 +292,10 @@ def test_artifact_hash_tampering_is_rejected(tmp_path):
     dependencies, _, _ = _dependencies()
     destination = tmp_path / "cv"
     training.run_plain_mlp_cv(
-        destination, dependencies=dependencies, expected_train_rows=50
+        destination,
+        dependencies=dependencies,
+        expected_train_rows=50,
+        run_id="plain_mlp_test_run",
     )
     with (destination / "cv_result.json").open("a", encoding="utf-8") as handle:
         handle.write("\n")

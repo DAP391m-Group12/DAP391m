@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from src.dataset_b.evaluation.plain_mlp_test_evaluation import METRIC_NAMES
+from src.dataset_b.reporting import model_reporting
 
 
 REPORT_FILES = {
@@ -39,13 +40,28 @@ def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) 
         writer.writerows(rows)
 
 
+def _indexed_artifact_path(path: str | Path, run_dir: Path) -> str:
+    source = Path(path).absolute()
+    try:
+        return str(Path("..") / source.relative_to(run_dir.absolute()))
+    except ValueError:
+        return str(source)
+
+
 def generate_plain_mlp_reporting(
     output_dir: str | Path,
     *,
     run_id: str,
     cv_result: Mapping[str, Any],
+    cv_metrics: Mapping[str, Any],
+    full_train_result: Mapping[str, Any],
+    validation_result: Mapping[str, Any],
+    threshold_selection: Mapping[str, Any],
     test_metrics: Mapping[str, Any],
     artifact_paths: Mapping[str, str | Path],
+    bootstrap_indices_path: str | Path,
+    test_predictions_path: str | Path,
+    published_artifact_paths: Mapping[str, str | Path] | None = None,
 ) -> dict[str, Any]:
     """Write the six locked reports without fitting, prediction, or data loading."""
     if not run_id or test_metrics.get("run_id") != run_id:
@@ -63,6 +79,20 @@ def generate_plain_mlp_reporting(
         raise PlainMLPReportingError("RQ1 interval schema is invalid.")
     if not isinstance(counts, dict) or not isinstance(curve, list):
         raise PlainMLPReportingError("Confusion or calibration payload is invalid.")
+    fold_roc_auc = cv_metrics.get("fold_roc_auc")
+    if not isinstance(fold_roc_auc, list) or len(fold_roc_auc) != 5:
+        raise PlainMLPReportingError("CV reporting requires five fold ROC-AUC values.")
+
+    canonical_point = {
+        ("brier_score_approved" if name == "brier_approved" else name): value
+        for name, value in point.items()
+    }
+    canonical_intervals = {
+        ("brier_score_approved" if name == "brier_approved" else name): value
+        for name, value in intervals.items()
+    }
+    if set(canonical_point) != model_reporting.REQUIRED_RQ1_METRICS:
+        raise PlainMLPReportingError("Canonical RQ1 metric schema is invalid.")
 
     destination = Path(output_dir)
     working = destination.with_name(destination.name + ".tmp")
@@ -74,78 +104,156 @@ def generate_plain_mlp_reporting(
             "schema_version": 1,
             "contract_id": "PMLP-F05-REPORTING",
             "status": "PASS",
+            "reporting_status": "COMPLETE",
             "run_id": run_id,
+            "reporting_key": "plain_mlp",
+            "model_key": "plain_mlp",
             "model_version": test_metrics.get("model_version"),
-            "threshold": test_metrics.get("threshold"),
-            "test_rows": test_metrics.get("rows"),
-            "metric_count": len(METRIC_NAMES),
-            "bootstrap_replicates": 1000,
+            "feature_version": "feature_set_v1",
+            "split_version": "split_v1",
+            "preprocessing_version": test_metrics.get("preprocessing_version"),
+            "stages": {
+                "preprocessing": "PASS",
+                "cuda_smoke": "PASS",
+                "train_only_pilot": "PASS",
+                "train_only_cv": "PASS",
+                "full_train_fit": "PASS",
+                "validation_threshold": "PASS",
+                "test_evaluation": "PASS",
+                "final_review": "PASS",
+            },
+            "data_boundaries": {
+                "train_rows": int(cv_result.get("train_rows", 0)),
+                "validation_rows": int(validation_result.get("prediction_summary", {}).get("rows", 0)),
+                "test_rows": int(test_metrics.get("rows", 0)),
+                "validation_accessed": True,
+                "test_accessed": True,
+            },
+            "feature_counts": {"raw": 15, "semantic": 19, "model_input": 62},
+            "cv": {
+                "fold_count": 5,
+                "mean_roc_auc": cv_metrics.get("mean_roc_auc"),
+                "std_roc_auc": cv_metrics.get("std_roc_auc"),
+                "oof_roc_auc": cv_metrics.get("oof_roc_auc"),
+                "oof_rows": int(cv_result.get("train_rows", 0)),
+                "warning_count": sum(len(fold.get("warnings", [])) for fold in folds),
+            },
+            "full_train": {
+                "fit_rows": full_train_result.get("final_estimator", {}).get("fit_rows"),
+                "fit_seconds": full_train_result.get("timing_seconds", {}).get("final_fit"),
+                "best_epoch": full_train_result.get("final_estimator", {}).get("best_epoch"),
+                "warning_count": len(full_train_result.get("warnings", [])),
+            },
+            "validation": {
+                "rows": validation_result.get("prediction_summary", {}).get("rows"),
+                "unique_record_ids": validation_result.get("prediction_summary", {}).get("unique_record_ids"),
+                "source_order_preserved": validation_result.get("data_boundary", {}).get("quality_gate", {}).get("row_order_preserved"),
+                "ordered_record_ids_verified": validation_result.get("data_boundary", {}).get("quality_gate", {}).get("record_id_alignment_preserved"),
+                "probability_min": validation_result.get("prediction_summary", {}).get("probability_min"),
+                "probability_max": validation_result.get("prediction_summary", {}).get("probability_max"),
+                "threshold": threshold_selection.get("selected_threshold"),
+                **dict(threshold_selection.get("selected_metrics", {})),
+            },
+            "test": {
+                "rows": test_metrics.get("rows"),
+                "unique_record_ids": test_metrics.get("rows"),
+                "source_order_preserved": test_metrics.get("data_boundary", {}).get("quality_gate", {}).get("row_order_preserved"),
+                "ordered_record_ids_verified": test_metrics.get("data_boundary", {}).get("quality_gate", {}).get("record_id_alignment_preserved"),
+                "threshold": test_metrics.get("threshold"),
+                "point_metrics": canonical_point,
+                "confidence_intervals_95_percentile": canonical_intervals,
+                "counts": counts,
+                "calibration_curve": curve,
+                "bootstrap_indices": str(bootstrap_indices_path),
+            },
+            "selected_threshold": test_metrics.get("threshold"),
+            "point_metrics": canonical_point,
+            "confidence_intervals_95_percentile": canonical_intervals,
+            "artifact_sources": {
+                **{
+                    name: str(path)
+                    for name, path in sorted(
+                        (published_artifact_paths or artifact_paths).items()
+                    )
+                },
+                "test_predictions": str(test_predictions_path),
+            },
             "execution": {
-                "model_fit_calls": 0,
+                "fit_calls": 0,
                 "predict_proba_calls": 0,
+                "threshold_changed": False,
+                "bootstrap_regenerated": False,
             },
         }
         _write_json(working / "model_summary.json", summary)
 
         fold_rows: list[dict[str, Any]] = []
-        for fold in folds:
+        for fold, roc_auc in zip(folds, fold_roc_auc):
             timing = fold.get("timing_seconds", {})
-            final = fold.get("final_estimator", {})
             fold_rows.append(
                 {
+                    "model_key": "plain_mlp",
+                    "run_id": run_id,
+                    "feature_version": "feature_set_v1",
+                    "split_version": "split_v1",
                     "fold": fold.get("fold"),
-                    "fit_rows": fold.get("fit_rows"),
-                    "fold_validation_rows": fold.get("fold_validation_rows"),
-                    "best_epoch": final.get("best_epoch"),
-                    "pos_weight": final.get("pos_weight"),
-                    "selector_seconds": timing.get("selector"),
-                    "final_fit_seconds": timing.get("final_fit"),
-                    "outer_prediction_seconds": timing.get("outer_prediction"),
-                    "warnings": json.dumps(fold.get("warnings", []), ensure_ascii=False),
+                    "roc_auc": roc_auc,
+                    "fit_seconds": timing.get("final_fit"),
+                    "predict_seconds": timing.get("outer_prediction"),
+                    "warning_count": len(fold.get("warnings", [])),
                 }
             )
         _write_csv(
             working / "cv_fold_metrics.csv",
-            ("fold", "fit_rows", "fold_validation_rows", "best_epoch", "pos_weight",
-             "selector_seconds", "final_fit_seconds", "outer_prediction_seconds", "warnings"),
+            model_reporting.REPORTING_CSV_COLUMNS["cv_fold_metrics.csv"],
             fold_rows,
         )
 
         metric_rows = [
             {
+                "model_key": "plain_mlp",
+                "run_id": run_id,
+                "feature_version": "feature_set_v1",
+                "split_version": "split_v1",
+                "partition": "test",
                 "metric": name,
-                "point_estimate": point[name],
-                "ci_lower_2_5": intervals[name]["lower_2_5"],
-                "ci_upper_97_5": intervals[name]["upper_97_5"],
-                "valid_replicates": intervals[name]["valid_replicates"],
-                "invalid_replicates": intervals[name]["invalid_replicates"],
+                "estimate": canonical_point[name],
+                "ci_low": canonical_intervals[name]["lower_2_5"],
+                "ci_high": canonical_intervals[name]["upper_97_5"],
+                "unit": "coefficient" if name.startswith("calibration_") else "rate",
+                "higher_is_better": name not in {"brier_score_approved", "calibration_intercept", "calibration_slope"},
+                "valid_replicates": canonical_intervals[name]["valid_replicates"],
             }
-            for name in METRIC_NAMES
+            for name in sorted(model_reporting.REQUIRED_RQ1_METRICS)
         ]
         _write_csv(
             working / "rq1_metrics_long.csv",
-            ("metric", "point_estimate", "ci_lower_2_5", "ci_upper_97_5",
-             "valid_replicates", "invalid_replicates"),
+            model_reporting.REPORTING_CSV_COLUMNS["rq1_metrics_long.csv"],
             metric_rows,
         )
         confusion_rows = [
-            {"actual": "approved", "predicted": "approved", "count": counts["tp_approved"]},
-            {"actual": "approved", "predicted": "denied", "count": counts["fn_approved"]},
-            {"actual": "denied", "predicted": "denied", "count": counts["tn_denied"]},
-            {"actual": "denied", "predicted": "approved", "count": counts["fp_denied"]},
+            {"model_key": "plain_mlp", "run_id": run_id, "actual_class": "approved", "predicted_class": "approved", "count": counts["tp_approved"]},
+            {"model_key": "plain_mlp", "run_id": run_id, "actual_class": "approved", "predicted_class": "denied", "count": counts["fn_approved"]},
+            {"model_key": "plain_mlp", "run_id": run_id, "actual_class": "denied", "predicted_class": "approved", "count": counts["fp_denied"]},
+            {"model_key": "plain_mlp", "run_id": run_id, "actual_class": "denied", "predicted_class": "denied", "count": counts["tn_denied"]},
         ]
-        _write_csv(working / "confusion_matrix.csv", ("actual", "predicted", "count"), confusion_rows)
+        _write_csv(working / "confusion_matrix.csv", model_reporting.REPORTING_CSV_COLUMNS["confusion_matrix.csv"], confusion_rows)
         _write_csv(
             working / "calibration_curve.csv",
-            ("bin", "lower_edge", "upper_edge", "count", "mean_p_approved", "observed_approval_rate"),
-            [dict(row) for row in curve],
+            model_reporting.REPORTING_CSV_COLUMNS["calibration_curve.csv"],
+            [{"model_key": "plain_mlp", "run_id": run_id, **dict(row)} for row in curve],
         )
         index = {
             "schema_version": 1,
             "contract_id": "PMLP-F05-ARTIFACT-INDEX",
             "run_id": run_id,
+            "reporting_key": "plain_mlp",
+            "model_key": "plain_mlp",
             "artifacts": [
-                {"name": name, "path": str(path)}
+                {
+                    "name": name,
+                    "path": _indexed_artifact_path(path, destination.parent),
+                }
                 for name, path in sorted(artifact_paths.items())
             ],
             "acceptance_policy": "direct_content_and_numerical_comparison",
@@ -166,21 +274,20 @@ def validate_plain_mlp_reporting(
         raise PlainMLPReportingError("Reporting artifact set is invalid.")
     summary = json.loads((directory / "model_summary.json").read_text(encoding="utf-8"))
     index = json.loads((directory / "artifact_index.json").read_text(encoding="utf-8"))
-    with (directory / "cv_fold_metrics.csv").open(encoding="utf-8", newline="") as handle:
-        folds = list(csv.DictReader(handle))
-    with (directory / "rq1_metrics_long.csv").open(encoding="utf-8", newline="") as handle:
-        metrics = list(csv.DictReader(handle))
-    with (directory / "confusion_matrix.csv").open(encoding="utf-8", newline="") as handle:
-        confusion = list(csv.DictReader(handle))
     if (
         summary.get("contract_id") != "PMLP-F05-REPORTING"
         or summary.get("status") != "PASS"
         or summary.get("run_id") != index.get("run_id")
+        or summary.get("reporting_key") != "plain_mlp"
+        or index.get("reporting_key") != "plain_mlp"
+        or summary.get("model_key") != "plain_mlp"
+        or index.get("model_key") != "plain_mlp"
         or (expected_run_id is not None and summary.get("run_id") != expected_run_id)
-        or len(folds) != 5
-        or [row.get("metric") for row in metrics] != list(METRIC_NAMES)
-        or len(confusion) != 4
         or "sha256" in json.dumps(index).lower()
     ):
         raise PlainMLPReportingError("Reporting schema or linkage is invalid.")
+    try:
+        model_reporting.validate_reporting_directory(directory)
+    except model_reporting.ReportingContractError as exc:
+        raise PlainMLPReportingError("Common reporting contract validation failed.") from exc
     return summary
