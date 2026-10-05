@@ -164,10 +164,15 @@ Validation must not refit preprocessing or the model, update a vocabulary,
 change a configuration, or trigger open-ended tuning. Once selected, the
 threshold is immutable for Test evaluation and the corresponding RQ1 bootstrap.
 
-For PlainMLP, the candidate grid is the 999 values from 0.001 through 0.999 in
-steps of 0.001. Ties in maximum Balanced Accuracy are resolved first by the
-minimum absolute distance to 0.5 and then by the lower threshold. The persisted
-probability matrix is `float64`, finite, shaped `(n_rows, 2)`, bounded in
+The authoritative shared threshold policy for final benchmark models uses the
+999 candidates from `0.001` through `0.999` inclusive in steps of `0.001`.
+Select the candidate that maximizes Balanced Accuracy. Resolve ties first by
+minimum absolute distance to `0.5`, then by the lower threshold. Applying this
+fixed evaluation policy to a model's single Validation prediction pass is not
+hyperparameter search.
+
+For PlainMLP, the persisted probability matrix is `float64`, finite, shaped
+`(n_rows, 2)`, bounded in
 `[0, 1]`, and each row sums to one under `rtol = 0`, `atol = 1.0e-7`. Both
 columns returned by `predict_proba` are persisted directly: no rounding,
 clipping, or persistence-layer reconstruction is allowed.

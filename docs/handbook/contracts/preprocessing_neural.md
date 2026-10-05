@@ -75,10 +75,11 @@ Each neural route applies the following ordered operations:
 4. learn each numeric placeholder median from the permitted fit population in
    original scale;
 5. fill only the numeric value channels with those medians;
-6. apply `log1p` only to the four numeric value columns;
-7. for PlainMLP only, fit `RobustScaler` on all four transformed numeric value
-   columns using the permitted fit population and transform only those four
-   columns; do not scale OHE indicators;
+6. apply `log1p` only to `income_value` and `loan_amount_value`; leave
+   `loan_to_value_ratio_value` and `loan_term_value` unchanged after imputation;
+7. for PlainMLP only, fit `RobustScaler` on all four numeric value columns
+   using the permitted fit population and transform only those four columns;
+   do not scale OHE indicators;
 8. preserve all categorical and reporting-status meanings;
 9. pass the resulting 19-column semantic frame to the selected engine adapter.
 
@@ -99,8 +100,10 @@ boundary, and those transformations are not project preprocessing artifacts.
 Before and after `log1p`, the implementation must verify:
 
 - every numeric value is finite;
-- every numeric value is non-negative before transformation;
-- only the four numeric value columns change;
+- `income_value` and `loan_amount_value` are non-negative before `log1p`;
+- only `income_value` and `loan_amount_value` change during `log1p`;
+- `loan_to_value_ratio_value` and `loan_term_value` remain unchanged during
+  `log1p`;
 - category/status values and the 19-column order remain unchanged;
 - retained row count and `record_id` alignment remain unchanged;
 - repeating a transform with the same fitted state is deterministic.
@@ -170,7 +173,7 @@ category conversion.
 
 The PlainMLP route is:
 
-`raw 15 -> quality gate/parser/normalizer -> normalized 15 -> two-channel 19 -> log1p -> RobustScaler on four numeric value columns -> fixed-schema OHE -> CSR float64`
+`raw 15 -> quality gate/parser/normalizer -> normalized 15 -> two-channel 19 -> log1p on income and loan amount -> RobustScaler on four numeric value columns -> fixed-schema OHE -> CSR float64`
 
 The encoded representation has exactly 62 columns: four numeric value columns
 followed by 58 fixed categorical/status indicators. `OBSERVED` is the omitted
@@ -314,7 +317,9 @@ pass:
 3. raw `1111` counts equal semantic `Exempt` counts for the five named flags,
    no semantic `1111` remains, and no adapter/backend repeats the mapping;
 4. fitted state comes only from fold-train or full Train, as appropriate;
-5. all numeric values are non-negative before `log1p` and finite afterward;
+5. `income_value` and `loan_amount_value` are non-negative before `log1p`, all
+   numeric values are finite afterward, and the other two numeric values remain
+   unchanged during `log1p`;
 6. category/status meanings and the fixed semantic schema are preserved;
 7. category support, including `Exempt`, is audited with the outcomes in §5;
 8. PlainMLP output is CSR `float64` with exactly 62 columns, the four numeric
@@ -348,8 +353,9 @@ This contract was reconciled against:
 - `src/dataset_b/preprocessing/export_neural_cv.py`;
 - `src/dataset_b/preprocessing/realmlp_native.py`.
 
-This document records the approved final neural preprocessing contract. The
-listed implementation and saved artifacts describe the historical baseline
-until a separately authorized code task updates and validates all three neural
-routes. These sources are not evidence for final retraining completion, model
-quality, or Test performance.
+This document records the approved final neural preprocessing contract.
+PlainMLP implementation and execution status is evidenced by its frozen final
+run and the authoritative [STATUS](../STATUS.md) register. RealMLP and TabMmini
+implementation and execution status remains governed exclusively by that same
+register. Historical sources listed here do not by themselves establish final
+retraining completion, model quality, or Test performance.
