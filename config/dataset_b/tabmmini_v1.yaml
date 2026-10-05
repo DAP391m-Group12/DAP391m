@@ -1,0 +1,126 @@
+schema_version: 1
+dataset: dataset_b
+model: tabmmini
+model_version: tabmmini_v1
+status: final_locked_configuration
+is_final_configuration: true
+hyperparameter_search: false
+
+contracts:
+  feature: dataset_b/feature_set_v1.yaml
+  split: dataset_b/split_v1.yaml
+  preprocessing_version: dataset_b_neural_preprocessing_v1
+  raw_feature_count: 15
+  semantic_feature_count: 19
+  numeric_feature_count: 4
+  categorical_feature_count: 15
+
+backend:
+  package: tabm
+  package_version: "0.0.3"
+  constructor: tabm.TabM.make
+
+model_parameters:
+  arch_type: tabm-mini
+  k: 32
+  n_blocks: 2
+  d_block: 512
+  dropout: 0.1
+  d_out: 1
+  num_embeddings: null
+
+optimizer:
+  name: AdamW
+  learning_rate: 0.002
+  weight_decay: 0.0003
+
+training:
+  positive_class: approved
+  pos_weight_formula: n_denied / n_approved
+  member_loss: weighted_bce_with_logits
+  member_reduction: mean_all_elements
+  average_logits_before_loss: false
+  requested_batch_size: 256
+  batch_fallback_on_confirmed_cuda_oom: [128, 64]
+  seed: 42
+  fixed_epoch_from_pilot: true
+  early_stopping_after_pilot: false
+  sample_weight: false
+  resampling: false
+  amp: false
+  torch_compile: false
+
+input_contract:
+  representation: tabmmini_native_19_columns
+  numerical_dtype: float32
+  categorical_dtype: int64
+  vocabulary_source: authoritative_schema
+  learn_vocabulary_from_data: false
+  unknown_category: fail
+  preserve_absent_schema_categories: true
+  support_audit: true
+  external_scaler: false
+  external_ohe: false
+  backend_encoding: tabm_native
+  num_embeddings: null
+
+output_contract:
+  logits_shape: [B, 32, 1]
+  expanded_target_shape: [B, 32, 1]
+  canonical_probability: p_approved
+  probability_dtype: float32
+  member_transform: sigmoid
+  member_aggregation: mean_probability
+  average_logits_before_sigmoid: false
+
+pilot:
+  source: train_only
+  sample_fraction: 0.20
+  fit_fraction: 0.80
+  stop_fraction: 0.20
+  stratified: true
+  seed: 42
+  maximum_epochs: 100
+  selection_metric: inner_stop_weighted_bce_loss
+  selection_mode: min
+  tie_rtol: 0.0
+  tie_atol: 0.000001
+  tie_break: earliest_epoch
+  boundary_rule: unresolved_if_best_epoch_is_100_and_curve_is_still_improving
+
+evaluation:
+  outer_cv_folds: 5
+  outer_cv_shuffle: true
+  outer_cv_random_state: 42
+  fresh_model_each_fold: true
+  full_train_fresh_model: true
+  threshold:
+    candidates:
+      start: 0.001
+      stop: 0.999
+      step: 0.001
+      count: 999
+    objective: maximize_balanced_accuracy
+    tie_break:
+      - minimum_absolute_distance_to_0.5
+      - lower_threshold
+  bootstrap:
+    replicates: 1000
+    indices: locked_existing_indices
+    regenerate_indices: false
+
+serialization:
+  state: model_state_dict
+  include_optimizer_state: false
+  include_category_maps: true
+  include_semantic_schema: true
+  require_finite_prediction_round_trip: true
+
+run_policy:
+  run_id_pattern: tabmmini_final_15f_<YYYYMMDD>_<NN>
+  artifact_working_path: artifacts/dataset_b/tabmmini/working/<run_id>
+  artifact_final_path: artifacts/dataset_b/tabmmini/final/<run_id>
+  allow_overwrite: false
+  allow_resume_model_state: false
+  validation_prediction_passes: 1
+  test_prediction_passes: 1

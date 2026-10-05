@@ -23,6 +23,15 @@ from .realmlp_native import (
     make_realmlp_native_preprocessing_pipeline,
     validate_realmlp_category_support,
 )
+from .tabmmini_native import (
+    DatasetBTabMMiniNativeAdapter,
+    TabMMiniCategorySupportError,
+    TabMMiniNativeBatch,
+    fixed_tabmmini_category_maps,
+    make_tabmmini_native_preprocessing_pipeline,
+    tabmmini_category_cardinalities,
+    validate_tabmmini_category_support,
+)
 from .split_inputs import (
     DatasetBInputQualityAudit,
     DatasetBInputQualityGate,
@@ -46,12 +55,15 @@ __all__ = [
     "DatasetBOneHotEncoder",
     "DatasetBNeuralLog1pTransformer",
     "DatasetBRealMLPNativeAdapter",
+    "DatasetBTabMMiniNativeAdapter",
     "DatasetBNumericValueRobustScaler",
     "DatasetBRawParserStep",
     "make_preprocessing_pipeline",
     "make_plain_mlp_preprocessing_pipeline",
     "make_realmlp_native_preprocessing_pipeline",
+    "make_tabmmini_native_preprocessing_pipeline",
     "validate_realmlp_category_support",
+    "validate_tabmmini_category_support",
     "CATEGORICAL_COLUMNS",
     "CATEGORICAL_SCHEMA",
     "EXEMPTION_FLAG_COLUMNS",
@@ -64,6 +76,10 @@ __all__ = [
     "ParsedFeatures",
     "RawFeatureError",
     "RealMLPCategorySupportError",
+    "TabMMiniCategorySupportError",
+    "TabMMiniNativeBatch",
+    "fixed_tabmmini_category_maps",
+    "tabmmini_category_cardinalities",
     "InputQualityError",
     "SplitInputError",
 ]
