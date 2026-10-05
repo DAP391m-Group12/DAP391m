@@ -20,6 +20,7 @@ outside this Markdown handbook.
 | Understand neural preprocessing and model-family input routes | [Neural preprocessing contract](contracts/preprocessing_neural.md) |
 | Train or validate classical baselines | [Baseline training runbook](runbooks/baseline_training.md) |
 | Run neural pilots/training, publish artifacts, recover, or hand off | [Neural training runbook](runbooks/neural_training.md) |
+| Implement or execute the locked TabMmini v1 route | [TabMmini v1 training runbook](runbooks/tabmmini_training.md) |
 | Understand split, CV, refit, Validation/Test, metrics, bootstrap, or RQ gates | [Split and evaluation contract](contracts/split_and_evaluation.md) |
 | Check current execution stage and evidence | [Current execution status](STATUS.md) |
 
@@ -45,6 +46,10 @@ outside this Markdown handbook.
   and verification steps for classical baselines.
 - [Neural training](runbooks/neural_training.md) owns runtime gates, pilot and
   training procedures, history, publication, recovery, and handoff.
+- [TabMmini training](runbooks/tabmmini_training.md) owns the locked TabMmini
+  v1 backend, architecture, objective, ensemble, pilot, runtime, prediction,
+  recovery, and model-specific implementation policy. It does not record
+  execution status.
 - [STATUS](STATUS.md) is the sole source for current execution status. Other
   files may define contracts/procedures or retain clearly labeled history, but
   must not act as a parallel current-status register.
@@ -64,9 +69,11 @@ preprocessors, model states, matrices, predictions, thresholds, and evaluation
 packages remain historical experimental evidence only. They must not be
 resumed, extended, relabeled, or reused by the final 15-feature retraining.
 
-RQ2 and RQ3 remain closed until the required final 15-feature model runs are
-complete, directly validated, frozen, and linked through their `run_id`
-manifests. See [Current execution status](STATUS.md) for the active gate.
+The six final 15-feature reporting inputs are complete and linked through their
+`run_id` manifests. RQ2 and RQ3 nevertheless remain closed until their
+separately governed model-selection, explanation, grouping, denominator, and
+uncertainty decisions are approved. See [Current execution status](STATUS.md)
+for the active gates.
 
 ## Archive and reports
 

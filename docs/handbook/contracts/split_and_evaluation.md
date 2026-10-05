@@ -177,6 +177,12 @@ For PlainMLP, the persisted probability matrix is `float64`, finite, shaped
 columns returned by `predict_proba` are persisted directly: no rounding,
 clipping, or persistence-layer reconstruction is allowed.
 
+TabMmini instead persists its canonical finite `float32` vector
+`p_approved = P(y_approved = 1)` with shape `(n_rows,)`. If a shared evaluator
+requires two columns, its evaluation adapter derives
+`[1.0 - p_approved, p_approved]`; column 0 is `P(Denied)` and column 1 is
+`P(Approved)`. This derived matrix does not replace the canonical prediction.
+
 ## 6. Test evaluation boundary
 
 Test is opened only after the preceding configuration, full-Train fitted state,

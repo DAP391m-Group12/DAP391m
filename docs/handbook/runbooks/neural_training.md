@@ -23,16 +23,22 @@ model results, or current execution status. Use:
   routes and fitted preprocessing state.
 
 The concrete commands in this runbook are verified against the current RealMLP
-interfaces. PlainMLP, TabMmini, or a future neural model may reuse this process
-only after it has its own approved configuration and equivalent runtime and
-validation interfaces. RealMLP parameters must not be copied into another model
-family by implication.
+interfaces. PlainMLP and TabMmini have their own locked configurations and
+model-specific interfaces; a future neural model may reuse this process only
+after equivalent contracts exist. Parameters must not be copied between model
+families by implication.
+
+TabMmini v1's approved model-specific decisions are locked in the
+[TabMmini v1 training runbook](tabmmini_training.md). Its reusable source and
+final run are now closed; consult [STATUS](../STATUS.md) for the authoritative
+execution evidence rather than treating this procedural runbook as a status
+register.
 
 PlainMLP's final policy is locked in
-[`plain_mlp_v1.yaml`](../../../config/dataset_b/plain_mlp_v1.yaml). That policy
-does not imply source readiness or execution completion; a PlainMLP command may
-be used only after its implementation and validator directly match the locked
-configuration and the current stage is authorized.
+[`plain_mlp_v1.yaml`](../../../config/dataset_b/plain_mlp_v1.yaml). Its source
+and final run are closed; [STATUS](../STATUS.md) owns the execution evidence.
+Any later command still requires an explicitly authorized new run and must not
+resume the frozen fitted state.
 
 ## 2. Authorization envelope and gate types
 
@@ -216,17 +222,14 @@ fallback may follow only a confirmed CUDA OOM and only in the locked sequence
 
 Pilot data must come only from immutable Train membership. The pilot-fit and
 pilot-inner-stop ID files must be disjoint, reproduce their directly recorded
-ordered membership, and contain no project Validation or Test IDs. Use the
-public split functions
-in
-[`realmlp_pilot.py`](../../../src/dataset_b/splits/realmlp_pilot.py) to
-materialize once or validate an existing pilot split; do not regenerate the IDs
-per attempt.
+ordered membership, and contain no project Validation or Test IDs. The final
+runner persists both ordered ID files inside the current run-scoped pilot
+directory and validates their uniqueness, disjointness, and prediction order.
 
 Run the RealMLP pilot through its public CLI:
 
 ```console
-python -m src.dataset_b.runtime.run_realmlp_pilot run
+python -m src.dataset_b.runtime.realmlp_pilot_run run --run-id <run_id>
 ```
 
 The pilot must:
@@ -274,18 +277,14 @@ after the chosen policy is authorized or when that exact choice is already
 inside the active authorization:
 
 ```console
-python -m src.dataset_b.runtime.run_realmlp_pilot decide --decision FIXED_EPOCH --fixed-epochs <N> --rationale "<evidence-based rationale>"
-python -m src.dataset_b.runtime.run_realmlp_pilot decide --decision INNER_EARLY_STOPPING --inner-stop-fraction <F> --inner-stop-seed <SEED> --additive-patience <N> --multiplicative-patience <X> --rationale "<evidence-based rationale>"
-python -m src.dataset_b.runtime.run_realmlp_pilot validate
+python -m src.dataset_b.runtime.realmlp_pilot_run decide --run-id <run_id> --fixed-epoch <N> --rationale "<evidence-based rationale>"
+python -m src.dataset_b.runtime.realmlp_pilot_run validate --run-id <run_id>
 ```
 
-Use one decision command, not both.
-
-The current RealMLP CV smoke, production CV, and full-Train runners implement
-the fixed-epoch branch. If a pilot selects `INNER_EARLY_STOPPING`, stop after
-publishing and validating that decision. Do not use the fixed-epoch runners
-until a separately authorized implementation has added the approved inner
-split/stopping behavior and matching validators.
+The current RealMLP production CV and full-Train runners implement only the
+fixed-epoch branch. If a future pilot selects `INNER_EARLY_STOPPING`, stop;
+do not use the fixed-epoch runners until a separately authorized implementation
+has added that stopping behavior and matching validators.
 
 ### PlainMLP locked inner-stopping policy
 
@@ -338,12 +337,10 @@ and runtime gate validate for the same `run_id`, the current RealMLP interfaces
 are:
 
 ```console
-python -m src.dataset_b.runtime.run_realmlp_cv_smoke run
-python -m src.dataset_b.runtime.run_realmlp_cv_smoke validate
-python -m src.dataset_b.runtime.run_realmlp_cv run
-python -m src.dataset_b.runtime.run_realmlp_cv validate
-python -m src.dataset_b.runtime.run_realmlp_full_train run
-python -m src.dataset_b.runtime.run_realmlp_full_train validate
+python -m src.dataset_b.runtime.realmlp_cv run --run-id <run_id>
+python -m src.dataset_b.runtime.realmlp_cv validate --run-id <run_id>
+python -m src.dataset_b.runtime.realmlp_full_train run --run-id <run_id>
+python -m src.dataset_b.runtime.realmlp_full_train validate --run-id <run_id>
 ```
 
 Each CV fold must initialize fresh preprocessing, model, optimizer, and
@@ -381,10 +378,21 @@ Before publication:
 6. validate the complete working bundle;
 7. rename the whole `working/<run_id>` directory to `final/<run_id>` on the
    same filesystem;
-8. validate the final directory again and freeze it against overwrite.
+8. validate the final directory again, including reporting and `run_id`
+   lineage;
+9. create `FROZEN` only after that post-move validation returns `PASS`.
 
 A `COMPLETE` state inside a working directory does not make it published. A
-model file alone is never completion evidence.
+model file alone is never completion evidence. Never create `FROZEN` in the
+working directory or before post-move validation. Rename failure must preserve
+diagnosable working state without a marker; post-move validation failure must
+leave the final directory unmarked and must not report publication success.
+
+The retained RealMLP and TabMmini final artifacts were directly reviewed and
+frozen as historical execution evidence. Their reusable publication modules
+now enforce the canonical working-review `PASS` -> atomic rename -> post-move
+final validation `PASS` -> `FROZEN` order. This source guarantee does not
+rewrite or restage the already frozen artifact directories.
 
 On restart:
 
@@ -403,12 +411,12 @@ The following commands exist for the current RealMLP evaluation path, but they
 must be run only after the corresponding data-boundary authorization:
 
 ```console
-python -m src.dataset_b.evaluation.realmlp_validation run
-python -m src.dataset_b.evaluation.realmlp_validation validate
-python -m src.dataset_b.evaluation.realmlp_validation_threshold run
-python -m src.dataset_b.evaluation.realmlp_validation_threshold validate
-python -m src.dataset_b.evaluation.realmlp_test_evaluation run
-python -m src.dataset_b.evaluation.realmlp_test_evaluation validate
+python -m src.dataset_b.evaluation.realmlp_validation run --run-id <run_id>
+python -m src.dataset_b.evaluation.realmlp_validation validate --run-id <run_id>
+python -m src.dataset_b.evaluation.realmlp_validation_threshold run --run-id <run_id>
+python -m src.dataset_b.evaluation.realmlp_validation_threshold validate --run-id <run_id>
+python -m src.dataset_b.evaluation.realmlp_test_evaluation run --run-id <run_id>
+python -m src.dataset_b.evaluation.realmlp_test_evaluation validate --run-id <run_id>
 ```
 
 Before opening Validation, hand off the validated full-Train manifest and
@@ -470,10 +478,10 @@ below identifies the retained config or artifact for a decision that has
 execution evidence; it does not turn this runbook into an execution-status
 register.
 
-All evidence links in this register predate the final 15-feature retraining
-unless a new `run_id` manifest explicitly records otherwise. They may preserve
-the rationale for a decision, but they are not compatible preprocessing,
-fitted-model, prediction, threshold, or completion evidence for the final run.
+Legacy evidence links in this register predate the final 15-feature retraining
+unless a final `run_id` path explicitly records otherwise. Legacy links may
+preserve decision rationale, but they are not compatible preprocessing,
+fitted-model, prediction, threshold, or completion evidence for a final run.
 
 | Decision ID | Decision status | Meaning | Retained config or execution evidence |
 | --- | --- | --- | --- |
@@ -481,16 +489,16 @@ fitted-model, prediction, threshold, or completion evidence for the final run.
 | `NATIVE-INPUT-01` | `LOCKED` | Use the shared neural semantic layer with backend-owned categorical encoding. | [RealMLP input contract](../../../config/dataset_b/realmlp_v1.yaml) |
 | `MODEL-SEQUENCE-01` | `LOCKED` | Implement and evaluate RealMLP before opening TabMmini. | — |
 | `PILOT-SPLIT-01` | `LOCKED` | Use a stratified Train-only 20% pilot, split internally 80/20, with seed 42. | [Pilot split manifest](../../../artifacts/dataset_b/realmlp_v1/pilot/pilot_split_manifest.json) |
-| `REALMLP-PILOT-START-01` | `PROVISIONAL` | Freeze the documented starting configuration for the pilot only. | [RealMLP configuration](../../../config/dataset_b/realmlp_v1.yaml) |
+| `REALMLP-PILOT-START-01` | `LOCKED_FINAL_FIXED_EPOCH_50` | The complete Train-only pilot used the locked starting configuration and selected fixed epoch 50; CV and full-Train reused that epoch unchanged. | [Final pilot decision](../../../artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/pilot/decision.json) |
 | `GPU-COMPAT-01` | `LOCKED_GATE` | Verify the selected GPU environment and a finite CUDA calculation before the pilot; prohibit silent CPU fallback and bind any PASS evidence to that environment. | [Runtime manifest](../../../artifacts/dataset_b/realmlp_v1/runtime/runtime_manifest.json) and [smoke result](../../../artifacts/dataset_b/realmlp_v1/runtime/smoke_result.json) |
 | `RUNTIME-OBSERVABILITY-01` | `LOCKED` | Require authoritative local monitoring artifacts; W&B remains optional. | [Runtime history](../../../artifacts/dataset_b/realmlp_v1/runtime/training_history.json) |
 | `VISUAL-TRAIN-01` | `LOCKED` | Produce the local post-run or post-fold training visuals defined by the runbook. | [Pilot history visual](../../../artifacts/dataset_b/realmlp_v1/pilot_run/plots/pilot_history.svg) |
 | `TRAINING-HISTORY-01` | `LOCKED_OUTPUT_CONTRACT` | Use the callback/backend logger contract for complete per-epoch history; this decision does not imply that a run completed. | [Pilot training history](../../../artifacts/dataset_b/realmlp_v1/pilot_run/training_history.json) |
-| `EARLY-STOPPING-01` | `LOCKED_FIXED_EPOCH_51` | Use 51 fixed epochs and no inner-stop set for CV and full-Train. | [Pilot decision](../../../artifacts/dataset_b/realmlp_v1/pilot_run/decision.json) |
+| `EARLY-STOPPING-01` | `LOCKED_FIXED_EPOCH_FROM_PILOT` | Select one fixed epoch from the complete Train-only pilot trajectory and reuse it unchanged for CV and full-Train; the final RealMLP evidence selected epoch 50. | [Final pilot decision](../../../artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/pilot/decision.json) |
 | `CHECKPOINT-RESUME-01` | `LOCKED` | Do not resume fitted model/preprocessor state; restart a failed stage from fresh state, and use a completed fold from the same current `run_id` only as validated OOF evidence. | [CV fold 01 run state](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/run_state.json) |
 | `FOLD-ATOMIC-WRITE-01` | `LOCKED` | Validate each run-scoped fold directly and publish it with a same-filesystem rename before accepting its artifacts. | [CV fold 01 manifest](../../../artifacts/dataset_b/realmlp_v1/cv/fold_01/manifest.json) |
 | `REALMLP-CV-01` | `LOCKED_TRAIN_ONLY_CV` | Use fresh state for each fold in five-fold Train-only CV. | [CV summary manifest](../../../artifacts/dataset_b/realmlp_v1/cv/summary/manifest.json) and [CV results](../../../artifacts/dataset_b/realmlp_v1/cv/summary/cv_results.json) |
-| `TABMMINI-OPEN-01` | `LOCKED_GATE` | Require the RealMLP prerequisite review, separate authorization, and a model-specific configuration before opening TabMmini. | — |
+| `TABMMINI-OPEN-01` | `LOCKED_SATISFIED` | The RealMLP prerequisite and separate authorization were satisfied; TabMmini v1 source and final execution are closed under their own policy and evidence. | [TabMmini v1 training runbook](tabmmini_training.md) and [STATUS](../STATUS.md) |
 
 ### 13.1 PlainMLP global stop rules
 

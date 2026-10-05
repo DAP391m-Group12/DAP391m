@@ -193,7 +193,7 @@ merely to feed the model.
 
 The RealMLP route is:
 
-`raw 15 -> quality gate/parser/normalizer -> normalized 15 -> two-channel 19 -> log1p -> native DataFrame adapter`
+`raw 15 -> quality gate/parser/normalizer -> normalized 15 -> two-channel 19 -> log1p on income and loan amount -> native DataFrame adapter`
 
 There is no project-level external OHE. The adapter must emit a pandas
 DataFrame with the exact 19-column order:
@@ -217,11 +217,20 @@ PlainMLP external-OHE artifact. Numeric values must remain finite `float32`.
 When its adapter materializes indexed categorical tensors, their dtype must be
 integer/`long`.
 
-The TabMmini adapter or its manifest must define the semantic category-to-index
-maps, unseen-category behavior, exact output container, and any backend-owned
-transform. Its category maps include `Exempt` wherever allowed and exclude
-`1111` and `MISSING`. Those details must not be inferred from the RealMLP
-adapter, and the backend must not repeat raw-to-semantic normalization.
+The TabMmini adapter builds fixed category-to-index maps from the authoritative
+semantic schema, not from observed pilot, fold, full-Train, Validation, or Test
+values. The maps remain identical across the pilot, all five folds, and full
+Train; preserve schema positions for absent categories. They include `Exempt`
+wherever allowed and exclude `1111`, `MISSING`, and an unknown-category bucket.
+An unknown category fails rather than being silently remapped.
+
+Integer indexing is the native container boundary, not project-level OHE. The
+project must not apply OHE, `StandardScaler`, or `RobustScaler` on this route.
+The indexed categories are passed once to the TabM package, whose native
+categorical encoding is backend-owned; an adapter must not pre-encode and then
+invoke that encoding a second time. The backend must not repeat raw-to-semantic
+normalization. The complete locked model-specific policy is in the
+[TabMmini v1 training runbook](../runbooks/tabmmini_training.md).
 
 ## 7. Dtype and container contract
 
@@ -348,14 +357,16 @@ This contract was reconciled against:
   which identifies `Dataset_B_Engine_preprocesing.md` as a former source;
 - `config/dataset_b/plain_mlp_v1.yaml`;
 - `config/dataset_b/realmlp_v1.yaml`;
+- `config/dataset_b/tabmmini_v1.yaml`;
 - `src/dataset_b/preprocessing/neural_log_transformer.py`;
 - `src/dataset_b/preprocessing/neural_profiles.py`;
 - `src/dataset_b/preprocessing/export_neural_cv.py`;
-- `src/dataset_b/preprocessing/realmlp_native.py`.
+- `src/dataset_b/preprocessing/realmlp_native.py`;
+- `src/dataset_b/preprocessing/tabmmini_native.py`.
 
 This document records the approved final neural preprocessing contract.
-PlainMLP implementation and execution status is evidenced by its frozen final
-run and the authoritative [STATUS](../STATUS.md) register. RealMLP and TabMmini
-implementation and execution status remains governed exclusively by that same
-register. Historical sources listed here do not by themselves establish final
-retraining completion, model quality, or Test performance.
+PlainMLP, RealMLP, and TabMmini implementation and execution status is
+evidenced by their frozen final runs and the authoritative
+[STATUS](../STATUS.md) register. Historical sources listed here do not by
+themselves establish final retraining completion, model quality, or Test
+performance.
