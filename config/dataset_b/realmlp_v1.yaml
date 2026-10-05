@@ -1,8 +1,17 @@
-schema_version: 1
+schema_version: 2
 dataset: dataset_b
 model: realmlp
-config_version: realmlp_v1
-contract_id: REALMLP-PILOT-START-01
+model_version: realmlp_v1
+status: final_locked_configuration
+is_final_configuration: true
+hyperparameter_search: false
+
+contracts:
+  feature: dataset_b/feature_set_v1.yaml
+  split: dataset_b/split_v1.yaml
+  preprocessing_version: dataset_b_neural_preprocessing_v1
+  raw_feature_count: 15
+  semantic_feature_count: 19
 
 backend:
   package: pytabkit
@@ -45,6 +54,44 @@ project_policy:
 
 input_contract:
   preprocessing_version: dataset_b_neural_preprocessing_v1
-  representation: realmlp_native_16_columns
+  representation: realmlp_native_19_columns
+  raw_feature_count: 15
+  semantic_feature_count: 19
   numerical_dtype: float32
   categorical_dtype: category
+  external_scaler: false
+  external_ohe: false
+
+pilot:
+  population: train_only
+  sample_fraction: 0.20
+  inner_stop_fraction: 0.20
+  random_state: 42
+  maximum_epochs: 256
+  decision: fixed_epoch_from_pilot
+
+threshold:
+  candidates:
+    start: 0.001
+    stop: 0.999
+    step: 0.001
+    count: 999
+  objective: maximize_balanced_accuracy
+  tie_break: [minimum_absolute_distance_to_0.5, lower_threshold]
+
+bootstrap:
+  replicates: 1000
+  indices: locked_existing_indices
+  regenerate_indices: false
+
+run_policy:
+  run_id_pattern: realmlp_final_15f_<YYYYMMDD>_<NN>
+  artifact_working_path: artifacts/dataset_b/realmlp/working/<run_id>
+  artifact_final_path: artifacts/dataset_b/realmlp/final/<run_id>
+  allow_overwrite: false
+  allow_resume_model_state: false
+  allow_historical_relabel: false
+  outer_cv_folds: 5
+  oof_required_coverage: exactly_once
+  validation_prediction_passes: 1
+  test_prediction_passes: 1

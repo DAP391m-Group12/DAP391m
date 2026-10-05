@@ -16,6 +16,7 @@ from .model_reporting import (
     validate_reporting_directory,
     write_lr_reporting_package,
 )
+from .realmlp_reporting import write_realmlp_reporting
 
 __all__ = [
     "EXPECTED_REPORTING_FILES",
@@ -32,4 +33,5 @@ __all__ = [
     "validate_model_summary",
     "validate_reporting_directory",
     "write_lr_reporting_package",
+    "write_realmlp_reporting",
 ]

@@ -63,9 +63,13 @@ _FROZEN_PROJECT_POLICY = {
 }
 _FROZEN_INPUT_CONTRACT = {
     "preprocessing_version": "dataset_b_neural_preprocessing_v1",
-    "representation": "realmlp_native_16_columns",
+    "representation": "realmlp_native_19_columns",
+    "raw_feature_count": 15,
+    "semantic_feature_count": 19,
     "numerical_dtype": "float32",
     "categorical_dtype": "category",
+    "external_scaler": False,
+    "external_ohe": False,
 }
 
 
@@ -74,7 +78,7 @@ class RealMLPConfigurationError(ValueError):
 
 
 def load_realmlp_v1_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
-    """Load and validate the frozen provisional RealMLP pilot configuration."""
+    """Load and validate the final 15-feature RealMLP configuration."""
     path = Path(config_path)
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -85,11 +89,13 @@ def load_realmlp_v1_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dic
     if not isinstance(payload, dict):
         raise RealMLPConfigurationError("RealMLP configuration must be a YAML mapping.")
     expected_header = {
-        "schema_version": 1,
+        "schema_version": 2,
         "dataset": "dataset_b",
         "model": "realmlp",
-        "config_version": "realmlp_v1",
-        "contract_id": "REALMLP-PILOT-START-01",
+        "model_version": "realmlp_v1",
+        "status": "final_locked_configuration",
+        "is_final_configuration": True,
+        "hyperparameter_search": False,
     }
     if any(payload.get(key) != value for key, value in expected_header.items()):
         raise RealMLPConfigurationError("RealMLP configuration header is invalid.")
@@ -102,7 +108,7 @@ def load_realmlp_v1_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dic
         raise RealMLPConfigurationError("RealMLP backend contract is invalid.")
     if payload.get("estimator_parameters") != _FROZEN_ESTIMATOR_PARAMETERS:
         raise RealMLPConfigurationError(
-            "RealMLP provisional estimator parameters differ from the locked contract."
+            "RealMLP estimator parameters differ from the final locked contract."
         )
     if payload.get("backend_controls") != _FROZEN_BACKEND_CONTROLS:
         raise RealMLPConfigurationError("RealMLP backend split controls are invalid.")
@@ -110,7 +116,25 @@ def load_realmlp_v1_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> dic
         raise RealMLPConfigurationError("RealMLP project policy is invalid.")
     if payload.get("input_contract") != _FROZEN_INPUT_CONTRACT:
         raise RealMLPConfigurationError("RealMLP native input contract is invalid.")
-    expected_keys = {*expected_header, "backend", "estimator_parameters", "backend_controls", "project_policy", "input_contract"}
+    contracts = payload.get("contracts")
+    if not isinstance(contracts, dict) or contracts.get("raw_feature_count") != 15 or contracts.get("semantic_feature_count") != 19:
+        raise RealMLPConfigurationError("RealMLP final 15/19 feature contract is invalid.")
+    run_policy = payload.get("run_policy")
+    if not isinstance(run_policy, dict) or run_policy.get("allow_overwrite") is not False:
+        raise RealMLPConfigurationError("RealMLP final run policy is invalid.")
+    expected_keys = {
+        *expected_header,
+        "contracts",
+        "backend",
+        "estimator_parameters",
+        "backend_controls",
+        "project_policy",
+        "input_contract",
+        "pilot",
+        "threshold",
+        "bootstrap",
+        "run_policy",
+    }
     if set(payload) != expected_keys:
         raise RealMLPConfigurationError("RealMLP configuration contains unexpected fields.")
     return payload
@@ -185,7 +209,7 @@ class RealMLPClassifier(ClassifierMixin, BaseEstimator):
 
     @classmethod
     def from_yaml(cls, config_path: str | Path = DEFAULT_CONFIG_PATH) -> "RealMLPClassifier":
-        """Construct the frozen provisional pilot estimator from YAML."""
+        """Construct the final RealMLP estimator template from YAML."""
         payload = load_realmlp_v1_config(config_path)
         return cls(**payload["estimator_parameters"], **payload["project_policy"])
 
@@ -341,7 +365,7 @@ class RealMLPClassifier(ClassifierMixin, BaseEstimator):
             or tuple(X.columns) != TWO_CHANNEL_COLUMNS
         ):
             raise ValueError(
-                "Dataset B RealMLP expects the non-empty 16-column native DataFrame."
+                "Dataset B RealMLP expects the non-empty 19-column native DataFrame."
             )
         if any(X[column].dtype != np.dtype("float32") for column in NUMERIC_VALUE_COLUMNS):
             raise ValueError("Dataset B RealMLP numerical columns must be float32.")
