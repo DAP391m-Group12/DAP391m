@@ -301,23 +301,22 @@ through `record_id` for downstream analysis.
 
 RQ2 may begin only when:
 
-1. RQ1 artifacts required for the selected comparison models come from
+1. RQ1 artifacts for all six comparison models come from
    complete, independently verified, and frozen final 15-feature benchmark
    runs;
-2. each selected run has complete `run_id` lineage across preprocessing,
+2. each of the six runs has complete `run_id` lineage across preprocessing,
    model, Validation threshold, Test predictions, and evaluation;
 3. Dataset B and the final feature lock, including final explanation groups,
    are recorded;
-4. the representative neural model is selected under an approved rule;
-5. fitted models, preprocessing, ordered predictions, and `record_id` lineage
+4. fitted models, preprocessing, ordered predictions, and `record_id` lineage
    required for explanation are preserved;
-6. the RQ2 protocol has approved its explanation observations, background,
-   baseline/value-function semantics, dependence treatment, approximation
-   budget, Top-k and tie rules, bootstrap validity rules, and CI method.
+5. the [RQ2 explanation contract](rq2_explanation.md) and
+   `config/dataset_b/rq2_protocol.yaml` agree and have passed their stated
+   protocol gates.
 
 RQ2 reads frozen RQ1 artifacts. It must not retrain a model, recreate the split,
-mix in a superseded 12-feature run, or infer unapproved GSV or Shapley-Lorenz
-settings from an example.
+mix in a superseded 12-feature run, use Test rows for explanation, or infer
+unapproved GSV or Shapley-Lorenz settings from an example.
 
 ## 11. Conditions for opening RQ3
 
