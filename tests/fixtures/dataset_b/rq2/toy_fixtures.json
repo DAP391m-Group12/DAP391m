@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "numerical_policy": {
+    "dtype": "float64",
+    "importance_epsilon": 1e-12,
+    "rank_tie_atol": 1e-10,
+    "efficiency_atol": 1e-12,
+    "efficiency_rtol": 1e-10
+  },
+  "lorenz_zonoid_numeric": {
+    "prediction_vector": [0.1, 0.2, 0.3, 0.4],
+    "expected_ranks": [1.0, 2.0, 3.0, 4.0],
+    "expected_prediction_mean": 0.25,
+    "expected_rank_mean": 2.5,
+    "expected_population_covariance": 0.125,
+    "expected_lz": 0.25,
+    "tied_prediction_vector": [0.1, 0.2, 0.2, 0.4],
+    "expected_tied_ranks": [1.0, 2.5, 2.5, 4.0],
+    "expected_tied_prediction_mean": 0.225,
+    "expected_tied_population_covariance": 0.1125,
+    "expected_tied_lz": 0.25
+  },
+  "exact_shapley_combinatorics": {
+    "players": ["A", "B"],
+    "coalition_values": {
+      "empty": 0.0,
+      "A": 1.0,
+      "B": 2.0,
+      "AB": 5.0
+    },
+    "expected_contributions": {
+      "A": 2.0,
+      "B": 3.0
+    }
+  },
+  "prediction_cube_gsv_sl": {
+    "coalition_order": ["empty", "A", "B", "AB"],
+    "prediction_cube": [
+      [0.20, 0.20, 0.20, 0.20],
+      [0.10, 0.20, 0.30, 0.40],
+      [0.20, 0.20, 0.20, 0.40],
+      [0.05, 0.15, 0.35, 0.45]
+    ],
+    "expected_gsv_local": {
+      "A": [-0.125, -0.025, 0.125, 0.125],
+      "B": [-0.025, -0.025, 0.025, 0.125]
+    },
+    "expected_gsv_direction_mean": {
+      "A": 0.025,
+      "B": 0.025
+    },
+    "expected_gsv_importance": {
+      "A": 0.10,
+      "B": 0.05
+    },
+    "expected_gsv_normalized": {
+      "A": 0.6666666666666666,
+      "B": 0.3333333333333333
+    },
+    "expected_sl_coalition_values": {
+      "empty": 0.0,
+      "A": 0.25,
+      "B": 0.15,
+      "AB": 0.35
+    },
+    "expected_sl_signed_contribution": {
+      "A": 0.225,
+      "B": 0.125
+    },
+    "expected_sl_normalized": {
+      "A": 0.6428571428571429,
+      "B": 0.3571428571428571
+    }
+  },
+  "ranking_and_edge_cases": {
+    "top_k": 3,
+    "normalized_importances": [0.30, 0.25, 0.175, 0.175, 0.10],
+    "expected_top_k_indices_one_based": [1, 2, 3, 4],
+    "constant_positive_vector": [0.2, 0.2, 0.2, 0.2],
+    "near_zero_mean_vector": [0.0, 0.0, 0.0, 0.0]
+  },
+  "shared_bootstrap": {
+    "observation_count": 4,
+    "replicate_count": 3,
+    "indices": [
+      [0, 1, 2, 3],
+      [3, 3, 1, 0],
+      [2, 2, 2, 2]
+    ],
+    "production_seed": 4204,
+    "production_shape": [1000, 256],
+    "minimum_valid_replicates": 950,
+    "quantiles": [0.025, 0.975],
+    "quantile_method": "linear"
+  }
+}

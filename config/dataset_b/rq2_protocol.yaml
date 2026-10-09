@@ -1,0 +1,128 @@
+dataset: dataset_b
+protocol_version: rq2_explanation_v1
+status: production_complete
+purpose: six_model_global_explanation_agreement_and_stability
+
+execution:
+  device: cpu
+  allow_cuda_fallback: false
+  smoke_required_for_all_models: true
+  coalition_batch_size: 16
+
+eligible_final_runs:
+  lr: lr_final_15f_20261002_01
+  rf: rf_final_15f_20261002_01
+  xgboost: xgb_final_15f_20261003_01
+  plain_mlp: plain_mlp_final_15f_20261004_03
+  realmlp: realmlp_final_15f_20261004_01
+  tabmmini: tabmmini_final_15f_20261004_01
+
+scope:
+  model_keys: [lr, rf, xgboost, plain_mlp, realmlp, tabmmini]
+  output_scale: probability_approved
+  explanation_partition: validation
+  test_partition_allowed_for_explanation: false
+  ordered_players:
+    - key: loan_type
+      raw_fields: [loan_type]
+    - key: loan_purpose
+      raw_fields: [loan_purpose]
+    - key: lien_status
+      raw_fields: [lien_status]
+    - key: transaction_characteristics
+      raw_fields: [reverse_mortgage, open-end_line_of_credit, business_or_commercial_purpose]
+    - key: income
+      raw_fields: [income]
+    - key: debt_to_income_ratio
+      raw_fields: [debt_to_income_ratio]
+    - key: loan_amount
+      raw_fields: [loan_amount]
+    - key: loan_to_value_ratio
+      raw_fields: [loan_to_value_ratio]
+    - key: loan_term
+      raw_fields: [loan_term]
+    - key: occupancy_type
+      raw_fields: [occupancy_type]
+    - key: preapproval
+      raw_fields: [preapproval]
+    - key: special_repayment_structure
+      raw_fields: [interest_only_payment, balloon_payment]
+
+sampling:
+  strata: [0, 1]
+  explanation:
+    partition: validation
+    n_rows: 256
+    seed: 4201
+  background:
+    partition: train
+    pool_rows: 128
+    seed: 4202
+    assignment_seed: 4203
+
+smoke:
+  rows: 8
+  atol: 1.0e-6
+
+numerical_policy:
+  importance_epsilon: 1.0e-12
+  rank_tie_atol: 1.0e-10
+
+ranking_and_agreement:
+  top_k: 3
+  top_k_ties: include_all_at_cutoff
+  within_model_metrics: [spearman, kendall_tau_b, top_k_jaccard, mean_absolute_rank_difference]
+  cross_model_metrics: [spearman, kendall_tau_b]
+
+uncertainty:
+  bootstrap_replicates: 1000
+  bootstrap_seed: 4204
+  confidence_level: 0.95
+  quantile_method: linear
+  shared_indices_across_methods: true
+  shared_indices_across_models: true
+  may_retrain_or_reinfer: false
+  checkpoint:
+    enabled: true
+    chunk_size: 100
+    chunk_count: 10
+    resume_existing_run: true
+    safe_file_replace: true
+    retain_completed_chunks: true
+  undefined_metrics:
+    minimum_valid_replicates: 950
+
+toy_fixtures:
+  production_bootstrap_gate:
+    expected_shape: [1000, 256]
+    one_artifact_for_all_six_models: true
+
+output:
+  root_template: artifacts/dataset_b/rq2/{run_id}
+
+production_evidence:
+  run_id: rq2_cpu_production_20261009_01
+  output_root: artifacts/dataset_b/rq2/rq2_cpu_production_20261009_01
+  model_order: [lr, rf, xgboost, plain_mlp, realmlp, tabmmini]
+  model_status_pass: 6
+  model_status_required: 6
+  checkpoint_chunks_per_model: 10
+  importance_rows_per_model: 24
+  bootstrap_metric_rows_per_model: 4
+  minimum_valid_replicates_observed: 1000
+  cross_model_stability_rows: 60
+  test_partition_used: false
+  benchmark_imported: false
+  frozen_artifacts_rewritten: false
+  validation_checks_passed: 91
+  validation_checks_failed: 0
+  runtime_seconds:
+    lr: 782.9453709
+    rf: 865.1570737999999
+    xgboost: 748.4194796
+    plain_mlp: 713.7663306000001
+    realmlp: 908.9360968000001
+    tabmmini: 798.1936332
+    total: 4817.4179849
+  notebook: notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb
+  notebook_verified: true

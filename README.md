@@ -46,7 +46,7 @@ Source-lineage conventions và target rule có thể dùng chung; `X`, audit met
 | `dataset_view` | Tạo Set A view theo contract đã khóa | Tạo cohort, target và audit frame | Không chạy model |
 | `feature_governance` | Không mở lại Set A contract | Audit, redundancy, representation và feature lock | Không chạy sáu model; LR/RF chỉ dùng cho sensitivity hẹp nếu được phê duyệt |
 | `rq1_train_evaluate` | Baseline bridge | Thực nghiệm chính | A: LR, RF. B: LR, RF, XGBoost, plain MLP, RealMLP, TabMmini |
-| `rq2_explain` | GSV/SL bridge | Chỉ sau RQ1 và feature lock | A: LR, RF. B: LR, RF, XGBoost và một neural model được chọn sau RQ1 |
+| `rq2_explain` | GSV/SL bridge | Chỉ sau final RQ1 artifacts và feature lock | A: LR, RF. B: LR, RF, XGBoost, plain MLP, RealMLP, TabMmini |
 | `rq3_fairness_audit` | Ngoài scope Set A hiện tại | Audit prediction theo `record_id` | Cả sáu model Dataset B |
 | `reporting` | Baseline và explanation artifacts | RQ1, RQ2, RQ3 artifacts | Không retrain model |
 
@@ -125,10 +125,9 @@ data contract, feature governance, preprocessing, training, evaluation và
 đường dẫn tới trạng thái thực thi hiện hành.
 
 - RQ1 chạy sáu model: Logistic Regression, Random Forest, XGBoost, plain MLP, RealMLP và TabMmini.
-- Feature governance diễn ra trước RQ1. Hiện có 12 raw features ở trạng thái `keep` sau screening; đây chưa phải `FINAL_MODEL_FEATURES`.
-- `property_value` là `exclude_from_main`; `construction_method` và `total_units` vẫn cần representation comparison.
+- Final feature governance đã khóa 15 raw fields và 12 business players cho giải thích; xem [Feature governance](docs/handbook/contracts/feature_governance.md).
 - `applicant_sex`, năm race slots, `lei`, `county_code` và `applicant_age` nằm ngoài `X` để audit/truy vết.
-- RQ2 chỉ chạy sau RQ1 và feature lock. RQ3 là descriptive fairness audit của prediction từ cả sáu model, không phải fairness mitigation.
+- RQ2 dùng sáu final frozen models, giải thích `P(Approved)` theo [RQ2 explanation contract](docs/handbook/contracts/rq2_explanation.md); RQ3 là descriptive fairness audit của prediction từ cả sáu model, không phải fairness mitigation.
 
 ## Artifact tối thiểu cần bảo tồn
 

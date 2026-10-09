@@ -22,7 +22,7 @@ outside this Markdown handbook.
 | Run neural pilots/training, publish artifacts, recover, or hand off | [Neural training runbook](runbooks/neural_training.md) |
 | Implement or execute the locked TabMmini v1 route | [TabMmini v1 training runbook](runbooks/tabmmini_training.md) |
 | Understand split, CV, refit, Validation/Test, metrics, bootstrap, or RQ gates | [Split and evaluation contract](contracts/split_and_evaluation.md) |
-| Implement or review the locked six-model GSV/Shapley--Lorenz protocol | [RQ2 explanation contract](contracts/rq2_explanation.md) |
+| Implement or review the locked six-model GSV/interventional Shapley--Lorenz adaptation protocol and its numerical fixtures | [RQ2 explanation contract](contracts/rq2_explanation.md) |
 | Check current execution stage and evidence | [Current execution status](STATUS.md) |
 
 ## Document ownership
@@ -38,8 +38,10 @@ outside this Markdown handbook.
   split membership, Train-only CV, full-Train refit, Validation thresholding,
   Test evaluation, metric/comparison boundaries, and RQ2/RQ3 gates.
 - [RQ2 explanation](contracts/rq2_explanation.md) owns the six-model RQ2
-  player, sample, coalition, explanation, ranking, bootstrap, and acceptance
-  protocol. It does not record execution status.
+  player, sample, coalition, GSV, interventional Shapley--Lorenz adaptation,
+  ranking, shared-bootstrap, numerical-fixture, and acceptance protocol. It
+  defines expected fixture outputs but does not record fixture execution or
+  RQ2 execution status.
 - [Classical preprocessing](contracts/preprocessing_classical.md) owns
   classical parser, transformations, model-family preprocessing, and output
   schema contracts.
@@ -74,10 +76,11 @@ packages remain historical experimental evidence only. They must not be
 resumed, extended, relabeled, or reused by the final 15-feature retraining.
 
 The six final 15-feature reporting inputs are complete and linked through their
-`run_id` manifests. The Dataset B RQ2 protocol is locked and its implementation
-is pending; RQ3 remains closed until its separately governed grouping,
-denominator, and uncertainty decisions are approved. See
-[Current execution status](STATUS.md) for the active gates.
+`run_id` manifests. The Dataset B RQ2 protocol, including its numerical-fixture
+specification, is locked. This router does not duplicate mutable implementation
+or test status; see [Current execution status](STATUS.md) for the evidence-backed
+RQ2 stage and active gates. RQ3 remains closed until its separately governed
+grouping, denominator, and uncertainty decisions are approved.
 
 ## Archive and reports
 
