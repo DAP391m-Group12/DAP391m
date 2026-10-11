@@ -221,7 +221,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# HMDA: dữ liệu/artifact local; chỉ giữ README và marker thư mục
+# HMDA: dữ liệu/artifact local mặc định; chỉ giữ README và marker thư mục
 # Gitignore không gỡ file đã được theo dõi hoặc xóa lịch sử Git.
 /data/**
 !/data/**/
@@ -239,6 +239,12 @@ __marimo__/
 # CSV ở mọi vị trí, kể cả chữ hoa, file nén hoặc bản sao
 *.[cC][sS][vV]
 *.[cC][sS][vV].*
+
+# Dataset A: tạm thời theo dõi evidence đã merge để xử lý kiến trúc
+!/data/processed/datasetA/results/figures/*.png
+!/data/processed/datasetA/results/tables/.gitignore
+!/data/processed/datasetA/results/tables/*.csv
+!/data/processed/datasetA/results/models/.gitignore
 
 # Database local, dump và log runtime; giữ migration SQL nguồn
 *.sqlite
@@ -281,6 +287,8 @@ GEMINI.md
 /docs/ai_audit/
 /_archive/
 /.tmp/
+/tmp/
+/output/
 
 # Secret và môi trường thật; chỉ cho phép mẫu không chứa secret
 .env.*
