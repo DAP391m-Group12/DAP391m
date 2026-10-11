@@ -23,6 +23,7 @@ outside this Markdown handbook.
 | Implement or execute the locked TabMmini v1 route | [TabMmini v1 training runbook](runbooks/tabmmini_training.md) |
 | Understand split, CV, refit, Validation/Test, metrics, bootstrap, or RQ gates | [Split and evaluation contract](contracts/split_and_evaluation.md) |
 | Implement or review the locked six-model GSV/interventional Shapley--Lorenz adaptation protocol and its numerical fixtures | [RQ2 explanation contract](contracts/rq2_explanation.md) |
+| Review the locked protocol or accepted six-model descriptive fairness audit for `applicant_sex` and `derived_race` | [RQ3 fairness contract](contracts/rq3_fairness.md) |
 | Check current execution stage and evidence | [Current execution status](STATUS.md) |
 
 ## Document ownership
@@ -42,6 +43,9 @@ outside this Markdown handbook.
   ranking, shared-bootstrap, numerical-fixture, and acceptance protocol. It
   defines expected fixture outputs but does not record fixture execution or
   RQ2 execution status.
+- [RQ3 fairness](contracts/rq3_fairness.md) owns the protected-group mapping,
+  reference direction, metrics, denominator rules, paired-bootstrap policy,
+  interpretation boundary, and minimal output contract for RQ3.
 - [Classical preprocessing](contracts/preprocessing_classical.md) owns
   classical parser, transformations, model-family preprocessing, and output
   schema contracts.
@@ -76,11 +80,11 @@ packages remain historical experimental evidence only. They must not be
 resumed, extended, relabeled, or reused by the final 15-feature retraining.
 
 The six final 15-feature reporting inputs are complete and linked through their
-`run_id` manifests. The Dataset B RQ2 protocol, including its numerical-fixture
-specification, is locked. This router does not duplicate mutable implementation
-or test status; see [Current execution status](STATUS.md) for the evidence-backed
-RQ2 stage and active gates. RQ3 remains closed until its separately governed
-grouping, denominator, and uncertainty decisions are approved.
+`run_id` manifests. The Dataset B RQ2 and RQ3 protocols are locked, and their
+accepted execution evidence is registered in STATUS. This router does not
+duplicate mutable implementation or test status; see
+[Current execution status](STATUS.md) for the evidence-backed execution state
+and accepted-run boundaries.
 
 ## Archive and reports
 

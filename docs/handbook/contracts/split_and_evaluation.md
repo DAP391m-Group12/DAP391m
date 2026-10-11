@@ -328,15 +328,20 @@ RQ3 may begin only when:
    through Test evaluation;
 3. prediction rows can be joined one-to-one by `record_id` to the preserved
    audit metadata without placing protected attributes in predictor input;
-4. `applicant_sex` raw-code handling, missing/unknown handling, reference-group
-   direction, minimum denominators, undefined-result rules, calibration
-   residual definition, and CI procedure are approved;
+4. the `applicant_sex` and `derived_race` group mappings, missing/unknown
+   handling, reference-group directions, minimum denominators,
+   undefined-result rules, calibration residual definition, and CI procedure
+   are approved in the RQ3 fairness contract;
 5. the audit remains descriptive and does not introduce group-specific model
    thresholds unless a new research decision explicitly authorizes them.
 
-Preserving race fields as audit metadata does not automatically expand the
-approved RQ3 scope beyond gender. Any race analysis requires its own grouping
-and denominator decisions.
+The approved race scope uses `derived_race` in a separate RQ3-only audit view,
+joined from the immutable raw source using the one-based source-row number in
+the numeric `record_id` suffix (`dataframe position = suffix - 1`). The grouping, denominator,
+pairwise, and global-range rules are owned by the RQ3 fairness contract. This
+approval does not place `derived_race` in the controlled model view or change
+the Test partition, stored predictions, frozen Validation thresholds, or locked
+bootstrap indices.
 
 ## 12. Prohibited boundary crossings
 

@@ -139,8 +139,10 @@ into a predictor role requires a separately approved study design and a versione
 contract change.
 
 The five applicant-race slots must be preserved as raw, traceable fields. Their
-later use as a multi-valued audit group does not turn them into five independent
-business predictors.
+presence in audit metadata does not turn them into five independent business
+predictors. The approved RQ3 fairness contract uses `derived_race`, rather than
+these five raw slots, to calculate race-group metrics. The raw slots remain
+available only for traceability under the current RQ3 protocol.
 
 ## 8. Predictor-candidate universe — 35 columns
 
@@ -230,6 +232,15 @@ representations belongs to feature governance.
 
 Exclusion from Dataset B means the column is not carried into the controlled
 Dataset B view. It does not authorize deletion or mutation of the raw source.
+
+The separately approved RQ3 fairness contract defines one controlled exception
+for `derived_race`: it may be read from the immutable raw source into a
+separate RQ3-only audit view through the one-based source-row number encoded in
+the numeric suffix of `record_id`; dataframe position is `suffix - 1`. This
+exception does not add `derived_race` to the
+controlled model view or predictor matrix and may not change the cohort, split,
+labels, stored predictions, or frozen Validation thresholds. The 99-column role
+arithmetic in this contract remains unchanged.
 
 ### 9.1 Outcome-dependent or direct-leakage fields — 15 columns
 
@@ -515,9 +526,9 @@ Project sources used to reconstruct this contract:
   final input-quality gate;
 - `data/raw/state_NY_2024.csv` — frozen 99-column raw header used for exact role
   reconciliation;
-- `config/dataset_b/feature_set_v1.yaml` — `legacy evidence only` for the
-  historical machine-readable target, 12-input view, and audit separation
-  pending the separately scoped final configuration update;
+- `config/dataset_b/feature_set_v1.yaml` — machine-readable protected-metadata,
+  target, and role-separation evidence; the final 15-field model-input list and
+  12-player explanation mapping are owned by the feature-governance contract;
 - `src/dataset_b/preparation/dataset_view.py` — cohort filtering, target mapping,
   record-ID generation, and controlled-view construction;
 - `src/dataset_b/preprocessing/split_inputs.py` — enforced model/audit/target

@@ -127,7 +127,7 @@ data contract, feature governance, preprocessing, training, evaluation và
 - RQ1 chạy sáu model: Logistic Regression, Random Forest, XGBoost, plain MLP, RealMLP và TabMmini.
 - Final feature governance đã khóa 15 raw fields và 12 business players cho giải thích; xem [Feature governance](docs/handbook/contracts/feature_governance.md).
 - `applicant_sex`, năm race slots, `lei`, `county_code` và `applicant_age` nằm ngoài `X` để audit/truy vết.
-- RQ2 dùng sáu final frozen models, giải thích `P(Approved)` theo [RQ2 explanation contract](docs/handbook/contracts/rq2_explanation.md); RQ3 là descriptive fairness audit của prediction từ cả sáu model, không phải fairness mitigation.
+- RQ2 dùng sáu final frozen models, giải thích `P(Approved)` theo [RQ2 explanation contract](docs/handbook/contracts/rq2_explanation.md). RQ3 đã hoàn tất descriptive fairness audit cho `applicant_sex` và `derived_race` trong accepted run `rq3_fairness_20261010_01`; notebook 09 chỉ đọc accepted outputs và không thực hiện fairness mitigation.
 
 ## Artifact tối thiểu cần bảo tồn
 

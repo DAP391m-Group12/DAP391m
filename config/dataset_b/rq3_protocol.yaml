@@ -1,0 +1,164 @@
+dataset: dataset_b
+protocol_version: rq3_fairness_v1
+status: complete
+purpose: six_model_descriptive_fairness_audit
+
+eligible_final_runs:
+  lr:
+    run_id: lr_final_15f_20261002_01
+    predictions: artifacts/dataset_b/lr/final/lr_final_15f_20261002_01/test/test_predictions.csv
+    threshold: artifacts/dataset_b/lr/final/lr_final_15f_20261002_01/validation/threshold_selection.json
+  rf:
+    run_id: rf_final_15f_20261002_01
+    predictions: artifacts/dataset_b/rf/final/rf_final_15f_20261002_01/test/test_predictions.csv
+    threshold: artifacts/dataset_b/rf/final/rf_final_15f_20261002_01/validation/threshold_selection.json
+  xgboost:
+    run_id: xgb_final_15f_20261003_01
+    predictions: artifacts/dataset_b/xgboost/final/xgb_final_15f_20261003_01/test/test_predictions.csv
+    threshold: artifacts/dataset_b/xgboost/final/xgb_final_15f_20261003_01/validation/threshold_selection.json
+  plain_mlp:
+    run_id: plain_mlp_final_15f_20261004_03
+    predictions: artifacts/dataset_b/plain_mlp/final/plain_mlp_final_15f_20261004_03/test_evaluation/test_predictions.csv
+    threshold: artifacts/dataset_b/plain_mlp/final/plain_mlp_final_15f_20261004_03/validation/threshold_selection/threshold_selection.json
+  realmlp:
+    run_id: realmlp_final_15f_20261004_01
+    predictions: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/test_evaluation/test_predictions.csv
+    threshold: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/threshold/threshold_selection.json
+  tabmmini:
+    run_id: tabmmini_final_15f_20261004_01
+    predictions: artifacts/dataset_b/tabmmini/final/tabmmini_final_15f_20261004_01/test_evaluation/test_predictions.csv
+    threshold: artifacts/dataset_b/tabmmini/final/tabmmini_final_15f_20261004_01/validation/threshold_selection.json
+
+audit_data:
+  partition: test
+  test_rows: 43996
+  test_view: data/dataset_b/split_v1/test.csv
+  raw_source: data/raw/state_NY_2024.csv
+  join_key: record_id
+  join_method: one_based_source_row_number_from_record_id_suffix
+  join_cardinality: one_to_one_complete
+  protected_attributes_are_model_inputs: false
+  allow_retraining_or_reinference: false
+  allow_group_specific_thresholds: false
+  allow_fairness_mitigation: false
+
+target_orientation:
+  positive_outcome: Approved
+  label: y_approved
+  probability: p_approved
+  predicted_class: predicted_approved
+  allow_denied_label_inversion: false
+
+audit_view:
+  name: rq3_only_audit_view
+  controlled_model_view_unchanged: true
+  controlled_model_view_role_arithmetic_unchanged: true
+  derived_race:
+    source: immutable_raw_source
+    allowed_in_rq3_audit_view: true
+    allowed_in_controlled_model_view: false
+    allowed_in_predictors: false
+  raw_applicant_race_slots:
+    fields:
+      - applicant_race-1
+      - applicant_race-2
+      - applicant_race-3
+      - applicant_race-4
+      - applicant_race-5
+    retained_for_traceability: true
+    used_for_rq3_metrics: false
+
+attributes:
+  applicant_sex:
+    source: test_view
+    reference_group: Male
+    gap_direction: target_minus_reference
+    primary_groups:
+      Male: "1"
+      Female: "2"
+    primary_comparisons: [Female]
+    coverage_only_groups:
+      Information not provided: "3"
+      Not applicable: "4"
+      Applicant selected both male and female: "6"
+  derived_race:
+    source: raw_source
+    interpretation: hmda_derived_application_level_race_group
+    reference_group: White
+    gap_direction: target_minus_reference
+    primary_comparisons: [Black or African American, Asian]
+    secondary_comparisons:
+      - American Indian or Alaska Native
+      - 2 or more minority races
+      - Joint
+    coverage_only_groups:
+      - Native Hawaiian or Other Pacific Islander
+      - Free Form Text Only
+      - Race Not Available
+
+metrics:
+  group_metrics:
+    - selection_rate
+    - tpr_approved
+    - fpr_approved
+    - fnr_approved
+    - brier_score
+    - calibration_residual
+    - absolute_calibration_residual
+  calibration_residual: mean_p_approved_minus_y_approved
+  pairwise_gap_metrics:
+    - selection_rate_gap_signed
+    - selection_rate_gap_absolute
+    - tpr_approved_gap_signed
+    - tpr_approved_gap_absolute
+    - fpr_approved_gap_signed
+    - fpr_approved_gap_absolute
+    - fnr_approved_gap_signed
+    - fnr_approved_gap_absolute
+    - calibration_residual_gap_signed
+    - calibration_residual_gap_absolute
+    - equalized_odds_gap
+  pairwise_gap_direction: target_minus_reference
+  equalized_odds_gap: max_absolute_tpr_fpr_gap
+  global_race_metrics:
+    - demographic_parity_difference_range
+    - tpr_approved_range
+    - fpr_approved_range
+    - equalized_odds_difference_range
+  global_race_group_scope: reference_primary_and_secondary_groups_passing_metric_denominator
+  global_race_excludes_coverage_only_groups: true
+
+denominators:
+  minimum_group_rows: 100
+  minimum_actual_approved: 30
+  minimum_actual_denied: 30
+  insufficient_result: undefined
+  undefined_storage: null
+  never_replace_undefined_with_zero: true
+
+uncertainty:
+  indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+  replicates: 1000
+  confidence_level: 0.95
+  quantile_method: linear
+  paired_across_models_attributes_and_groups: true
+  apply_denominator_rules_per_replicate: true
+  minimum_valid_replicates: 950
+  may_regenerate_indices: false
+
+output:
+  run_id: rq3_fairness_20261010_01
+  root: artifacts/dataset_b/rq3/rq3_fairness_20261010_01
+  files:
+    - audit_metadata.csv
+    - group_metrics.csv
+    - gap_metrics.csv
+    - bootstrap_summary.csv
+    - runtime.csv
+    - status.json
+
+interpretation_boundary:
+  descriptive_model_audit_only: true
+  causal_claim_allowed: false
+  legal_discrimination_claim_allowed: false
+  creditworthiness_or_default_claim_allowed: false
