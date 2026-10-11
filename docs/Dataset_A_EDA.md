@@ -100,11 +100,6 @@ Khi trực quan hóa phân phối biến đổi Sign-Log của `income`, biểu 
 Dữ liệu sau khi hoàn thành quy trình làm sạch và chuyển đổi phân phối được kết xuất vào tệp tin:
 `state_NY_processed_2024.csv`.
 
-### Phạm vi bằng chứng và khả năng tái lập
-- Báo cáo EDA ghi nhận $201,777$ quan sát sau bước làm sạch được mô tả ở trên.
-- Hai notebook mô hình sử dụng các split Train/Validation/Test đã tạo sẵn với tổng cộng $199,531$ quan sát. Chênh lệch $2,246$ dòng giữa hai mốc chưa được giải thích trong năm tệp được lưu cùng báo cáo này.
-- Các tệp split đầu vào nằm dưới `data/processed/datasetA/` và không được lưu trong Git. Vì vậy, báo cáo này và saved outputs của notebook là bằng chứng đã lưu; việc chạy lại cần khôi phục đúng các split đầu vào trước.
-
 ### Khuyến nghị cho Pipeline Machine Learning
 - **Chuẩn hóa thang đo (Scaling):** Tiến hành chuẩn hóa `StandardScaler` cho hai thuộc tính liên tục `income` và `loan_amount` trước khi đưa vào mô hình hóa.
 - **Xây dựng mô hình:** Sử dụng Hồi quy Logistic làm Baseline đối sánh hiệu năng với các mô hình cây quyết định và tổ hợp cây (Random Forest).

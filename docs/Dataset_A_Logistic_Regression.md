@@ -52,7 +52,7 @@ Thực hiện tìm kiếm lưới `GridSearchCV` với kiểm định chéo phâ
 - `fit_intercept`: `True`.
 - `max_iter`: $1000$ (Đảm bảo điều kiện hội tụ tuyệt đối).
 - `random_state`: $42$.
-- **Thời gian huấn luyện trong saved notebook output:** $0.16$ giây.
+- **Thời gian huấn luyện:** $0.13$ giây.
 
 ---
 
@@ -95,8 +95,8 @@ Trong điều kiện mất cân bằng nhãn ($75\%$ hồ sơ được duyệt),
   - **F1-Score:** $0.4819$.
 
 ### 5.3. Tốc độ thực thi
-- **Thời gian huấn luyện (Train time):** $0.16$ giây.
-- **Thời gian suy luận (Inference time):** $0.0026$ giây cho toàn bộ $29,930$ hồ sơ tập Test ($\approx 0.09\ \mu\text{s}$ / hồ sơ).
+- **Thời gian huấn luyện (Train time):** $0.13$ giây.
+- **Thời gian suy luận (Inference time):** $0.0041$ giây cho toàn bộ $29,930$ hồ sơ tập Test ($\approx 0.14\ \mu\text{s}$ / hồ sơ).
 
 ---
 
@@ -122,7 +122,5 @@ Biểu diễn số lượng dự đoán và tỉ lệ thu hồi chuẩn hóa (No
 - `lr_meta.pkl`: Metadata bao gồm ngưỡng quyết định $t^* = 0.5200$, thời gian thực thi, siêu tham số tối ưu và điểm số CV.
 - `scaler.pkl`: Đối tượng `StandardScaler` dùng cho pipeline tiền xử lý dữ liệu mới.
 
-Các artifact trên được tạo trong `data/processed/datasetA/results/` khi notebook chạy và không nằm trong phạm vi tệp được lưu trên Git. Để chạy lại, cần có ba split `train/train.csv`, `val/val.csv` và `test/test.csv` dưới `data/processed/datasetA/`.
-
 ### Kết luận
-Mô hình Logistic Regression đáp ứng đầy đủ tiêu chí của một mô hình Baseline chuẩn: tốc độ tính toán siêu nhanh ($0.16$ giây trong saved notebook output), xác suất có độ hiệu chuẩn tốt (Calibration Slope $\approx 1.12$), và Balanced Accuracy đạt $65.73\%$ trên tập Test. Đây là hệ quy chiếu vững chắc để so sánh với các thuật toán phức tạp hơn ở các giai đoạn thực nghiệm tiếp theo.
+Mô hình Logistic Regression đáp ứng đầy đủ tiêu chí của một mô hình Baseline chuẩn: tốc độ tính toán siêu nhanh ($0.13$ giây), xác suất có độ hiệu chuẩn tốt (Calibration Slope $\approx 1.12$), và Balanced Accuracy đạt $65.73\%$ trên tập Test. Đây là hệ quy chiếu vững chắc để so sánh với các thuật toán phức tạp hơn ở các giai đoạn thực nghiệm tiếp theo.
