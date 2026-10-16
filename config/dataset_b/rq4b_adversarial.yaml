@@ -1,0 +1,236 @@
+schema_version: 1
+dataset: dataset_b
+protocol_version: rq4b_adversarial_realmlp_v1
+repository_question: RQ4b
+manuscript_equivalent: RQ3b
+status: planned_not_implemented
+artifact_namespace: artifacts/dataset_b/rq4/rq4b
+prohibit_rq3_artifact_namespace_reuse: true
+
+prerequisites:
+  documentation_and_config_approval: required
+  rq1_paired_bootstrap_task: required_before_execution
+  internal_extension_technical_spike: required
+  implementation_in_this_task: false
+
+target:
+  label: y_approved
+  positive_outcome: Approved
+  join_key: record_id
+
+groups:
+  attribute: derived_race
+  interpretation: hmda_application_level_applicant_coapplicant_aggregation
+  joint_is_applicant_race: false
+  g3:
+    - White
+    - Black or African American
+    - Asian
+  g6:
+    - White
+    - Black or African American
+    - Asian
+    - American Indian or Alaska Native
+    - 2 or more minority races
+    - Joint
+  coverage_only_outside_g6:
+    - Native Hawaiian or Other Pacific Islander
+    - Free Form Text Only
+    - Race Not Available
+  fixed_roster_across_bootstrap: true
+  allow_drop_merge_rename_or_dynamic_shrink: false
+  invalid_required_group_metric_invalidates_eod6_replicate: true
+
+denominators:
+  source_contract: config/dataset_b/rq3_protocol.yaml
+  minimum_group_rows: 100
+  minimum_actual_approved: 30
+  minimum_actual_denied: 30
+  insufficient_result: null
+  never_replace_undefined_with_zero: true
+
+development_governance:
+  source_partition: validation
+  use_complete_validation: true
+  split_validation: false
+  threshold_calibration_partition: validation
+  lambda_selection_partition: validation
+  lambda_selection_primary_fairness_metric: eod3
+  eod6_role: audit_only
+  preserve_train_validation_and_test_membership: true
+  same_partition_selection_calibration_limitation: explicitly_report
+  required_checks: [complete_validation_coverage, stable_record_id, group_outcome_counts]
+
+realmlp_recipe:
+  base_config: config/dataset_b/realmlp_v1.yaml
+  predictor_features_exclude: [derived_race, applicant_sex]
+  predictor_loss_population: all_train_rows
+  adversarial_loss_population: configured_group_roster_only
+  all_groups_receive_predictor_output: true
+  decision_threshold: one_global_calibrated_threshold
+  adversary:
+    task: multiclass_group_prediction
+    loss_primary: unweighted_multiclass_cross_entropy
+    conditioned_on_true_y_during_training_only: true
+    input_preference: predictor_logit
+    fallback_input: positive_class_probability
+    final_input_requires_technical_spike_gate: true
+    predictor_total_loss: L_prediction - lambda * L_adversary
+    gradient_reversal_equivalent_allowed: true
+    additive_positive_adversary_loss_prohibited: true
+  lambda_grid: [0, 0.01, 0.03, 0.1, 0.3, 1.0]
+  development_seeds: [42, 43, 44]
+  final_seeds: [42, 43, 44, 45, 46]
+
+threshold_calibration:
+  partition: validation
+  candidates:
+    start: 0.001
+    stop: 0.999
+    step: 0.001
+    count: 999
+  objective: maximize_balanced_accuracy
+  tie_break: [minimum_absolute_distance_to_0.5, lower_threshold]
+  global_threshold_only: true
+
+candidate_selection:
+  evaluation_partition: validation
+  matched_control: same_seed_lambda_zero
+  eligibility_metric: mean_matched_delta_balanced_accuracy
+  eligibility_minimum: -0.01
+  rq4b_3_objective: minimum_mean_eod3
+  eod6_may_select_lambda: false
+  exact_tie_break: smaller_lambda
+  lambda_zero_may_win: true
+  use_test_for_selection: false
+  same_partition_as_threshold_calibration: true
+  exploratory_optimism_limitation_required: true
+
+configurations:
+  RQ4b-3:
+    role: primary
+    group_roster: g3
+    readiness: blocked_pending_internal_extension_technical_spike
+  RQ4b-6:
+    role: deferred_optional_sensitivity
+    group_roster: g6
+    readiness: deferred_optional_not_committed
+    requires_separate_future_authorization: true
+    prerequisite: rq4b_3_gates_and_stable_diagnostics
+    small_cell_warning: 2 or more minority races
+    optional_weighted_sensitivity:
+      enabled_by_default: false
+      weighting: train_only_inverse_frequency
+      weights_fixed_before_test: true
+      additional_unique_full_fits: 5
+
+fit_budget:
+  train_lambda_zero_controls_for_all_final_seeds: true
+  reuse_lambda_zero_controls_across_g3_g6: true
+  reuse_selected_lambda_artifacts_for_seeds: [42, 43, 44]
+  retrain_reused_selected_lambda_artifacts: false
+  committed_rq4b_3_maximum_unique_full_fits_approx: 22
+  future_rq4b_6_additional_primary_fits_approx: 17
+  future_optional_weighted_rq4b_6_additional_fits: 5
+  rq4b_6_outside_committed_budget: true
+
+runtime:
+  device: cuda:0
+  allow_silent_cpu_fallback: false
+  batch_size: 256
+  predict_batch_size: 1024
+  preflight_required: [cuda_available, finite_operation]
+  compatibility_baseline:
+    python: 3.13.14
+    torch: 2.14.0+cu130
+    pytabkit: 1.7.3
+    numpy: 2.5.2
+    pandas: 3.0.5
+    scikit_learn: 1.9.1
+  pytabkit_source_revision_pin_required: true
+
+internal_extension_and_naming_gate:
+  public_sklearn_wrapper_has_adversarial_hooks: false
+  existing_history_adapter_proves_internal_extension_possible: true
+  existing_history_adapter_proves_adversarial_recipe: false
+  required_gates:
+    - pin_pytabkit_source_revision
+    - replace_or_subclass_training_step
+    - locate_score_tensor_and_verify_dimensions
+    - finite_one_batch_forward_backward
+    - serialization_and_reload
+    - lambda_zero_equivalence
+  preserve_realmlp_recipe_required: true
+  if_recipe_not_preserved: do_not_name_adversarial_realmlp
+
+metrics:
+  primary_fairness: [eod3]
+  audit_fairness: [eod6]
+  eod_definition: max_fixed_roster_tpr_range_fpr_range
+  primary_utility: full_partition_balanced_accuracy
+  ba_budget_primary: 0.01
+  ba_budget_sensitivity: [0.005, 0.02]
+  fairness_generalization_gap:
+    name: fairness_generalization_gap
+    definition: test_eod_minus_development_eod
+    report_for: [eod3, eod6]
+    development_partition: validation
+    same_partition_selection_calibration_limitation: true
+    prohibited_name: calibration-versus-Test fairness gap
+  additional:
+    - denied_f1
+    - denied_precision
+    - denied_recall
+    - per_group_tpr
+    - per_group_fpr
+    - per_group_selection_rate
+    - extrema_groups
+    - group_coverage_and_denominators
+    - sex_eod_safety_audit
+    - decision_changes_overall_and_by_group
+
+uncertainty:
+  within_seed:
+    method: paired_test_bootstrap_vs_matched_lambda_zero
+    indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+    reuse_locked_indices: true
+    allow_regenerate_indices: false
+  across_seed:
+    summaries: [mean, standard_deviation, range]
+  select_seed_from_test: false
+  save_invalid_replicates_and_reasons: true
+
+status_contract:
+  execution_status: [completed, failed, infeasible]
+  stability_status: [stable, unstable, not_assessed]
+  primary_criterion: [pass, fail, not_evaluable]
+  fields_are_independent: true
+  reason_codes:
+    - none
+    - prerequisite_rq1_paired_bootstrap_missing
+    - technical_spike_pending
+    - pytabkit_revision_unpinned
+    - adversarial_hook_unavailable
+    - score_tensor_unresolved
+    - nonfinite_preflight
+    - serialization_reload_failed
+    - lambda_zero_equivalence_failed
+    - required_group_metric_invalid
+    - insufficient_valid_bootstrap_replicates
+    - ba_budget_exceeded
+    - unstable_diagnostics
+    - runtime_failure
+
+prohibitions:
+  prohibit_race_or_sex_as_predictor: true
+  prohibit_group_specific_thresholds: true
+  prohibit_silent_cpu_fallback: true
+  prohibit_test_selection_of_lambda_threshold_seed_or_weighting: true
+  prohibit_best_seed_selection: true
+  prohibit_dynamic_group_roster: true
+  prohibit_locked_test_bootstrap_regeneration: true
+  prohibit_adversarial_realmlp_name_before_gate_passes: true
+  prohibit_legal_compliance_claim: true
+  prohibit_discrimination_claim: true
+  prohibit_causal_claim: true
+  prohibit_creditworthiness_or_default_risk_claim: true

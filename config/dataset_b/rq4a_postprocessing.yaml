@@ -1,0 +1,185 @@
+schema_version: 1
+dataset: dataset_b
+protocol_version: rq4a_equalized_odds_postprocessing_v1
+repository_question: RQ4a
+manuscript_equivalent: RQ3a
+status: planned_not_implemented
+artifact_namespace: artifacts/dataset_b/rq4/rq4a
+prohibit_rq3_artifact_namespace_reuse: true
+
+prerequisites:
+  documentation_and_config_approval: required
+  rq1_paired_bootstrap_task: required_before_execution
+  rq1_paired_bootstrap_scope: predictive_performance_thresholded_utility_and_calibration
+  implementation_in_this_task: false
+
+target:
+  label: y_approved
+  positive_outcome: Approved
+  probability: p_approved
+  join_key: record_id
+
+groups:
+  attribute: derived_race
+  interpretation: hmda_application_level_applicant_coapplicant_aggregation
+  joint_is_applicant_race: false
+  g3:
+    - White
+    - Black or African American
+    - Asian
+  g6:
+    - White
+    - Black or African American
+    - Asian
+    - American Indian or Alaska Native
+    - 2 or more minority races
+    - Joint
+  coverage_only_outside_g6:
+    - Native Hawaiian or Other Pacific Islander
+    - Free Form Text Only
+    - Race Not Available
+  fixed_roster_across_bootstrap: true
+  allow_drop_merge_rename_or_dynamic_shrink: false
+  invalid_required_group_metric_invalidates_eod6_replicate: true
+
+denominators:
+  source_contract: config/dataset_b/rq3_protocol.yaml
+  minimum_group_rows: 100
+  minimum_actual_approved: 30
+  minimum_actual_denied: 30
+  insufficient_result: null
+  never_replace_undefined_with_zero: true
+
+development_governance:
+  source_partition: validation
+  use_complete_validation: true
+  split_validation: false
+  postprocessor_fit_partition: validation
+  development_metric_partition: validation
+  rq4a_model_or_policy_search: false
+  preserve_train_validation_and_test_membership: true
+  required_checks: [complete_validation_coverage, stable_record_id, group_outcome_counts]
+
+baseline_models:
+  xgboost:
+    run_id: xgb_final_15f_20261003_01
+    validation_predictions: artifacts/dataset_b/xgboost/final/xgb_final_15f_20261003_01/validation/validation_predictions.csv
+    test_predictions: artifacts/dataset_b/xgboost/final/xgb_final_15f_20261003_01/test/test_predictions.csv
+    threshold_artifact: artifacts/dataset_b/xgboost/final/xgb_final_15f_20261003_01/validation/threshold_selection.json
+    frozen_threshold: 0.525
+    validation_balanced_accuracy_anchor: 0.7868670516646672
+    test_balanced_accuracy_anchor: 0.7829818365685688
+    test_roc_auc_anchor: 0.8641458255153933
+    test_brier_anchor: 0.13138776492926293
+  realmlp:
+    run_id: realmlp_final_15f_20261004_01
+    validation_predictions: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/validation/validation_predictions.csv
+    test_predictions: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/test_evaluation/test_predictions.csv
+    threshold_artifact: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/threshold/threshold_selection.json
+    frozen_threshold: 0.726
+    validation_balanced_accuracy_anchor: 0.7865608645808757
+    test_balanced_accuracy_anchor: 0.7827860581110593
+    test_roc_auc_anchor: 0.8632032832847532
+    test_brier_anchor: 0.1065088230151043
+
+postprocessor:
+  implementation: fairlearn.postprocessing.ThresholdOptimizer
+  fit_partition: validation
+  development_metric_partition: validation
+  constraints: equalized_odds
+  objective: balanced_accuracy_score
+  grid_size: 1000
+  flip: false
+  prefit: true
+  predict_method: predict_proba
+  allow_base_model_retraining: false
+  allow_base_model_reinference: false
+
+configurations:
+  RQ4a-3:
+    role: primary
+    group_roster: g3
+    readiness: ready_after_docs_config_approval
+    outside_roster_decision: frozen_baseline_hard_prediction
+  RQ4a-6:
+    role: required_sensitivity
+    group_roster: g6
+    readiness: ready_after_docs_config_approval
+    outside_roster_decision: frozen_baseline_hard_prediction
+    small_cell_warning: 2 or more minority races
+
+randomized_decisions:
+  primary_seed: 42
+  sensitivity_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71]
+  select_best_seed: false
+
+metrics:
+  primary_fairness: [eod3, eod6]
+  eod_definition: max_fixed_roster_tpr_range_fpr_range
+  primary_utility: full_partition_balanced_accuracy
+  ba_budget_primary: 0.01
+  ba_budget_sensitivity: [0.005, 0.02]
+  fairness_generalization_gap:
+    name: fairness_generalization_gap
+    definition: test_eod_minus_development_eod
+    report_for: [eod3, eod6]
+    development_partition: validation
+    prohibited_name: calibration-versus-Test fairness gap
+  additional:
+    - denied_f1
+    - denied_precision
+    - denied_recall
+    - per_group_tpr
+    - per_group_fpr
+    - per_group_selection_rate
+    - extrema_groups
+    - group_coverage_and_denominators
+    - sex_eod_safety_audit
+    - decision_changes_overall_and_by_group
+  inherited_invariant_score_diagnostics: [roc_auc, brier]
+  claim_postprocessing_improvement_for_invariant_scores: false
+
+bootstrap:
+  replicates: 1000
+  calibration_resampling:
+    source: validation
+    method: conditional_bootstrap_with_replacement
+    strata: [derived_race, y_approved]
+    refit_postprocessor_each_replicate: true
+  test_indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+  reuse_locked_paired_test_indices: true
+  allow_regenerate_test_indices: false
+  root_seed_formula: 10000 + replicate_id
+  independent_child_streams: [calibration_resampling, randomized_decisions]
+  locked_test_indices_consume_new_rng_stream: false
+  save_invalid_replicates: true
+  save_invalid_reasons: true
+  allow_base_model_retraining_or_reinference: false
+
+status_contract:
+  execution_status: [completed, failed, infeasible]
+  stability_status: [stable, unstable, not_assessed]
+  primary_criterion: [pass, fail, not_evaluable]
+  fields_are_independent: true
+  reason_codes:
+    - none
+    - prerequisite_rq1_paired_bootstrap_missing
+    - required_group_metric_invalid
+    - insufficient_valid_bootstrap_replicates
+    - ba_budget_exceeded
+    - unstable_diagnostics
+    - runtime_failure
+
+prohibitions:
+  prohibit_base_model_retraining: true
+  prohibit_base_model_reinference: true
+  prohibit_locked_test_bootstrap_regeneration: true
+  prohibit_best_randomized_seed_selection: true
+  prohibit_dynamic_group_roster: true
+  prohibit_test_use_for_selection_or_refit: true
+  prohibit_roc_auc_or_brier_postprocessing_improvement_claim: true
+  prohibit_legal_compliance_claim: true
+  prohibit_discrimination_claim: true
+  prohibit_causal_claim: true
+  prohibit_creditworthiness_or_default_risk_claim: true
+
