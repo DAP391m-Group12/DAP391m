@@ -2,6 +2,203 @@
 
 ## 1. Purpose and ownership
 
+**Scoped chat override (2026-10-19):** the user authorized Codex to implement
+terminal reports every 120 seconds, retain detailed durable file logging, test
+and separately self-review, then execute one fresh real N4 probe, verify its
+artifacts and stop before N5. This overrides user-only execution statements in
+this runbook only for that sequence. No automatic retry or N5/production launch
+is authorized. Implementation/execution is deferred to the next chat; consult
+STATUS for actual progress and the interrupted `_02` attempt.
+
+Terminal reporting must be periodic rather than printing every batch/epoch.
+Report start, phase transitions, completion and errors immediately, even when
+the operation finishes before 120 seconds. Keep detailed epoch/history and
+failure evidence in files without throttling those records. Periodic reports
+identify run/attempt, phase/fold/epoch/batch as applicable, elapsed time and the
+last confirmed completed-progress time; observer activity is not optimizer
+progress. Validate the reporting change before the single authorized real fit.
+
+RQ4b uses the separate model-specific protocol in
+[RQ4 mitigation plan, Section 6](../RQ4_MITIGATION_PLAN.md#6-rq4b-adversarial-realmlp-protocol)
+and `config/dataset_b/rq4b_adversarial.yaml`. For every lambda/seed, five
+Train-only folds each run all 256 epochs; the minimum unweighted mean
+prediction CE selects the refit epoch, with exact ties selecting the earliest.
+This is post-training selection, not patience-based early stopping or the
+historical fixed-50 RealMLP pilot. Full-Train refit starts fresh without a
+stopping holdout. The generic pilot branches below do not override this route.
+Use `src.dataset_b.mitigation.rq4b_runner` for the separate staged RQ4b route;
+legacy RealMLP commands do not implement that protocol. The spike uses synthetic
+fixtures and at most two epochs per smoke fit; it does not execute production CV.
+Codex owns current implementation, contracts/config, tests, self-review and
+reporting. Approvals for the handover are given in chat, not terminal Allow
+requests. Historical Claude implementation and Codex independent-review records
+retain their authorship. The user executes all real fits (capability probe, CV
+and full-Train refit) after the scoped readiness handoff. Codex supplies exact
+commands, fixes scoped bugs, reports technical acceptance and checks saved
+artifacts after each user run. Codex does not launch or retry real fits. There
+is no current Claude assignment, reviewer role or verifier dependency.
+Runtime/data checks and execution still need their own task scopes;
+documentation approval is not production authorization.
+The user locked production adversary `2 -> 32 ReLU -> 3`, no dropout/class
+weighting/search, adversary seed equal to model seed with isolated RNG, and
+refit schedule horizon 256 while executing only the selected epoch count.
+Implementation acceptance and its evidence limits are recorded in STATUS;
+real-data runtime is not verified and production remains unlaunched. The user has locked capability probe population,
+60/20/20 split, AdamW budget, Y-only comparison and synthetic gate; the separate
+probe uses patience 15, not predictor CV. Test uncertainty is locked-index
+paired percentile bootstrap (1,000/1,000 valid), with strict strong-support CI
+endpoints and sample SD (`ddof=1`). Final probe AdamW parameters, CE-based
+stopping/checkpoint, stored-probability log-ratio, synthetic fixture and linear
+percentile interpolation are locked in the RQ4 plan/YAML. Method decisions are
+unchanged. Remaining integration verification and explicit user launch are
+separate gates; §9 of the plan owns sequencing and §10 owns interpretation. Report stability as
+`not_assessed` and distinguish scientific support from execution success.
+
+### RQ4b stage operation and user-fit handoff
+
+These instructions describe the current interface, not a launch approval or
+runtime PASS. Use STATUS for execution state. Codex prepares and tests code,
+fixes scoped bugs, performs a separate self-review/validation pass and reports
+technical acceptance. The user runs every real probe/CV/refit command; Codex
+checks outputs before recommending the next unit. Non-fit preflight,
+inference and evaluation also require their own authorized task scopes.
+
+Run from `D:\Proj\DAP\DAP391m_GR12` using the existing GPU environment
+`.venv-realmlp-gpu\Scripts\python.exe`. Before command handoff, verify the
+environment and pinned PyTabKit lineage against the locked configuration,
+mandatory acceptances and a finite operation on `cuda:0`; no CPU fallback or
+dependency installation is implied. Environment existence is not readiness.
+Set a fresh run ID only at execution, in the form `rq4b3_adv_<YYYYMMDD>_<NN>`.
+Finish required code fixes before creating the run: `open_run` rejects changes
+to any of the five recorded RQ4b source files. Do not edit manifests to bypass
+that check. Every CLI stage requires `--confirm-production`; this flag is an
+execution acknowledgement, not a replacement for the scoped chat decision.
+
+The PowerShell command template is:
+
+```powershell
+& .\.venv-realmlp-gpu\Scripts\python.exe -m src.dataset_b.mitigation.rq4b_runner --stage <stage> --run-id <run_id> --confirm-production
+```
+
+For `development`, `development_validation`, `final_fit` and `final_validation`,
+append `--lambda <lambda> --seed <seed>`. Other stages take neither option.
+For `capability` only, supply `--real-probe-evidence <path>` to ingest an
+already completed real-probe attempt. This never fits a probe. If omitted,
+the real probe is explicitly recorded as not run; if supplied but missing,
+invalid or failed, the stage fails rather than silently falling back.
+These are templates: replace placeholders at handoff and run one explicit unit
+at a time. There is no whole-grid command in this interface.
+
+Paths below are repository-relative. Let `R` be
+`artifacts/dataset_b/rq4/rq4b/<run_id>`. Each published stage lives at
+`R/stages/<key>/` with `receipt.json`; verify receipt identity, input lineage
+and all output hashes before proceeding. Unit keys use
+`<prefix>_l<lambda>_s<seed>`, replacing a decimal point by `p` (for example,
+`dev_l0p01_s42`). Failures retained by the stage writer live under
+`R/failures/<key>.<uuid>/` with `FAILURE_RECEIPT.json`. Receipt writing itself
+can fail; keep the original exception, logs and any temporary directory.
+
+| CLI `--stage` | Prerequisites and inputs | Published output/key | Real work and stop check |
+|---|---|---|---|
+| `create` | Approved readiness handoff; unused run ID; locked YAML and current source | `R/run_manifest.json`, empty stages/failures directories | No fit/inference. Stop on collision, invalid ID or wrong namespace. |
+| `preflight` | Run manifest; T1-T5 acceptance records; spike/T1/source-lineage prerequisites; CUDA finite operation; locked index file and manifest presence | `preflight/preflight.json` | No fit/model inference. Stop unless every collected status is PASS. This stage does not validate all real input bodies or prove fit/reload readiness. |
+| `capability` | Verified preflight; retained synthetic gate; optional explicit `--real-probe-evidence` path | `capability/capability.json`, including the validated real evidence and invocation when supplied | No fit/model inference. Ingestion reconstructs the frozen population and verifies input/code lineage, split, settings, comparator, fit history and bootstrap arithmetic. Stop on invalid evidence; inconclusive capability is not a stop gate. |
+| `development` | Preflight/capability receipts; Train split, feature contract, manifest and audit join; one locked lambda/seed | `dev_l*_s*/`: preprocessor/model, CV curves, complete per-fold outputs, selection record, diagnostics, run log, JSONL/final history and fit ledger | User runs 5 Train-only CV folds of 256 epochs and 1 fresh refit; includes reload verification predictions. Stop on exception, nonfinite values, logging failure, invalid 5x256 curves, serialization/reload or lineage failure. |
+| `development_validation` | Matching development fit receipt/files; complete Validation split and audit metadata | `devval_l*_s*/validation_predictions.csv`, `threshold.json` | Validation inference and global calibration; no fit. Stop on population, probability, metadata or artifact validation error. |
+| `selection` | All 18 development Validation units, references and saved thresholds | `selection/candidates.json`, `selection_lock.json` | No fit/new model inference. Recompute locked Validation selection; stop if not evaluable or stored thresholds disagree. No Test-based selection. |
+| `final_fit` | Selection lock; only a unit listed in `required_new_fits`; Train inputs | `final_l*_s*/`: same fit payload types as development | User runs 5 CV folds and 1 fresh refit per required unit, with reload verification. Same fit stop conditions; do not refit reused development arms. |
+| `final_validation` | Required final fit and selection lock; complete Validation inputs | `finalval_l*_s*/validation_predictions.csv`, `threshold.json` | Validation inference/calibration; no fit. Same Validation stop conditions. |
+| `test_evaluation` | Selection, all required final Validation units and verified reused/final arms; Test split/audit join; locked indices and manifest | `test_evaluation/`: deduplicated Test predictions, `seed_42.json` through `seed_46.json`, `assessment.json`, `status.json` | Test inference and paired bootstrap; no fit. Stop on missing threshold locks, lineage/ID/index mismatch or runtime error. A valid criterion failure is reported, not retried to obtain a better result. |
+| `package_validation` | Published Test evaluation and all published receipts/saved reporting inputs | `package_validation/package_report.json` | No fit/new model inference. Check hashes, lineage, declared fit budget and reporting traces; stop if any package check fails. |
+
+The loader resolves Train/Validation/Test from
+`data/dataset_b/split_v1/{train,validation,test}.csv`, with
+`artifacts/dataset_b/split_v1.json`, the feature contract and authorized raw
+derived-race reconciliation source through `rq4b_inputs.load_contract()`.
+Use only resources permitted by the stage; do not replace them with cached
+matrices from another branch/run. Test indices are
+`artifacts/dataset_b/rq1_test_bootstrap_indices.npz` with
+`rq1_test_bootstrap_manifest.json` beside it; do not regenerate them.
+
+**Real probe is a separate user-fit operation.** Its frozen source is
+`artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/validation/validation_predictions.csv`
+plus authorized race reconciliation. No baseline refit or new frozen-model
+inference is permitted. After the separately scoped runtime/readiness checks,
+the user executes this template with a new attempt name:
+
+```powershell
+& .\.venv-realmlp-gpu\Scripts\python.exe -m src.dataset_b.mitigation.rq4b_probe --kind real --attempt-name <new_attempt_name> --confirm-real-probe
+```
+
+The command creates one direct child of `scratch/rq4b_implementation/`, loads
+the frozen population through the contract and fits once. Successful output is
+`invocation.json` plus immutable `real_probe_evidence.json`; preparation/fit/
+publication failures retain `FAILURE_RECEIPT.json` when receipt writing succeeds.
+Never reuse an attempt. Omitting `--kind real` preserves the synthetic-gate
+CLI; `--confirm-real-probe` is required for real mode and rejected for synthetic.
+This acknowledgement does not authorize Codex to run real fits.
+
+Before publishing the capability stage, ingest the saved result with:
+
+```powershell
+& .\.venv-realmlp-gpu\Scripts\python.exe -m src.dataset_b.mitigation.rq4b_runner --stage capability --run-id <run_id> --confirm-production --real-probe-evidence scratch/rq4b_implementation/<new_attempt_name>/real_probe_evidence.json
+```
+
+Do not publish a placeholder capability stage and then try to overwrite it.
+Evidence must come from the frozen-source CLI route, not a synthetic or legacy
+in-memory attempt. Ingestion checks source content hashes, producing probe/input
+code, reconstructed population and saved invocation; it includes the evidence
+and invocation in the stage receipt's hashed payload. It rereads frozen inputs
+but performs no fitting or model inference. Keep inputs and producing code
+unchanged between fitting and ingestion. These checks establish lineage and
+internal consistency, not independent proof of GPU execution or fitted-model
+correctness; Codex still checks the user's logs/environment after the run.
+The report records real execution as `completed` with gain and CI, rather than
+`not_run`. It conservatively retains `capability_inconclusive`: the locked real
+probe is descriptive and has no automatic binary promotion rule here. It does
+not apply the synthetic gain cutoff to the real probe. Capability inconclusive
+is not a new production PASS/FAIL gate. Consistent bootstrap evidence with
+`ci_evaluable=false` is retained descriptively; forged validity counts or CI
+values are rejected. A runtime failure still requires
+investigation. A missing/failed/corrupt explicitly supplied attempt is an input
+error, not a negative scientific finding.
+
+**Failure and recovery:**
+
+- Never overwrite a published stage, delete a failure to unlock a key, resume
+  fitted state or transplant stages into another run. Inspect the exception,
+  logs, receipt and partial outputs first; failures before the writer boundary
+  may have no receipt and must not be described as successful attempts.
+- Only `development` and `final_fit` forward
+  `--new-attempt-after-failure`. After Codex diagnoses the failure, a scoped
+  user-executed fresh attempt may use the same run/unit if code lineage is
+  unchanged and the unit is unpublished. It reruns the whole unit; this is not
+  checkpoint resume or automatic retry.
+- The flag does not enable retry for preflight, capability, Validation,
+  selection, Test evaluation or package validation. A retained failure for
+  those keys blocks that stage in the same run. Stop and plan recovery in chat;
+  a new run entails fresh prerequisites/work and explicit accounting, not reuse
+  of the previous run's stage directories. Do not silently redesign retry.
+- An interrupted/partial `create` also must not be reused by deleting its
+  directory. A real-probe attempt is single-use; retain it and use a new
+  explicitly scoped attempt after diagnosis. If source changes are required,
+  the existing production run cannot continue across the code-lineage change.
+
+**Fit accounting and post-run review:** development is 6 lambdas
+`[0, 0.01, 0.03, 0.1, 0.3, 1.0]` by seeds `[42, 43, 44]` (18 units).
+Final seeds are `[42, 43, 44, 45, 46]`; reuse seeds 42-44 and execute only the
+up-to-four additional units required by the lock. Lambda=0 selection removes
+duplicate arms. The main-plan bound is 110 CV fold fits plus 22 refits.
+Package counts are per-published-unit declarations, not a complete measure of
+all attempted compute. Keep a separate handoff/audit ledger for probe fits,
+spike, failed/partial fits and retries, including run/attempt IDs, unit, command,
+timestamps, exit status and observed completed/started fits. Mark unknown
+partial counts unknown rather than zero; no retry allowance is automatic.
+Codex checks receipts, curves, epoch selection, reload diagnostics, predictions,
+thresholds and lineage after user execution, then reports whether the next
+stage's prerequisites are met. Preserve execution, capability, point criterion
+and strong support as separate conclusions; stability remains `not_assessed`.
+
 This runbook is the operator-facing procedure for Dataset B neural training. It
 owns:
 
@@ -329,6 +526,57 @@ version-bound and must fail rather than fabricate unavailable fields.
 History must be sufficient to render loss, learning-rate, timing, and GPU-memory
 diagnostics. Rendered figures help review but do not replace JSON/JSONL evidence
 or block execution by default.
+
+For RQ4b fit units, `run.log` and `training_history.jsonl` are append-only live
+evidence in the stage attempt directory. Each write is flushed and fsynced.
+Records identify UTC timestamp, run, attempt, unit, lambda, seed, phase and fold
+when applicable. Completed-epoch records contain the observed batch count,
+training loss, fold-validation CE when applicable, learning rate, epoch/elapsed
+time and allocated GPU memory. A non-applicable value is null with a reason; it
+must not be inferred or copied from another metric. Batch/time heartbeats record
+the last callback position and explicitly do not claim that an optimizer step
+completed.
+
+`fit_ledger.json` records planned, started, completed, partial and unknown fit
+counts plus the last observed phase/fold/epoch/batch and timestamp. Failure
+receipts preserve the exception chain, last position, ledger accounting and all
+already-flushed logs. A missing backend ledger after dispatch is `unknown`, not
+zero compute. Any logging write failure is a stage failure and is not silently
+ignored. On successful completion, `training_history.json` is finalized and
+`cv_fold_outputs.json` retains every fold's complete history/log alongside the
+curve and selected-epoch link; `cv_curves.json` alone is not sufficient.
+
+Real capability-probe attempts use the same three log/history filenames inside
+their single-use attempt directory. Their heartbeats have no production run ID
+and state that reason. Probe failure receipts retain traceback and last progress;
+the flushed log remains evidence after interruption.
+
+For N4, the observer starts before frozen-population loading and source hashing.
+Its time-based `observer_heartbeat` can report during preparation, a long batch,
+validation, holdout, bootstrap and lineage verification when the interpreter
+and filesystem can run. It does not claim optimizer progress. `timestamp_utc`
+is observation time; `last_progress_utc` changes only on a recorded completed
+epoch (and completed fit phase for the training ledger), never on a heartbeat.
+Do not infer that an optimizer is moving merely because the observer is alive.
+Hard process termination, an interpreter-wide stall or blocked storage can
+prevent observations; no log-based liveness guarantee covers those cases.
+
+Initial log/invocation writes are inside the failure-receipt boundary. Observer
+write errors are reported on stderr and propagated at the next foreground log
+check or observer shutdown; a blocked foreground GPU call cannot be forcibly
+interrupted by the observer. No automatic retry is permitted.
+
+Before N4 publication, stop the observer, append `computation_completed`, then
+seal the three log/history files. This event is not an attempt-success claim.
+The atomically published `real_probe_evidence.json` is the completion marker;
+only the subsequent CLI summary reports `completed`. A failure while publishing
+evidence leaves failure evidence even if computation and log sealing finished.
+The evidence binds SHA-256 hashes of `run.log`, `training_history.jsonl` and
+`training_history.json`. Ingestion requires all three, checks their integrity,
+identity and event consistency, and compares every logged epoch's metrics to
+the scientific history. Missing logs or mismatched histories fail validation.
+Older N4 attempts remain immutable under their producing lineage; do not
+rewrite them or relax current lineage/logging gates to reuse them.
 
 ## 9. CV and full-Train execution
 

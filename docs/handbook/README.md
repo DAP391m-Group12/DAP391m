@@ -24,7 +24,7 @@ outside this Markdown handbook.
 | Understand split, CV, refit, Validation/Test, metrics, bootstrap, or RQ gates | [Split and evaluation contract](contracts/split_and_evaluation.md) |
 | Implement or review the locked six-model GSV/interventional Shapley--Lorenz adaptation protocol and its numerical fixtures | [RQ2 explanation contract](contracts/rq2_explanation.md) |
 | Review the locked protocol or accepted six-model descriptive fairness audit for `applicant_sex` and `derived_race` | [RQ3 fairness contract](contracts/rq3_fairness.md) |
-| Review the planned, not-yet-implemented Equalized-Odds mitigation governance for RQ4a/RQ4b | [RQ4 mitigation plan](RQ4_MITIGATION_PLAN.md) |
+| Review the completed RQ4a post-processing evidence or the still-open RQ4b mitigation governance | [RQ4 mitigation plan](RQ4_MITIGATION_PLAN.md) |
 | Check current execution stage and evidence | [Current execution status](STATUS.md) |
 
 ## Document ownership
@@ -47,10 +47,11 @@ outside this Markdown handbook.
 - [RQ3 fairness](contracts/rq3_fairness.md) owns the protected-group mapping,
   reference direction, metrics, denominator rules, paired-bootstrap policy,
   interpretation boundary, and minimal output contract for RQ3.
-- [RQ4 mitigation plan](RQ4_MITIGATION_PLAN.md) owns the planned RQ4a/RQ4b
-  mitigation governance, fixed G3/G6 scopes, development-data policy,
-  fairness--utility criteria, uncertainty design, and pre-execution gates. It
-  records no implementation or execution evidence.
+- [RQ4 mitigation plan](RQ4_MITIGATION_PLAN.md) owns the RQ4a/RQ4b mitigation
+  governance, fixed G3/G6 scopes, development-data policy, fairness--utility
+  criteria, uncertainty design, and execution gates. It records the accepted
+  RQ4a closure by reference to the immutable runs, Notebook 11, and STATUS;
+  RQ4b remains separately gated.
 - [Classical preprocessing](contracts/preprocessing_classical.md) owns
   classical parser, transformations, model-family preprocessing, and output
   schema contracts.
@@ -86,9 +87,12 @@ resumed, extended, relabeled, or reused by the final 15-feature retraining.
 
 The six final 15-feature reporting inputs are complete and linked through their
 `run_id` manifests. The Dataset B RQ2 and RQ3 protocols are locked, and their
-accepted execution evidence is registered in STATUS. RQ4 currently has
-governance/configuration only and remains not implemented. This router does not
-duplicate mutable implementation or test status; see
+accepted execution evidence is registered in STATUS. RQ4a post-processing is
+implemented, executed, reported, and closed after C8 `PASS`; RQ4b remains open
+under its separate technical gates. Use the RQ4b route in the neural runbook
+for the staged runner; accepted implementation does not establish real-data
+runtime readiness. This router does not duplicate detailed
+implementation or test status; see
 [Current execution status](STATUS.md) for the evidence-backed execution state
 and accepted-run boundaries.
 

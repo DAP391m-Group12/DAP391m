@@ -1,7 +1,202 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-10-16
+**Reconciled:** 2026-10-20
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
+
+## Current RQ4b handover ownership
+
+### Temporary N5-to-RQ4b-3 12-fit priority policy — 2026-10-20
+
+The user temporarily replaces the 18-development-unit gate for the current
+N5-through-RQ4b-3 path with a 12-fit priority design. The original 18-unit gate
+is inactive for this path unless the user explicitly reopens it later. The
+12 unique development fits are:
+
+- screening: all six locked lambdas `[0, 0.01, 0.03, 0.1, 0.3, 1.0]` at seed
+  42 (six fits);
+- controls: lambda 0 at seeds 43 and 44 (two fits); and
+- replication: two nonzero lambdas from the screening set at seeds 43 and 44
+  (four fits).
+
+The completed lambda-0, seed-42 development fit in production run
+`rq4b3_adv_20261019_02` counts toward the 12-fit total, leaving 11 fits under
+this temporary policy. The two nonzero replication lambdas are not yet named
+by this status entry. This is a user-approved temporary execution/selection
+policy, not evidence that the remaining fits, Validation units, selection,
+final arms, Test evaluation, or package validation have completed. No fit or
+inference was launched by recording this decision. Existing implementation or
+configuration requirements that still encode the former 18-unit gate require
+separately scoped alignment before a 12-unit selection stage can execute.
+
+For a separately authorized N5 execution, Codex reports terminal progress once
+per five minutes and immediately at phase/fold completion, process exit, or
+error. After 30 minutes without confirmed progress, Codex checks the actual
+process state, command identity, child processes, exit state, durable-log/file
+movement, conflicts, and failure evidence. RAM, CPU, and GPU utilization are
+secondary telemetry and cannot alone establish a hang or justify termination.
+Codex stops only for a confirmed conflict or process exit/failure, preserves
+the evidence, diagnoses and reports the reason, does not retry automatically,
+and does not advance to the next unit after a failure.
+
+### Latest chat authorization and N4 interruption — 2026-10-19
+
+This section supersedes the older user-only-fit assignment below for the
+following bounded sequence only: implement terminal reporting every 120 seconds
+while retaining detailed durable file logs; test and separately self-review;
+then Codex executes one fresh real N4 probe attempt, verifies its artifacts and
+stops before N5. The user explicitly approved this sequence in chat. No
+automatic retry, N5/production launch or scientific-method change is authorized.
+The current turn records the rule and handoff only; implementation and execution
+are deferred to the next chat. Terminal throttling is required, not implemented
+or tested yet. Start, phase transitions, completion and errors must be reported
+immediately; periodic reports distinguish observation from completed progress.
+
+The user-run `N4_real_probe_20261019_02` is interrupted, not unused or completed.
+Its failure receipt records `KeyboardInterrupt` at 2026-10-19T15:09:36.724157Z
+(22:09:36 UTC+07), with the last observation at epoch 86, batch 50. There are
+85 completed epochs and 515 parseable JSONL events; run.log and JSONL are byte
+identical (322,096 bytes each). The last heartbeat retains the epoch-85 completed
+progress timestamp. No final history summary or real_probe_evidence.json was
+published. The signal source is unknown; this does not establish an optimizer
+defect, OOM or hang. Preserve this attempt unchanged and use a new unused attempt
+after the approved code/test gates. Capability cannot be assessed from `_02`.
+
+### N4 logging review correction — 2026-10-19
+
+The follow-up Codex self-review found five remaining N4 logging issues in the
+initial logging fix: heartbeat/completed-progress timestamp conflation, startup
+log errors outside the receipt boundary, no observer during preparation or
+blocked foreground phases, premature attempt-completion logging, and missing
+logging-payload validation at evidence ingestion. The authorized correction
+addresses these in synthetic/mock scope; evidence is in
+`scratch/rq4b_implementation/LOGGING_REVIEW_FIX_20261019_01/`.
+Regression: 449 passed, one Torch deprecation warning, exit 0; an additional
+observer-write-failure test passed separately. Method-function AST comparisons
+and outside-scope input/evaluation/runner/YAML hashes passed. This is Codex
+self-review, not independent review or real-fit evidence.
+
+N4 now distinguishes observation time from last completed progress, observes
+before frozen preparation, routes initial log errors through failure handling,
+seals hashed logging payloads before atomic evidence publication, and verifies
+all three logging files plus epoch/history correspondence during ingestion.
+`computation_completed` is not an attempt-success claim: the published evidence
+is the completion marker. Observer activity does not establish optimizer
+progress and cannot guarantee output during interpreter/storage stalls or a
+hard kill. Background write errors surface at the next foreground check or
+shutdown; they cannot forcibly abort a blocked GPU call.
+
+The original handoff named `N4_real_probe_20261019_02`; that handoff is now
+historical because the user executed and interrupted the attempt, as recorded
+above. Codex has not reopened N5 or retried the failed run. Historical N4 `_01`
+and the failed N5 artifacts remain unchanged and must not bypass the new lineage
+and log-integrity gates. A new N4 attempt remains pending.
+
+Codex owns current implementation, testing, self-review and reporting. Claude
+has no active assignment or verifier dependency; historical authorship and
+independent reviews remain unchanged. Handover approvals are given in chat.
+The approved sequence is ownership synchronization (G1), synthetic/mock
+ProductionBackend integration verification (G2), then context handoff (G3),
+with review before each transition. A separate Codex validation pass is
+self-review, not independent review. C1-C5 implementation acceptances retain
+their documented evidence limits. Real-data runtime, real probe and production
+execution are not authorized by this handover.
+
+### Previous operating assignment — 2026-10-19 (superseded for the scoped N4 sequence above)
+
+The user confirmed the next workflow in chat: Codex implements, tests, fixes
+bugs, performs a separate self-review/validation pass and reports technical
+acceptance; the user executes every real fit (capability probe, CV and
+full-Train refit). Codex supplies stage-specific commands before execution and
+checks saved artifacts after the user's run. Codex does not launch or retry
+real fits. Claude has no current assignment, reviewer role or dependency;
+historical authorship and independent-review evidence remain unchanged.
+
+N1 documentation/governance, N2 real-probe entry/ingestion preparation, N3
+readiness verification and the user-executed N4 real probe are retained below.
+The N4 evidence was accepted under its then-current code lineage. A later
+logging fix changes `rq4b_probe.py`, `rq4b_training.py` and `rq4b_runner.py`, so
+the immutable N4 attempt remains historical and must not be overwritten or
+used to bypass current lineage checks. No production N5 run is opened by this
+status update.
+
+N1 documentation/governance acceptance is `PASS` (Codex self-review,
+2026-10-19): YAML parsing and the locked contract loader passed; comparison
+against the pre-N1 working copy preserved every non-governance YAML value
+and existing historical governance payload. Static inspection matched all ten
+CLI stages to the operation table; targeted whitespace checks passed. No
+pytest, real preflight, fit or inference was run for N1. Changes are limited to
+STATUS, the neural runbook, RQ4 plan ownership/sequencing and YAML governance.
+
+N2 implementation/self-review is `PASS` in its synthetic/mock scope. Evidence:
+`scratch/rq4b_implementation/N2_real_probe_20261019_01/review.json` and
+`final.txt` (433 passed, exit 0), plus two targeted ingestion tests. It did not
+execute a real probe or production fit.
+
+N3 readiness is `PASS` in `VERIFY_ONLY` scope. Evidence:
+`scratch/rq4b_implementation/N3_readiness_20261019_01/{review.json,checklist.json,code_baseline.json,input_hashes_before.json,HANDOFF.md}`.
+It verified 13 readiness checks, including real inputs/environment/CUDA, and
+performed no fit, inference or production-run creation.
+
+The user-executed N4 attempt
+`scratch/rq4b_implementation/N4_real_probe_20261019_01/` is accepted historical
+evidence under its recorded lineage: 35,267 G3 rows split 21,160/7,053/7,054;
+91 completed epochs, best epoch 76 and patience 15; CE gain
+0.009407937095777696 nats with 95% CI
+[0.006539494433896268, 0.012237872645475325] and 1,000/1,000 valid bootstrap
+replicates. This is descriptive capability evidence, not mitigation efficacy,
+production training, or authorization for N5.
+
+The RQ4b logging fix is implementation-complete and Codex-self-reviewed in
+synthetic/mock scope. It adds durable terminal/file progress, per-epoch JSONL,
+non-optimistic heartbeats, full CV-fold history/log retention, traceback and
+last-position failure evidence, and started/completed/partial/unknown fit
+accounting. The focused four-suite regression passed 283 tests with 28
+deprecation warnings; no real fit or production inference ran. Evidence:
+`scratch/rq4b_implementation/LOGGING_FIX_20261019_01/`. Because source lineage
+changed, the original handoff required a fresh user-run N4 attempt. The latest
+chat authorization above now governs the next N4 sequence; stop before N5.
+
+### Codex handover gates — 2026-10-18
+
+- **G1 PASS — ownership/status synchronization.** Seven authorized files were
+  updated. Contract validation and 185 input tests passed. All method sections
+  and historical C1-C5 acceptance payloads were preserved; 20/20 selected
+  outside-scope baseline hashes matched. Evidence:
+  `scratch/rq4b_implementation/CODEX_HANDOVER_1_b4f7f8b4953c49fe92ea79a5162ac79a/review.json`.
+- **G2 PASS — synthetic/mock production glue verification.** The new
+  `tests/test_dataset_b_rq4b_production_backend.py` exercises actual synthetic
+  disk loading, index validation, preflight collection/guard, prediction
+  packaging and CLI/engine argument forwarding. There were 57 integration
+  tests plus 233 related regression tests (290 passed, one Torch deprecation
+  warning), and 42 existing runner tests passed separately. All 27 selected
+  Task 2 baseline hashes matched; production source was unchanged. Evidence:
+  `scratch/rq4b_implementation/CODEX_INTEGRATION_2_adf341da88fc4db99eaebf75c67ea8e8/review.json`.
+  The initial runner harness exceeded Windows path limits; an audit-local
+  fixture-root override resolved that harness issue. The final pytest log
+  reports 42 passed in 201.94s; its shell pipeline was interrupted after pytest
+  completed, so no clean shell-exit claim is made for that invocation.
+- **G3 PASS — chat/context handoff.** The approved sequence and prior chat
+  decisions were reconciled with the G1/G2 evidence. Current ownership,
+  acceptance limits, remaining work and approval boundaries are recorded here
+  and in the context delivered in chat. This is Codex self-review, not an
+  independent acceptance or a new scientific result.
+
+G2 closes the earlier gap in synthetic/mock coverage of ProductionBackend,
+index loading and CLI dispatch. It does not close real-data runtime validation:
+production context/CUDA, real fit/inference/reload, frozen inputs and the real
+capability probe remain unexecuted in this handover. The historical T5 row
+below describes evidence available at C5 acceptance; this section records the
+later G2 evidence. Real capability remains `capability_inconclusive` while its
+probe has not run. RQ4b-6 remains deferred.
+
+The N1 operating instructions describe stage commands, paths, stop conditions
+and recovery without launching them. Some failed stages block continuation of
+their run because they have no retry option; do not silently redesign that
+behavior. Real capability fitting and staged production execution remain
+separately scoped, user-executed work. Do not launch the full grid from this
+handover. The locked main-plan budget remains at most 110 CV fold fits plus
+22 refits; probe fits, spike, retries and failed attempts are accounted for
+separately, not hidden within that bound.
 
 Statuses describe only the named workstream and evidence scope. A completed experiment on `temporary_training_lock_v0_2` is not a final feature-selection result or a completed research question. Integrity metadata recorded for those historical runs is `legacy evidence only`; final retraining acceptance uses direct schema, content, row-alignment, and numerical checks.
 
@@ -74,10 +269,16 @@ Statuses describe only the named workstream and evidence scope. A completed expe
 | Review-candidate screening | COMPLETE | Review-candidate screening is complete for all 18 raw fields: 3 keep and 15 exclude decisions reconcile across 10 blocks; both raw-versus-derived representation choices are resolved. | `notebooks/eda_datasetB/05_feature_selction.ipynb`; `docs/handbook/contracts/feature_governance.md` §§7–8 | Clean-kernel execution used the full 293,301-record cohort. All 33 code cells executed sequentially `1–33`, every code cell has output, no saved error is present, informative-only Cramér's V is `0.1735`, and all final reconciliation gates pass. No split membership or `record_id` was used. | None for the feature-screening decision. | Preserve the completed evidence; downstream configuration and preprocessing must implement the final decision without reopening screening. | 2026-10-02 |
 | Final feature lock and explanation groups | COMPLETE | `FINAL_MODEL_FEATURES` contains the ordered 15 raw fields and final `EXPLANATION_GROUPS` contains 12 business players. The governance contract publishes the completed decision in place. | `docs/handbook/contracts/feature_governance.md` §§9, 11–12 | The 15 kept and 20 excluded fields reconcile to the 35-field candidate universe; both representation choices are closed. Final LR, RF, XGBoost, PlainMLP, RealMLP, and TabMmini reporting inputs implement the locked feature contract. | None for final-model feature-contract coverage. | Preserve the feature decision; do not reopen feature selection in downstream RQ work. | 2026-10-05 |
 | Final preprocessing and full-model retraining | COMPLETE | All six final 15-feature model reporting packages are available and all six have `FROZEN` publication markers. | `config/dataset_b/{model_protocol_v1,plain_mlp_v1,realmlp_v1,tabmmini_v1}.yaml`; active preprocessing/evaluation contracts and runbooks; six final reporting packages connected by `notebooks/dataset_b/07_model_total_review.ipynb` | Notebook 07 saved output validates 6/6 `COMPLETE` summaries and shared feature/split, ordered Test membership, and bootstrap-index lineage; a direct current marker scan confirms all six `FROZEN` files. The three neural targeted suites pass 51, 12, and 33 tests respectively. | XGBoost retains the approved exception for the independent XGB-09 bootstrap re-validation. | Preserve the six final packages; open RQ2/RQ3 only under their separate contracts. | 2026-10-05 |
-| RQ1 paired-bootstrap cross-model comparison | COMPLETE | All 15 pairwise comparisons among the six frozen final 15-feature models are complete on the ordered `split_v1` Test partition using the locked shared Test bootstrap rows and the accepted ten-metric RQ1 contract. | `notebooks/dataset_b/07_model_total_review.ipynb`; six frozen final Test prediction and bootstrap-metric packages; `artifacts/dataset_b/rq1_test_bootstrap_indices.npz` | The saved notebook covers `15 × 10 = 150` pair/metric rows, with exactly 1,000 shared paired replicate IDs for every comparison. Percentile 95% CIs exclude zero for 131 rows and contain zero for 19 rows. Five RF `calibration_slope` comparisons retain 1,000 paired rows but have 998 finite paired differences because two frozen RF slope payloads are invalid. Notebook JSON and all code cells validate, execution counts are sequential `1–13`, no saved error is present, and no fit, prediction, inference, or bootstrap-index generation call appears. | Evidence is metric-specific and does not authorize an absolute-best model claim, a fairness-based model choice, or any causal, legal-discrimination, creditworthiness, or default-risk conclusion. The standard `nbconvert` launcher remained unverified on this Windows host; the saved notebook completed through the verified Python 3.12.13 sequential executor. | Preserve the paired-comparison evidence. The RQ1 prerequisite for RQ4 is satisfied; review/approve the separate RQ4 plan/config before the RQ4 environment smoke or implementation. | 2026-10-16 |
+| RQ1 paired-bootstrap cross-model comparison | COMPLETE | All 15 pairwise comparisons among the six frozen final 15-feature models are complete on the ordered `split_v1` Test partition using the locked shared Test bootstrap rows and the accepted ten-metric RQ1 contract. | `notebooks/dataset_b/07_model_total_review.ipynb`; six frozen final Test prediction and bootstrap-metric packages; `artifacts/dataset_b/rq1_test_bootstrap_indices.npz` | The saved notebook covers `15 × 10 = 150` pair/metric rows, with exactly 1,000 shared paired replicate IDs for every comparison. Percentile 95% CIs exclude zero for 131 rows and contain zero for 19 rows. Five RF `calibration_slope` comparisons retain 1,000 paired rows but have 998 finite paired differences because two frozen RF slope payloads are invalid. Notebook JSON and all code cells validate, execution counts are sequential `1–13`, no saved error is present, and no fit, prediction, inference, or bootstrap-index generation call appears. | Evidence is metric-specific and does not authorize an absolute-best model claim, a fairness-based model choice, or any causal, legal-discrimination, creditworthiness, or default-risk conclusion. The standard `nbconvert` launcher remained unverified on this Windows host; the saved notebook completed through the verified Python 3.12.13 sequential executor. | Preserve the paired-comparison evidence. The RQ1 prerequisite for RQ4 is satisfied; RQ4 follow-up is tracked in the RQ4 row. | 2026-10-17 |
 | RQ2 | COMPLETE | Production run `rq2_cpu_production_20261009_01` completed the locked six-model CPU GSV/interventional Shapley--Lorenz protocol in order for LR, RF, XGBoost, PlainMLP, RealMLP, and TabMmini. The results notebook presents only the accepted saved artifacts. | `artifacts/dataset_b/rq2/rq2_cpu_production_20261009_01/`; `config/dataset_b/rq2_protocol.yaml`; `docs/handbook/contracts/rq2_explanation.md`; `notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb`; `src/dataset_b/gsv_sl/{cpu_inference,predictors,exact_methods,runner}.py`; `tests/test_dataset_b_rq2_{contract,predictors,runner,toy_fixtures}.py` | Final validation passed 91 checks with zero failures: the sample is 256 unique Validation IDs; donors use a 128-row Train pool; Test IDs are absent; the shared bootstrap index is `1000 x 256`; all six cubes are `4096 x 256`, `float64`, finite, and within `[0,1]`; every model has 24 importance rows, four bootstrap rows with 1,000 valid replicates per metric, ten checkpoint pairs, and `status.json = PASS`; runtime has six ordered rows totaling `4817.4179849` seconds; cross-model stability has 60 rows. Benchmark evidence is separate and frozen artifacts predate production. The executed notebook has 12 code cells with execution counts `1–12`, nine PNG outputs, no saved errors, and reads production tables only. | Agreement and stability are descriptive properties of the frozen models under the locked replacement game; they are not ground truth, causal validity, fairness, or proof that an explanation is correct. | Preserve the accepted run, frozen inputs, and read-only notebook boundary. | 2026-10-09 |
 | RQ3 | COMPLETE | Production run `rq3_fairness_20261010_01` completed the locked six-model descriptive audit for `applicant_sex` and `derived_race` on the fixed Test partition. Approved remains the positive outcome throughout RQ1-RQ3, and the results notebook reads accepted outputs only. | `artifacts/dataset_b/rq3/rq3_fairness_20261010_01/`; `config/dataset_b/rq3_protocol.yaml`; `docs/handbook/contracts/{rq3_fairness,data_contract,split_and_evaluation}.md`; `notebooks/dataset_b/09_rq3_fairness_results.ipynb`; `src/dataset_b/fairness/{metrics,audit_data,runner}.py`; `tests/test_dataset_b_rq3_{contract,toy_fixtures,audit_data,runner,production}.py`; `../Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx` | Final validation passed 24 tests with zero failures. The audit view contains 43,996 ordered Test rows; all six model statuses are `PASS`; outputs contain 588 group rows, 420 pairwise/global gap rows, 1,008 bootstrap summaries, and six runtime rows totaling 686.7488264 seconds. The runner recorded zero fit calls, zero prediction calls, and no bootstrap-index generation. Notebook 09 has eight executed code cells with execution counts `1-8`, ten embedded PNG outputs, no saved errors, and a successful 1,499,758-byte HTML render; it reads accepted RQ1/RQ3 artifacts only. | Results are descriptive model-audit evidence only. Coverage-only and denominator-ineligible results remain explicitly undefined; no causal, legal-discrimination, creditworthiness, or default-risk claim is allowed. | Preserve the accepted production directory, frozen inputs and thresholds, locked bootstrap indices, Approved-positive orientation, and visualization-only notebook boundary. | 2026-10-10 |
-| RQ4 Equalized-Odds mitigation governance | PLANNED / NOT IMPLEMENTED | Governance, method, and machine-readable settings are authored for RQ4a post-processing and RQ4b adversarial RealMLP. RQ4a-3 is primary, RQ4a-6 is a required sensitivity, RQ4b-3 is blocked pending the internal-extension technical spike, and RQ4b-6 is deferred, optional, and not committed. No mitigation implementation or execution is claimed. | `docs/handbook/RQ4_MITIGATION_PLAN.md`; `config/dataset_b/{rq4a_postprocessing,rq4b_adversarial}.yaml` | Both YAML files parse and agree on exact G3/G6 rosters, complete-Validation development governance, unchanged RQ3 denominator gates, seeds, lambda grid, independent status fields, and explicit prohibition flags. Frozen XGBoost/RealMLP anchor paths and the locked Test bootstrap-index path exist. The RQ1 paired-bootstrap prerequisite is now `COMPLETE`. No training, inference, Fairlearn, RQ4 bootstrap, notebook, or CUDA execution was performed. | Documentation/configuration approval and the dedicated RQ4 environment/Fairlearn smoke remain open. RQ4b uses the same Validation rows for threshold calibration and lambda selection and must report the resulting exploratory optimism limitation. RQ4b also requires the PyTabKit internal-extension/naming spike, including a pinned source revision, score/logit identification, finite forward/backward, serialization/reload, and lambda=0 equivalence. | Review/approve the plan and configs; then run the dedicated RQ4 environment/CUDA/Fairlearn compatibility smoke and implement RQ4a separately. Open RQ4b-3 only after its technical spike passes. RQ4b-6 requires a separate later authorization. | 2026-10-16 |
+| RQ4 Equalized-Odds mitigation (RQ4a executed; RQ4b open) | PARTIAL | RQ4a production execution and reporting are `COMPLETE`; Codex final review C8 is `PASS`, and the manuscript-equivalent RQ3a is closed. RQ4a-3 (primary, fixed G3) run `rq4a3_postproc_20261017_01`: XGBoost and RealMLP are each `completed / stable / pass` with reason `none`. RQ4a-6 (required sensitivity, fixed G6) run `rq4a6_postproc_20261017_01`: XGBoost and RealMLP are each `completed / unstable / fail` with `target_eod_reduction_not_demonstrated`, `ba_budget_exceeded`, and `unstable_diagnostics`; this is a predeclared criterion outcome, not an execution failure, and RQ4a-6 is not promoted to primary. Notebook 11 presents both runs from their `reporting/` directories only. RQ4b technical spike R1 has C-spike PASS in synthetic two-epoch scope. RQ4b-3 method decisions are locked; T1-R1 input boundary has Codex C1 PASS and T2-R1 training/CV/refit engine has Codex C2 PASS and T3-R2 capability-probe implementation has Codex C3 PASS in synthetic validation scope (retained synthetic gate PASS; real probe not fitted); T4-R1 pure selection/evaluation logic has Codex C4 PASS and T5-R1 staged runner/reporting has Codex C5 PASS on synthetic fixtures. T1-T5 implementation gates are accepted within their documented synthetic scopes; production runtime/data integration remains unverified and explicit user launch is still required; RQ4b-6 remains deferred, optional, and not committed. | `docs/handbook/RQ4_MITIGATION_PLAN.md`; `config/dataset_b/{rq4a_postprocessing,rq4b_adversarial}.yaml`; `src/dataset_b/mitigation/{inputs,metrics,postprocessing,runner}.py`; `tests/test_dataset_b_rq4a_{inputs,metrics,postprocessing,runner}.py`; `artifacts/dataset_b/rq4/rq4a/{rq4a3_postproc_20261017_01,rq4a6_postproc_20261017_01}/`; `notebooks/dataset_b/11_rq4a_equalized_odds_results.ipynb` | Governance and tooling: T2 contract delta `COMPLETE` (C2 `PASS`); T3 CPU environment/Fairlearn smoke `COMPLETE` (C3 `PASS`, run `rq4a_cpu_env_smoke_20261016_02`, Fairlearn `0.15.0` in `.venv-rq4a-cpu`); T4 pure core `COMPLETE` (C4 `PASS`); T5 runner `COMPLETE` (C5 `PASS`). Production: both runs used the CPU environment (Python 3.13.14, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, scikit-learn 1.9.1, PyYAML 6.0.3, joblib 1.6.0, Fairlearn 0.15.0, recorded in each `artifact_index.json`), re-ran the input preflight, published 16 files each atomically, passed the runner package validator, and wrote no failure receipt. Each run has 43,995 Validation / 43,996 Test rows per model with exact frozen `record_id`/`y_approved`/`p_approved` lineage, baseline decisions equal to `p_approved >= frozen threshold`, unchanged decisions outside the target roster, no base-model fit or inference, and 1,000/1,000 valid replicates for target EOD, audit EOD, and BA cost (minimum 950). RQ4a-3 Test paired deltas (point [95% CI]): XGBoost delta EOD3 -0.0738 [-0.1075, -0.0246], BA cost 0.00135 [0.00013, 0.00629]; RealMLP delta EOD3 -0.0594 [-0.0839, -0.0079], BA cost 0.00295 [0.00097, 0.00681]; audit EOD6 is unchanged because its FPR extrema lie on G6 groups outside G3. RQ4a-6 Test paired deltas: XGBoost delta EOD6 -0.0867 [-0.1574, 0.0915], BA cost 0.00307 [0.00108, 0.01388]; RealMLP delta EOD6 -0.0656 [-0.2213, 0.1446], BA cost 0.00512 [0.00209, 0.03150]. C6 technical verification of RQ4a-3 is `PASS`; C7 technical verification of RQ4a-6 is `PASS`; RQ4a-3 artifacts kept identical SHA-256 and modification times through the RQ4a-6 run. C8 final review is `PASS`. Notebook 11: JSON and all 14 code cells validate, execution counts are sequential `1–14`, no saved error is present, reporting-file hashes match each run's artifact index, the saved key values match the reporting artifacts exactly, and the notebook imports no Fairlearn and reads no raw data, predictions, decision files, or bootstrap indices. | The C6 extrema interpretation is resolved: stored `*_extremum_role` values span all reported race groups including coverage-only groups, whereas EOD uses only the fixed roster; the RealMLP G6 FPR minimum is AIAN. The RQ4a-6 invalid-replicate path was not exercised in production (no G6 TPR/FPR gate failure in the locked Test rows) and is evidenced only by synthetic tests. Notebook 11 executed through the Anaconda `nbconvert` launcher with kernel `python3`, which resolved to Python 3.13.9 (pandas 2.3.3, matplotlib 3.10.6), not the RQ4a production environment. pytest is not part of the locked RQ4a environment. RQ4 outputs are exploratory model-behaviour evidence and do not establish legal compliance, discrimination, causal effects, creditworthiness, or default risk. RQ4b must report its Validation reuse optimism limitation. Its architecture, seed, refit horizon, full probe optimizer/stopping, stored-score log-ratio, fixed synthetic fixture, linear percentile CI/validity rules and strong-support endpoints are user-locked in the RQ4 plan/YAML. Probe capability and production performance have not been established by these documentation updates. Stability is not_assessed. | RQ4a and the manuscript-equivalent RQ3a are closed after C8 `PASS`. Preserve both RQ4a run roots and notebook 11 unchanged. C-spike is accepted only in its documented synthetic scope; complete production implementation/validation gates before the user launches RQ4b-3. RQ4b-6 requires a separate later authorization. | 2026-10-18 |
+| RQ4b production contract and input boundary (T1-R1) | COMPLETE | Codex C1 re-review PASS on 2026-10-18; limited to T1 input-boundary implementation and synthetic validation. | `src/dataset_b/mitigation/rq4b_inputs.py`; `tests/test_dataset_b_rq4b_inputs.py`; `scratch/rq4b_implementation/T1_R1_C1_e8bfd4d9b56b4d1c8326026950918f11/`; implementer audit `scratch/rq4b_implementation/T1_R1_audit_b2b8f2858aad422e817e9b031f97c9f8/` | Codex reran focused pytest: 185 passed in 6.71s, exit 0; 704 independent locked-leaf mutation/deletion checks rejected invalid contracts; 27/27 outside-scope baseline hashes matched; both target hashes matched the implementer report; git diff --check found no whitespace errors. Both original C1 findings are closed: execution-critical contract coverage and authorized loader-resource binding. | No real split or frozen-prediction body reads, model fitting, inference, CUDA validation or scientific capability assessment. Successful Test-partition loading was not exercised. Contract objects remain caller-controlled; test docstring still understates YAML reads. Review command output is retained in the chat; the scratch root contains synthetic fixtures, not a saved Codex review log. | T1 accepted only. T2 requires separate assignment; remaining production implementation/validation and explicit user training launch remain required. RQ4b-6 stays deferred. | 2026-10-18 |
+| RQ4b adversarial training and CV/refit engine (T2-R1) | COMPLETE | Codex C2 re-review PASS on 2026-10-18; T2 engine implementation accepted only within synthetic technical validation scope. | `src/dataset_b/mitigation/rq4b_training.py`; `tests/test_dataset_b_rq4b_training.py`; Codex scratch `scratch/rq4b_implementation/T2_R1_C2_7c87d0f8b72945aebe5aed34c2afd678/`; implementer audit `scratch/rq4b_implementation/T2_R1_audit_8f5a028f76f44e5db36087b760b65340/` | Codex reran T2 and T1 suites together: 267 passed (82 T2 plus 185 T1), 28 deprecation warnings, 38.05s, exit 0. Independent reproduction of the prior C2 finding now rejects foreign population IDs before preprocessing and engine calls; matching membership passes. Both target SHA-256 values match the implementer report; 32/32 outside-scope baseline files match; git diff --check found no whitespace errors. | GPU evidence is synthetic smoke of at most two epochs per fit. No production fit, 256-epoch execution or real Train/Validation/Test access. Full 5x256 bookkeeping is test-double evidence only. Membership digest covers fold-validation IDs under the locked label-stratified policy, not feature values; population loading and derived-race join integration remain outside T2. No scientific capability or production-readiness conclusion. Review command output is retained in the chat; the Codex scratch root contains test outputs, not a saved review transcript. | Prior C2 lineage finding closed. T3 requires separate assignment; remaining production implementation/validation and explicit user launch remain required. RQ4b-6 remains deferred. | 2026-10-18 |
+| RQ4b capability probe (T3-R2) | COMPLETE | Codex C3 re-review PASS on 2026-10-18 for probe implementation, retained synthetic correctness gate and Windows attempt failure handling. Real-data capability remains unassessed. | `src/dataset_b/mitigation/rq4b_probe.py`; `tests/test_dataset_b_rq4b_probe.py`; `scratch/rq4b_implementation/T3_R2_C3_4480ba14a8c245e2923d91cf7faa64f3/`; retained `scratch/rq4b_implementation/T3_synthetic_gate_5c041ca3b32e481f89574148ee0cbf7f/synthetic_gate_evidence.json`; archived gate-producing source `scratch/rq4b_implementation/T3_R1_audit_f6913bbaca814a31a506af0368f79e50/rq4b_probe_gate_lineage_02ED1280.py.txt` | Codex reran the probe suite: 53 passed in 10.84s, exit 0. Independent injected failures confirm partial evidence is not published and a receipt is retained; receipt-write failure preserves the original exception identity and exposes the secondary error. Source/test hashes match the report; 39/39 outside-scope baseline files match, including retained gate and source lineage. Method functions remain unchanged since the gate; changed experiment/writer wrappers were reviewed. Retained gate: gain 1.0934503013695 nats, linear percentile 95% CI [1.0926187243623788, 1.0941724543148197], 1000/1000 valid replicates; best epoch 100, stopped at cap. Stored interval arithmetic independently matches. | Gate was not rerun; its producing code hash is 02ED1280C365FA23AAC71EDBC3799D7497B187EFE5B99CA2185DA94CA3F08C1D, distinct from current wrapper code. No real data/frozen prediction-body access or real-probe fitting. Real-route tests use synthetic data. No-overwrite publication is accepted on Windows; POSIX race safety is not established. Invocation-writing failures occur before fitting and may leave no receipt; receipt-writing failure cannot guarantee a receipt, but preserves the primary exception and secondary diagnostic. T1/T2 regression suites were not rerun in this re-review. Review outputs are retained in the chat, not a saved review log. | C3 findings closed. Real frozen-Validation probe fitting and the next implementation task require separate authorization. No production training authorization; RQ4b-6 remains deferred. | 2026-10-18 |
+| RQ4b candidate selection and Test evaluation logic (T4-R1) | COMPLETE | Codex C4 re-review PASS on 2026-10-18; pure logic accepted on synthetic fixtures only. | `src/dataset_b/mitigation/rq4b_evaluation.py`; `tests/test_dataset_b_rq4b_evaluation.py`; `scratch/rq4b_implementation/T4_R1_C4_c61f2ec04ca947a7bb72c690a5a0dade/`; implementer audit `scratch/rq4b_implementation/T4_R1_audit_65de53ee4b294e98912c41fb9a705427/` | Codex reran 233 tests together (38 T4, 185 T1, 10 RQ4a metrics): all passed in 47.31s, exit 0. Prior C4 raw-sex-code reproduction now rejects invalid encoding at construction; explicit normalization maps all five approved RQ3 codes. Coverage-only labels remain valid and counted; genuine absent/insufficient groups retain undefined-metric semantics. Both target hashes match; 42/42 outside-scope baseline files match; targeted whitespace checks pass. AST comparison confirms existing changes limited to prediction validation and arm audit output, plus three sex helpers. Earlier C4 independent synthetic recomputation of 1000 paired replicates matched delta BA/EOD3/EOD6 values and CIs exactly. | No real Validation/Test data or locked bootstrap file access, model fitting or scientific outcome. Evaluation expects canonical sex labels; future loaders must explicitly normalize split codes. Locked-index SHA integrity, Test record-ID/manifest alignment, exact production row counts and enforcement of development-artifact reuse remain loader/integration gates. The sex mapping is cross-checked when normalization is called, not by reading YAML at prediction construction. Review output is retained in chat; scratch contains test fixtures, not a saved review log. | C4 sex-metadata finding closed. Next implementation task requires separate assignment; real probe and production training require separate authorization. RQ4b-6 remains deferred. | 2026-10-18 |
+| RQ4b staged runner, reporting and package validation (T5-R1) | COMPLETE | Codex C5 re-review PASS on 2026-10-18, limited to fake-backend synthetic integration. T1-T5 implementation gates are accepted in their documented scopes; no production run is implied. | `src/dataset_b/mitigation/rq4b_runner.py`; `tests/test_dataset_b_rq4b_runner.py`; implementer audit `scratch/rq4b_implementation/T5_R1_audit_703729e717d641878fe067adad1535ea/`; independent synthetic reproduction `scratch/rq4b_implementation/T5_R1_C5_trace_eb1daf9865194922ab417a441fa4a7ab/` | Codex reran runner suite: 42 passed in 198.89s; T1 plus T4 regression: 223 passed in 13.19s, both exit 0. Independent EOD3/EOD6 generalization-gap calculation matches exactly at locked thresholds. Prior C5 forgery reproduction now rejects modified lineage despite internally consistent output hashes. Tests cover status, lineage, gap and per-artifact Test-ID forgeries plus intact packages. Both target hashes match; 44/44 outside-scope baseline files match before this acceptance-record update; targeted whitespace checks pass. Runner exports and revalidates gap from saved Validation/Test predictions without additional inference. | ProductionBackend, real-data preflight, production index loading and CLI dispatch have not been runtime-verified. All integration results and full-grid fit counts are fake-backend evidence, not observed production fits. Production counts are per-unit declarations checked against engine/curve contracts. No production namespace exists at review time; no real data, training or inference performed. Some failed stages have no retry flag and consume the run ID; repeated run IDs are unique only within each run. Real probe remains not fitted/capability_inconclusive. Directory publication relies on Windows semantics. Review output is retained in chat, not a saved review log. | Both C5 findings closed. C5 recording satisfies the runner acceptance prerequisite only; it does not launch or authorize production. Prepare exact staged commands and obtain explicit user launch before real execution; do not run the whole grid automatically. RQ4b-6 remains deferred. | 2026-10-18 |
+| RQ4b internal-extension technical spike (S1-R1) | COMPLETE | Codex C-spike review PASS, limited to synthetic fixtures and at most two epochs per fit; not production readiness or a production result. | `src/dataset_b/mitigation/rq4b_spike.py`; `tests/test_dataset_b_rq4b_spike.py`; `scratch/rq4b_spike/r1_evidence_20261018_a1/`; `scratch/rq4b_spike/r1_pytest_20261018_a1/output.txt` | Stored implementer pytest log: 38 passed, exit 0. Codex independently reproduced installed-source comparison (89 files against saved upstream evidence), signed gradients/device/updates, lambda=0 equivalence under locked tolerances, exact in-memory reload for lambda=0 and positive lambda, row-feature-group alignment and same-label corruption rejection, nonfinite rejection before backward/step, mandatory non-PASS rejection, epoch selector and tolerance-boundary checks. R1 baseline hash audit: 77/77 outside the two edited files matched. | Codex did not rerun the full 38-test suite or filesystem receipt suite, fetch upstream evidence anew, or execute production CV; no full-run determinism claim. g10 is NOT_RUN in the evidence runner and covered by retained tests and focused review. Schedule feasibility is short-smoke evidence only. | Preserve spike evidence. Final probe and numerical decisions are locked; separately implement/validate production, and only the user launches training. The new probe protocol and CI rules are documented decisions, not executed results. | 2026-10-18 |
 | RMLP-07C related test-suite result | COMPLETE | The current nine-module RealMLP suite passed in the RealMLP GPU environment; this supersedes the uncorroborated historical claim of 42 passed tests. | `artifacts/dataset_b/realmlp_v1_recovery_20260928/review/test_report.json`; related source tests under `tests/test_dataset_b_realmlp*.py` | Exact retained invocation reports 52 passed, 0 failed, 0 errors, and one non-blocking Torch JIT deprecation warning in 28.12 seconds. | None for the retained test run. This test result does not expand the experimental feature-lock scope. | Preserve the RMLP-10 review package with the RealMLP evidence. | 2026-09-28 |
 | Documentation status reconciliation | COMPLETE | The execution register, machine-readable protocols, contracts, production evidence, visualization notebooks, and Dataset B technical DOCX are aligned on the accepted RQ2 and RQ3 closures. Historical GPU training/freeze evidence remains distinct from CPU-only RQ2 explanation inference; RQ3 remains an artifact-only descriptive audit. | This file; `contracts/{rq2_explanation,rq3_fairness}.md`; `config/dataset_b/{rq2_protocol,rq3_protocol}.yaml`; accepted RQ2/RQ3 artifact directories; `notebooks/dataset_b/{08_rq2_gsv_sl_results,09_rq3_fairness_results}.ipynb`; `../Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx` | RQ2 sources agree on run `rq2_cpu_production_20261009_01`, six-model PASS, 60 cross-model rows, observed runtimes, and no Test use. RQ3 sources agree on run `rq3_fairness_20261010_01`, six-model PASS, 43,996 Test rows, Approved-positive metrics, artifact-only notebook execution, and no fit, prediction, threshold, or bootstrap-index regeneration. | RQ2 agreement/stability and RQ3 group differences remain descriptive; neither establishes causal validity, legal discrimination, creditworthiness, default risk, or general explanation correctness. | Preserve both accepted runs, their interpretation boundaries, and their read-only notebook consumers. | 2026-10-10 |
 

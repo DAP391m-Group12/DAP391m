@@ -54,6 +54,11 @@ continuing to identify it as `split_v1`.
 
 ## 3. Train-only cross-validation
 
+RQ4b has a model-specific epoch-selection exception to the generic selection
+table below; see Section 3.3 and the
+[RQ4 mitigation plan](../RQ4_MITIGATION_PLAN.md#6-rq4b-adversarial-realmlp-protocol).
+The exception does not change the frozen benchmark protocols.
+
 Cross-validation is restricted to the Train partition:
 
 | Property | Contract value |
@@ -128,6 +133,29 @@ full-Train estimator: 12 fresh model initializations, of which only the six
 final estimators are model evidence. Temporary selector state is never
 published or reused by a final estimator.
 
+### 3.3 RQ4b post-training CV epoch selection
+
+For each configured lambda/model seed, use five Train-only stratified folds
+with shuffle and split random state 42, shared across lambdas and model seeds.
+Train every fold for exactly 256 epochs without patience stopping. Fit fresh
+preprocessing and model/backend/optimizer state only on each fold-train.
+At each epoch evaluate unweighted prediction CE (Approved=1) on that fold's
+complete validation rows in eval/no-gradient mode, using a stable logit-based
+equivalent of binary probability CE. Average the five fold CE values equally.
+Choose the minimum unrounded mean CE; exact ties choose the earliest epoch.
+Require all 5 x 256 values finite and present; missing folds/epochs must not
+be ignored. Fairness is monitoring only; adversarial loss, EOD and project
+Validation/Test cannot select epochs. CV estimates used in this selection are
+development evidence and are not independent performance estimates afterward.
+
+The selected epoch is specific to lambda/seed. Fresh full-Train refit uses it
+without a stopping holdout or transferred fitted CV state. Selected epoch 256
+sets `epoch_cap_hit`, without automatically increasing the budget. The user has
+locked refit schedule horizon at 256 for LR, weight decay and dropout, while
+executing only the selected number of epochs; do not rescale schedules to that
+budget. Production support still requires implementation/validation. This exception is not
+the historical fixed-50 RealMLP pilot policy or PlainMLP inner stopping.
+
 ## 4. Full-Train refit boundary
 
 After one configuration has been selected for a model family:
@@ -147,6 +175,40 @@ requires a later approved model-specific protocol compatible with this
 partition boundary.
 
 ## 5. Validation threshold boundary
+
+For RQ4b only, repeat the fresh refit boundary for each predeclared candidate.
+The complete project Validation partition calibrates each candidate's global
+threshold and selects lambda from the locked grid under the matched BA/EOD3
+rule in the RQ4 plan. This is an explicit exception to the generic prohibition
+on Validation configuration selection below, not permission for open-ended
+tuning. Do not select predictor epochs, seeds or adversary architecture using
+project Validation/Test. Report shared calibration/selection optimism; Test is
+opened only after lambda, thresholds, seeds and production policies are locked.
+
+RQ4b Test assessment uses adversarial-minus-same-seed-control deltas: the
+per-seed point criterion requires delta EOD3 < 0 and full-Test delta BA >= -0.01.
+Report 1,000 locked paired-bootstrap replicates per seed, percentile 95% CIs
+and separate across-five-seed mean/SD (`ddof=1`)/min/max/range; never pool seeds'
+bootstrap rows. Preserve the existing Y-stratified RQ1 Test indices, not new
+race-by-Y indices. Every CI quantity requires 1,000/1,000 valid replicates;
+otherwise it is not evaluable, without replacement sampling or an automatic
+scientific-failure conclusion. At least 4/5 seeds must each satisfy upper CI
+of delta EOD3 < 0 AND lower CI of full-Test delta BA > -0.01. Do not substitute
+point criteria for those CI conditions. Use quantiles 0.025/0.975 with
+`method="linear"`, without rounding before CI calculation or endpoint comparison. Stability
+is `not_assessed`; scientific support and capability are distinct from execution.
+
+The separate capability probe may split the frozen RQ1 RealMLP Validation G3
+population 60/20/20, stratified by `(race,Y)`, seed 42. Fit probe and Y-only
+comparator only on probe-training; select checkpoint on probe-validation and
+report gain/CI on probe-holdout. This exception does not subdivide Validation
+for predictor calibration/lambda selection or change project split membership.
+Probe bootstrap is paired and stratified by `(race,Y)` over probe-holdout rows,
+separate from the locked Test bootstrap. Real-probe gain does not select
+production architecture or decide production PASS/FAIL; see the RQ4 plan.
+The final probe optimizer/stopping, float64 stored-probability log-ratio and
+synthetic-generation rules are user-locked in that plan and the RQ4b YAML;
+implementation must not substitute defaults or silently clip boundary scores.
 
 Validation is independent of CV and full-Train fitting. Each frozen model
 produces `P(y_approved = 1)` for the ordered Validation records exactly once for
