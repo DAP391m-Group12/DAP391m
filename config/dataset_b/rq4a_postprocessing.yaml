@@ -3,21 +3,122 @@ dataset: dataset_b
 protocol_version: rq4a_equalized_odds_postprocessing_v1
 repository_question: RQ4a
 manuscript_equivalent: RQ3a
-status: planned_not_implemented
+status: complete
+contract_state: rq4a_complete_c8_pass
 artifact_namespace: artifacts/dataset_b/rq4/rq4a
 prohibit_rq3_artifact_namespace_reuse: true
 
 prerequisites:
-  documentation_and_config_approval: required
-  rq1_paired_bootstrap_task: required_before_execution
+  documentation_and_config_approval: complete
+  rq1_paired_bootstrap_task: complete
+  rq4a_runner_t5: complete
+  rq4a_runner_c5_review: pass
+  rq4a3_production_t6: complete
+  rq4a3_c6_review: pass
+  rq4a6_production_t7: complete
+  rq4a6_c7_review: pass
+  rq4a_reporting_t8: complete
+  rq4a_c8_review: pass
   rq1_paired_bootstrap_scope: predictive_performance_thresholded_utility_and_calibration
-  implementation_in_this_task: false
+  rq1_paired_bootstrap_evidence: 'docs/handbook/STATUS.md row: RQ1 paired-bootstrap cross-model comparison'
+  input_preflight: pass
+  rq4_environment_fairlearn_smoke: complete
+  rq4_environment_fairlearn_smoke_run_id: rq4a_cpu_env_smoke_20261016_02
+  rq4_environment_fairlearn_smoke_review: codex_c3_pass
+  rq4_environment_fairlearn_smoke_superseded_run_id: rq4a_cpu_env_smoke_20261016_01
+  rq4a_pure_core_t4: complete_codex_c4_pass
+  cuda_gate: false
+  cuda_pytabkit_verification_deferred_to: rq4b_technical_spike
+  implementation_and_execution: complete
+
+input_preflight:
+  status: pass
+  date: '2026-10-16'
+  mode: read_only_no_fit_no_inference_no_bootstrap
+  validation_rows: 43995
+  test_rows: 43996
+  checks:
+    - unique_record_id_per_package
+    - finite_p_approved_in_unit_interval
+    - binary_y_approved
+    - identical_ordered_record_id_and_y_across_xgboost_and_realmlp
+    - order_matches_split_v1
+    - stored_thresholds_match_config
+    - locked_test_indices_shape_1000_by_43996_int32_range_0_43995
+    - complete_record_id_raw_join_no_null_derived_race
+    - reconciliation_lei_action_taken_applicant_sex_zero_mismatches_validation_and_test
+    - applicant_sex_complete_and_mapped_by_rq3_sex_mapping
+  independently_reproduced_by: [c2_review_reported_pass, verifier_exact_string_equality]
+  evidence_location: session_local_console_output_not_repository_artifact
+  rerun_as_runtime_validation_at_implementation: true
+  locked_test_indices_g6_tpr_fpr_gate_failures: 0
+  locked_test_indices_min_approved_denied:
+    2 or more minority races: [31, 39]
+    American Indian or Alaska Native: [84, 49]
+  locked_test_indices_min_rows_2_or_more_minority_races: 74
+  group_counts_approved_denied:
+    validation:
+      White: [21623, 6246]
+      Black or African American: [2065, 1342]
+      Asian: [3002, 989]
+      American Indian or Alaska Native: [92, 89]
+      2 or more minority races: [49, 57]
+      Joint: [593, 161]
+    test:
+      White: [21421, 6370]
+      Black or African American: [2093, 1363]
+      Asian: [3014, 962]
+      American Indian or Alaska Native: [112, 77]
+      2 or more minority races: [53, 59]
+      Joint: [618, 147]
+  rows_outside_g6: {validation: 7687, test: 7707}
+  rows_outside_g3: {validation: 8728, test: 8773}
 
 target:
   label: y_approved
   positive_outcome: Approved
   probability: p_approved
   join_key: record_id
+
+cached_probability_adapter:
+  class_name: CachedProbabilityEstimator
+  source: frozen_stored_p_approved
+  lookup_key: record_id
+  exposes: [predict_proba]
+  predict_proba_columns: [p_denied_as_1_minus_p_approved, p_approved]
+  satisfies_prefit_fitted_state_without_fit: true
+  load_model_bundle_or_preprocessor: false
+  fit_or_train: false
+  base_model_inference: false
+  duplicate_lookup_record_id: fail
+  on_unknown_or_missing_query_record_id: fail
+  repeated_query_record_id_from_bootstrap: allowed
+  preserve_query_multiplicity_and_order: true
+  synthetic_row_keys_allowed: false
+  clarification_source: codex_c4
+
+audit_join:
+  partitions: [validation, test]
+  generalizes: rq3_test_audit_join
+  raw_source: data/raw/state_NY_2024.csv
+  join_key: record_id
+  join_method: one_based_source_row_number_from_record_id_suffix
+  join_cardinality: one_to_one_complete
+  attributes: [derived_race, applicant_sex]
+  derived_race_source: raw_source
+  applicant_sex_source: controlled_split_view
+  applicant_sex_group_mapping: config/dataset_b/rq3_protocol.yaml#attributes.applicant_sex
+  unmapped_applicant_sex_code: fail
+  reconciliation_fields: [lei, action_taken, applicant_sex]
+  reconciliation_rule: exact_match_controlled_split_vs_raw_before_accepting_derived_race
+  controlled_split_views:
+    validation: data/dataset_b/split_v1/validation.csv
+    test: data/dataset_b/split_v1/test.csv
+  derive_split_view_paths_from_test_view: false
+  allow_null_derived_race: false
+  preserve_row_order: true
+  protected_attributes_role: sensitive_features_and_audit_only
+  protected_attributes_enter_base_score: false
 
 groups:
   attribute: derived_race
@@ -82,6 +183,14 @@ baseline_models:
     test_roc_auc_anchor: 0.8632032832847532
     test_brier_anchor: 0.1065088230151043
 
+baseline_lineage:
+  rule: p_approved_ge_frozen_threshold
+  stored_predicted_approved_must_match_rule: true
+  stored_predicted_denied_must_equal_1_minus_predicted_approved: true
+  validated_frame_includes_predicted_approved: true
+  derive_when_no_stored_hard_class: true
+  clarification_source: codex_c4
+
 postprocessor:
   implementation: fairlearn.postprocessing.ThresholdOptimizer
   fit_partition: validation
@@ -99,32 +208,59 @@ configurations:
   RQ4a-3:
     role: primary
     group_roster: g3
-    readiness: ready_after_docs_config_approval
+    target_eod: eod3
+    audit_eod: eod6
+    readiness: complete_c6_pass
+    accepted_run_id: rq4a3_postproc_20261017_01
     outside_roster_decision: frozen_baseline_hard_prediction
+    run_id_pattern: rq4a3_postproc_<YYYYMMDD>_<NN>
   RQ4a-6:
     role: required_sensitivity
     group_roster: g6
-    readiness: ready_after_docs_config_approval
+    target_eod: eod6
+    audit_eod: eod3
+    readiness: complete_c7_pass
+    accepted_run_id: rq4a6_postproc_20261017_01
     outside_roster_decision: frozen_baseline_hard_prediction
     small_cell_warning: 2 or more minority races
+    run_id_pattern: rq4a6_postproc_<YYYYMMDD>_<NN>
 
 randomized_decisions:
   primary_seed: 42
   sensitivity_seeds: [42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71]
   select_best_seed: false
+  sensitivity_partition: test
+  sensitivity_policy: complete_validation_fit
+  sensitivity_role: randomization_sensitivity_only
+  pool_sensitivity_seeds_into_bootstrap_ci: false
 
 metrics:
   primary_fairness: [eod3, eod6]
   eod_definition: max_fixed_roster_tpr_range_fpr_range
+  eod_function: compute_fixed_roster_eod
+  group_metric_function: rq3_compute_group_metrics
+  reuse_rq3_compute_global_race_ranges_directly: false
+  missing_required_tpr_or_fpr_invalidates_eod: true
+  recompute_on_smaller_roster: false
+  invalidity_scope: metric_specific
   primary_utility: full_partition_balanced_accuracy
   ba_budget_primary: 0.01
   ba_budget_sensitivity: [0.005, 0.02]
   fairness_generalization_gap:
     name: fairness_generalization_gap
+    output_fields: [fairness_generalization_gap_eod3, fairness_generalization_gap_eod6]
     definition: test_eod_minus_development_eod
     report_for: [eod3, eod6]
     development_partition: validation
     prohibited_name: calibration-versus-Test fairness gap
+  denied_metric_definitions:
+    positive_class: denied
+    precision_none_when_no_predicted_denied: true
+    recall_none_when_no_actual_denied: true
+    f1_formula: 2 * true_denied / (actual_denied + predicted_denied)
+    f1_none_only_when_denominator_zero: true
+    clarification_source: codex_c4
+  empty_group_change_rate: null
   additional:
     - denied_f1
     - denied_precision
@@ -147,6 +283,10 @@ bootstrap:
     strata: [derived_race, y_approved]
     refit_postprocessor_each_replicate: true
   test_indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+  test_indices_dtype: int32
+  repeated_test_occurrences_receive_independent_randomized_draws: true
+  randomized_draw_order: locked_test_index_order_with_decision_child_stream
+  same_seed_and_order_reproduce_bit_for_bit: true
   reuse_locked_paired_test_indices: true
   allow_regenerate_test_indices: false
   root_seed_formula: 10000 + replicate_id
@@ -155,9 +295,230 @@ bootstrap:
   save_invalid_replicates: true
   save_invalid_reasons: true
   allow_base_model_retraining_or_reinference: false
+  paired_baseline_and_mitigated_on_same_test_rows: true
+  confidence_interval:
+    confidence_level: 0.95
+    method: percentile
+    sided: two_sided
+    quantile_method: linear
+    computed_over: valid_values_of_each_quantity
+  minimum_valid_replicates: 950
+  minimum_valid_applies_per_criterion_component: true
+  invalid_replicate_retention: retain_all_rows_with_reason_codes
+  invalid_replicate_exclusion_scope: only_from_invalidated_quantity
+  delta_eod_ci_replicates: target_eod_valid
+  ba_cost_ci_replicates: ba_valid_including_eod_invalid
+  audit_eod_ci_replicates: audit_eod_valid
+  audit_eod_gates_primary_criterion: false
+  ba_valid_definition: both_actual_classes_present_in_replicate_rows
+
+primary_criterion:
+  delta_eod_definition: mitigated_eod - baseline_eod
+  ba_cost_definition: baseline_ba - mitigated_ba
+  evaluate_per_model_separately: true
+  pool_models: false
+  select_model: false
+  point_estimate:
+    partition: test
+    rows: complete_test
+    policy: complete_validation_fit
+    randomized_decision_seed: 42
+  pass_requires_all:
+    - point_delta_eod_lt_0
+    - delta_eod_ci_upper_lt_0
+    - point_ba_cost_le_ba_budget_primary
+    - ba_cost_ci_upper_le_ba_budget_primary
+  ba_budget_primary: 0.01
+  ba_budget_sensitivity_reporting_only: [0.005, 0.02]
+  sensitivity_budgets_change_primary_criterion: false
+  not_evaluable_when:
+    point_target_eod_invalid: required_group_metric_invalid
+    delta_eod_valid_lt_minimum: insufficient_valid_bootstrap_replicates
+    ba_cost_valid_lt_minimum: insufficient_valid_bootstrap_replicates
+  not_evaluable_keeps_existing_reason_codes: true
+  fail_reason_when_ba_condition_fails: ba_budget_exceeded
+  fail_reason_when_eod_condition_fails: target_eod_reduction_not_demonstrated
+  eod_condition_fails_when_any: [point_delta_eod_ge_0, delta_eod_ci_upper_ge_0]
+  store_all_applicable_fail_reasons: true
+  unstable_diagnostics_substitutes_for_criterion_failure: false
+  decision_source: c2_review
+
+stability_status:
+  decision_source: c2_review
+  assessed_per: [model, configuration]
+  seeds: 42_through_71
+  required_seed_count: 30
+  reference_seed: 42
+  indicators: [delta_target_eod_lt_0, ba_cost_le_ba_budget_primary]
+  not_assessed_when_any: [execution_incomplete, seed_missing, required_metric_invalid_for_any_seed]
+  required_metrics: [target_eod, balanced_accuracy]
+  stable_when: all_30_seeds_valid_and_every_indicator_equals_seed_42_for_every_seed
+  unstable_when: all_30_seeds_valid_and_any_seed_changes_any_indicator_vs_seed_42
+  unstable_reason_code: unstable_diagnostics
+  measures: randomization_consistency_not_outcome_quality
+  stable_with_primary_criterion_fail_allowed: true
+  always_report_min_max_range: [mitigated_target_eod, delta_target_eod, mitigated_ba, ba_cost]
+
+run_identity:
+  one_immutable_run_id_per_configuration: true
+  patterns:
+    RQ4a-3: rq4a3_postproc_<YYYYMMDD>_<NN>
+    RQ4a-6: rq4a6_postproc_<YYYYMMDD>_<NN>
+  date_component: production_execution_date
+  sequence_component: two_digit_starting_01
+  concrete_run_ids_assigned_at: production_execution
+  overwrite_existing_run: false
+  rerun_policy: increment_sequence
+  models_per_run: [xgboost, realmlp]
+  collision_targets: [completed_run_directory, failure_receipt]
+  failure_receipt_consumes_run_id: true
+
+failure_receipts:
+  schema_version: 1
+  directory: artifacts/dataset_b/rq4/rq4a/_failures
+  output_root_override_relative_directory: _failures
+  filename_pattern: <run_id>.json
+  purpose: retain_atomic_audit_evidence_for_started_attempts_that_do_not_publish_a_completed_run
+  attempt_begins_after:
+    - runner_contract_validation
+    - config_validation
+    - prerequisite_validation
+    - run_id_validation
+    - output_collision_validation
+    - production_input_preflight
+    - runner_input_validation
+  no_receipt_for_failures_before_attempt_begins: true
+  completed_run_directory_on_failure: absent
+  write_mode: atomic
+  overwrite_existing_receipt: false
+  run_id_consumed_when_published: true
+  re_raise_after_receipt: true
+  fields:
+    - schema_version
+    - run_id
+    - configuration_id
+    - execution_status
+    - reason_codes
+    - failed_stage
+    - model
+    - started_at_utc
+    - failed_at_utc
+    - runtime_provenance
+    - exception_type
+    - error_summary
+  execution_status:
+    runtime_exception: failed
+    explicit_infeasible_exception: infeasible
+  reason_codes:
+    runtime_exception: [runtime_failure]
+    explicit_infeasible_exception: [postprocessing_infeasible]
+  infeasible_exception_class: RQ4AInfeasibleError
+  never_infer_infeasible_from_generic_exception: true
+  model_null_when_failure_is_not_model_specific: true
+  error_summary:
+    source: exception_message
+    single_line: true
+    maximum_characters: 1000
+  temporary_filename_pattern: .<run_id>.tmp-<pid>.json
+  cleanup_partial_receipt_on_write_failure: true
+
+outputs:
+  run_root: artifacts/dataset_b/rq4/rq4a/<run_id>
+  file_layout_status: locked
+  column_lists_status: locked
+  validation:
+    fitted_policies_dir: validation/fitted_policies
+    one_policy_per_model: true
+    decisions.csv:
+      columns: [run_id, configuration_id, model, record_id, y_approved, p_approved, derived_race, applicant_sex_group, in_target_roster, baseline_decision, mitigated_decision, decision_changed]
+      mitigated_decision_seed: 42
+      purpose: recompute_validation_eod_and_fairness_generalization_gap_without_rerunning_fairlearn
+  test_evaluation:
+    decisions.csv:
+      columns: [run_id, configuration_id, model, record_id, y_approved, p_approved, derived_race, applicant_sex_group, in_target_roster, baseline_decision, mitigated_decision, decision_changed]
+      mitigated_decision_seed: 42
+      purpose: recompute_test_eod_inherited_roc_auc_brier_and_sex_eod_audit
+    bootstrap_replicates.csv:
+      columns: [run_id, configuration_id, model, replicate_id, root_seed, calibration_stream_id, decision_stream_id, baseline_ba, mitigated_ba, ba_cost, ba_valid, baseline_target_eod, mitigated_target_eod, delta_target_eod, target_eod_valid, baseline_audit_eod, mitigated_audit_eod, delta_audit_eod, audit_eod_valid, invalid_reason_codes]
+      rows_per_model: 1000
+    status.json:
+      fields: [run_id, configuration_id, model_statuses]
+      model_statuses:
+        keyed_by: model
+        models: [xgboost, realmlp]
+        per_model_fields: [execution_status, stability_status, primary_criterion, reason_codes]
+      optional_run_level_status: true
+      run_level_status_replaces_model_statuses: false
+  reporting:
+    model_summary.json:
+      per_model_fields: [execution_status, stability_status, primary_criterion, reason_codes, point_delta_target_eod, delta_target_eod_ci, point_ba_cost, ba_cost_ci, n_valid_delta_target_eod, n_valid_ba_cost, ba_budget_sensitivity, fairness_generalization_gap_eod3, fairness_generalization_gap_eod6, sensitivity_mitigated_target_eod_min_max_range, sensitivity_delta_target_eod_min_max_range, sensitivity_mitigated_ba_min_max_range, sensitivity_ba_cost_min_max_range]
+    experiment_metrics.csv:
+      columns: [run_id, configuration_id, model, partition, policy, balanced_accuracy, eod3, eod3_valid, eod3_tpr_range, eod3_fpr_range, eod6, eod6_valid, eod6_tpr_range, eod6_fpr_range, denied_f1, denied_precision, denied_recall, sex_eod, sex_eod_valid, sex_eod_tpr_range, sex_eod_fpr_range, roc_auc_inherited, brier_inherited]
+    group_metrics.csv:
+      columns: [run_id, configuration_id, model, partition, policy, attribute, group, in_target_roster, n_rows, n_actual_approved, n_actual_denied, tpr, fpr, selection_rate, tpr_valid, fpr_valid, selection_rate_valid, tpr_extremum_role, fpr_extremum_role, selection_rate_extremum_role]
+      extremum_role_values: [min, max, none, not_evaluable]
+    decision_changes.csv:
+      columns: [run_id, configuration_id, model, scope, group, n_rows, n_changed, change_rate, approved_to_denied, denied_to_approved]
+    randomization_sensitivity.csv:
+      columns: [run_id, configuration_id, model, seed, mitigated_ba, ba_cost, ba_valid, mitigated_target_eod, delta_target_eod, target_eod_valid, mitigated_audit_eod, delta_audit_eod, audit_eod_valid, invalid_reason_codes]
+      seeds: 42_through_71
+    bootstrap_summary.csv:
+      columns: [run_id, configuration_id, model, quantity, point_estimate, ci_lower, ci_upper, confidence_level, ci_method, quantile_method, n_replicates, n_valid, minimum_valid, valid_gate_status]
+    runtime.csv:
+      columns: [run_id, stage, started_at_utc, finished_at_utc, elapsed_seconds, status]
+    artifact_index.json:
+      per_file_fields: [relative_path, sha256, bytes, rows]
+
+reporting_contract:
+  producer: python_code_produces_and_validates_artifacts
+  reporting_write_mode: atomic
+  notebook: notebook_11
+  notebook_pattern: notebook_09_results_presentation
+  notebook_review: c8_pass
+  notebook_reads: reporting_only
+  notebook_may_fit: false
+  notebook_may_predict: false
+  notebook_may_bootstrap: false
+  notebook_may_import_fairlearn: false
+  notebook_may_read_model_prediction_or_raw_data: false
+
+runtime:
+  device: cpu
+  environment: dedicated_rq4_environment
+  mutate_frozen_realmlp_environment: false
+  package_baseline:
+    python: 3.13.14
+    torch: 2.14.0+cu130
+    pytabkit: 1.7.3
+    numpy: 2.5.2
+    pandas: 3.0.5
+    scikit_learn: 1.9.1
+  package_baseline_role: realmlp_runtime_reference_only; rq4a_core_version_subset_sources_realmlp_runtime_manifest_and_requirements_txt
+  rq4a_environment:
+    path: .venv-rq4a-cpu
+    dependency_spec: requirements-rq4a-cpu.txt
+    core_version_subset:
+      python: 3.13.14
+      numpy: 2.5.2
+      pandas: 3.0.5
+      scipy: 1.18.1
+      scikit_learn: 1.9.1
+      pyyaml: 6.0.3
+      joblib: 1.6.0
+    torch_or_pytabkit_installed: false
+  fairlearn: 0.15.0
+  fairlearn_verification: smoke_pass_rq4a_cpu_env_smoke_20261016_02_codex_c3_pass
+  smoke_evidence: artifacts/dataset_b/rq4/environment/rq4a_cpu_env_smoke_20261016_02
+  policy_persistence: joblib_dump_compress_3_with_adapter_in_stable_importable_module
+  record_actual_interpreter_and_imported_versions: true
+  cuda_gate: false
+  cuda_pytabkit_verification_deferred_to: rq4b_technical_spike
 
 status_contract:
   execution_status: [completed, failed, infeasible]
+  completed_run_status_json_execution_status: [completed]
+  failure_receipt_execution_status: [failed, infeasible]
+  failed_and_infeasible_are_attempt_level_only: true
   stability_status: [stable, unstable, not_assessed]
   primary_criterion: [pass, fail, not_evaluable]
   fields_are_independent: true
@@ -166,9 +527,11 @@ status_contract:
     - prerequisite_rq1_paired_bootstrap_missing
     - required_group_metric_invalid
     - insufficient_valid_bootstrap_replicates
+    - target_eod_reduction_not_demonstrated
     - ba_budget_exceeded
     - unstable_diagnostics
     - runtime_failure
+    - postprocessing_infeasible
 
 prohibitions:
   prohibit_base_model_retraining: true

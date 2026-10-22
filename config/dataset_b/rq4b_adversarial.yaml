@@ -1,17 +1,92 @@
 schema_version: 1
 dataset: dataset_b
-protocol_version: rq4b_adversarial_realmlp_v1
+protocol_version: rq4b_adversarial_realmlp_v4_seed44_continuation
 repository_question: RQ4b
 manuscript_equivalent: RQ3b
-status: planned_not_implemented
+status: seed44_continuation_implementation_approved_execution_not_launched
+decision_revision: rq4b3_seed44_continuation_20261022
+method_contract_state: user_approved_amendment_recorded_selection_policy_pending
 artifact_namespace: artifacts/dataset_b/rq4/rq4b
 prohibit_rq3_artifact_namespace_reuse: true
+
+contract_amendment:
+  id: RQ4b-3_parallel_evaluation_and_training
+  effective_date: '2026-10-21'
+  track_a_source_run_id: rq4b3_adv_20261019_02
+  track_b_child_run_id: rq4b3_adv_20261021_01
+  execution_lineage:
+    relationship: track_b_child_reads_no_track_a_artifacts_during_fit
+    track_a_source_is_immutable: true
+    track_a_source_protocol: rq4b_adversarial_realmlp_v2_cv_epoch_selection
+    track_b_child_protocol: rq4b_adversarial_realmlp_v3_parallel_evaluation_training
+    cross_run_aggregation_status: blocked_until_gate_c_lineage_validation
+    prohibit_resume_across_code_change: true
+  supersedes:
+    - rq4b_adversarial_realmlp_v2_cv_epoch_selection_large_protocol
+    - temporary_12_fit_priority_policy_20261020
+  original_and_amended_protocols_must_remain_distinguishable: true
+  tracks:
+    evaluation:
+      name: track_a
+      dependency_on_additional_training: none
+      reads: frozen_completed_seed_42_development_artifacts_only
+      writes: authorized_evaluation_outputs_only
+      prohibit_refit_or_reinference: true
+    additional_training:
+      name: track_b
+      dependency_on_track_a: none
+      maximum_units: 4
+      sequential_queue_if_capacity_requires: true
+  test_remains_closed_until_gate_c: true
+
+seed44_continuation:
+  effective_date: '2026-10-22'
+  run_id: rq4b3_adv_20261022_01
+  role: track_b_seed44_continuation
+  protocol_version: rq4b_adversarial_realmlp_v4_seed44_continuation
+  decision_revision: rq4b3_seed44_continuation_20261022
+  authorized_units: [{lambda: 0, seed: 44}, {lambda: 0.01, seed: 44}]
+  source_runs:
+    track_a_seed42:
+      run_id: rq4b3_adv_20261019_02
+      protocol_version: rq4b_adversarial_realmlp_v2_cv_epoch_selection
+      manifest_sha256: b84f5d018cd308a97d0918dd9ba336e8f449a8b5c16a7ca319c6207829c004bc
+      receipt_sha256:
+        stages/dev_l0_s42/receipt.json: 0734ace391cee86112039640a5b6cc6c7c63a98e0da63c697a931859b3435e1f
+        stages/devval_l0_s42/receipt.json: 99f6d38f9cb05a095422f8ec4a0e4b612593e09f207ffe90587f33a266d625b6
+        stages/dev_l0p01_s42/receipt.json: 2fbf721f352fef151c00e512e288223411d04b48f84a19cb11864323eaa001b3
+        stages/devval_l0p01_s42/receipt.json: 90da727f27b88e42626a9719bd9f64abae8bc0895c12d3b62807cb88e56fd645
+        stages/dev_l0p03_s42/receipt.json: 0fe741be9b855bd5ea013c720677cfd2359e6728604373606ed27e8e1d6c7843
+        stages/devval_l0p03_s42/receipt.json: e6e7c55bd4b3921c8b8bdda9cef1c6a270e404479a0e224242ebaa48157ab5dd
+        stages/dev_l0p1_s42/receipt.json: 54a26511089fc82d5fbce445246c6205678900216faaba38555e205c6990de11
+        stages/devval_l0p1_s42/receipt.json: fed37b989d0e3ae900ac9ee4a3e988860e38730491938fe5718bfa62facbfb94
+        stages/dev_l0p3_s42/receipt.json: 98e9aaa0de00f4f10469b12f24867432ef4a597d86a2459c45171a1a9b79e377
+        stages/devval_l0p3_s42/receipt.json: 8ec1b31a442f8c3070a7f66cde94e78b0723559b0fcddd0131c526a00efbc6e4
+    track_b_seed43:
+      run_id: rq4b3_adv_20261021_01
+      protocol_version: rq4b_adversarial_realmlp_v3_parallel_evaluation_training
+      manifest_sha256: 315bd175e1239230992c459fb937f8de9ca4f995527a5e0a6aef63f9e3f11dfc
+      receipt_sha256:
+        stages/dev_l0_s43/receipt.json: 3525c6605e5be3f4d59472fa3f538c7c3daa94e48df742b7c7450918a4b43f84
+        stages/devval_l0_s43/receipt.json: b34dd1b9e0a322a35a20748361e34517de666f8080b1f36d4538c64a60d423ca
+        stages/dev_l0p01_s43/receipt.json: cb3cd1bf6c75825bd7d44716799b709f68b4fa4ea3a9199bf002a80e4d09724a
+        stages/devval_l0p01_s43/receipt.json: 043e4fc03fa0e743dabce9d87be8deaac46658ca33aab1204a94f3a9d75192a5
+      failure_receipt_sha256:
+        failures/dev_l0_s43.ca0ec0704255402b9f2a7fb8779f57fa/FAILURE_RECEIPT.json: 1b8c3630e3e39b43e9c3121cec4bbe6a56ae5d604cdfa4288f2ba63398e74115
+  source_runs_are_immutable: true
+  fitted_state_reuse: prohibited
+  migration_policy: no_migration_fresh_seed44_fit_state
+  cross_run_aggregation_status: blocked_until_gate_c_lineage_validation
+  source_digest_mismatch_action: stop_before_run_creation_or_open
+  code_or_config_change_after_creation_action: preserve_run_and_require_new_run_id
+  seed44_execution_order: [{lambda: 0, seed: 44}, verify_published_artifacts, {lambda: 0.01, seed: 44}]
+  selection_final_test_and_package_remain_closed: true
 
 prerequisites:
   documentation_and_config_approval: required
   rq1_paired_bootstrap_task: required_before_execution
   internal_extension_technical_spike: required
-  implementation_in_this_task: false
+  implementation_in_this_task: true
 
 target:
   label: y_approved
@@ -53,6 +128,8 @@ development_governance:
   source_partition: validation
   use_complete_validation: true
   split_validation: false
+  split_validation_scope: predictor_threshold_calibration_and_lambda_selection
+  capability_probe_internal_split_is_separate: true
   threshold_calibration_partition: validation
   lambda_selection_partition: validation
   lambda_selection_primary_fairness_metric: eod3
@@ -65,6 +142,8 @@ realmlp_recipe:
   base_config: config/dataset_b/realmlp_v1.yaml
   predictor_features_exclude: [derived_race, applicant_sex]
   predictor_loss_population: all_train_rows
+  predictor_population_semantics: no_race_filter_not_every_row_every_epoch
+  preserve_native_loader_drop_last: true
   adversarial_loss_population: configured_group_roster_only
   all_groups_receive_predictor_output: true
   decision_threshold: one_global_calibrated_threshold
@@ -72,15 +151,404 @@ realmlp_recipe:
     task: multiclass_group_prediction
     loss_primary: unweighted_multiclass_cross_entropy
     conditioned_on_true_y_during_training_only: true
-    input_preference: predictor_logit
-    fallback_input: positive_class_probability
+    input_preference: approved_minus_denied_logit_margin
+    fallback_input: historical_pre_spike_probability_not_production_selected
     final_input_requires_technical_spike_gate: true
     predictor_total_loss: L_prediction - lambda * L_adversary
     gradient_reversal_equivalent_allowed: true
     additive_positive_adversary_loss_prohibited: true
-  lambda_grid: [0, 0.01, 0.03, 0.1, 0.3, 1.0]
+    optimizer: {name: adam, learning_rate: 0.001, weight_decay: 0.0}
+    updates_per_batch: {adversary: 1, predictor: 1}
+    update_order: detached_score_adversary_then_frozen_adversary_predictor
+    empty_roster_batch: predictor_only_and_log_adversary_skip
+    group_alignment: shuffled_row_metadata_removed_before_predictor_forward
+    lambda_zero: bypass_adversary_and_isolate_adversary_rng
+    production_architecture:
+      status: user_locked
+      input_features: [approved_minus_denied_logit_margin, true_y_training_only]
+      input_dimensions: 2
+      hidden_sizes: [32]
+      activation: relu
+      output_classes: 3
+      dropout: 0.0
+      class_weighting: false
+      architecture_search: false
+    seed_policy:
+      adversary_seed: same_as_model_seed
+      matched_initialization_across_lambda_within_seed_and_fold: true
+      isolate_rng_from_predictor: true
+  lambda_grid: [0, 0.01, 0.03, 0.1, 0.3]
   development_seeds: [42, 43, 44]
-  final_seeds: [42, 43, 44, 45, 46]
+  final_seeds: [42, 43, 44]
+
+development_units:
+  maximum_total: 9
+  retained_completed:
+    - {lambda: 0, seed: 42}
+    - {lambda: 0.01, seed: 42}
+    - {lambda: 0.03, seed: 42}
+    - {lambda: 0.1, seed: 42}
+    - {lambda: 0.3, seed: 42}
+  retained_completed_count: 5
+  additional_approved:
+    - {lambda: 0, seed: 43}
+    - {lambda: 0.01, seed: 43}
+    - {lambda: 0, seed: 44}
+    - {lambda: 0.01, seed: 44}
+  additional_approved_count: 4
+  lambda_1_execution_status: removed_from_queue
+  screening_only_at_seed_42: [0.03, 0.1, 0.3]
+  replicated_across_seeds_42_43_44: [0, 0.01]
+  prohibit_cartesian_expansion: true
+  prohibit_additional_lambda_seed_architecture_or_method: true
+
+execution_gates:
+  gate_a_technical_readiness:
+    status: PASS
+    decision_date: '2026-10-22'
+    scope: v4_seed44_continuation_and_pinned_source_lineage
+    blocking_for: track_b
+    eod3_evaluation_required: false
+    required: [approved_amended_scope_and_budget, valid_configuration_and_implementation, correct_run_id_seed_lambda_assignment, nonconflicting_artifact_paths_and_write_ownership, completed_artifacts_protected_from_overwrite, no_unresolved_critical_implementation_or_lineage_issue]
+  gate_b_development_execution_and_validation:
+    blocking_for_each_new_unit: true
+    required: [five_cv_folds, full_train_refit_under_existing_epoch_selection_policy, development_validation, integrity_and_prediction_count_checks, artifact_and_receipt_validation]
+    incomplete_unit_may_be_marked_completed: false
+  gate_c_final_evaluation_and_selection:
+    blocking: true
+    required: [evaluation_for_all_retained_completed_development_units, eod3, paired_same_seed_delta_eod3, balanced_accuracy_cost, eod6_safety_audit, training_seed_variability, training_stability_and_integrity, approved_three_seed_selection_policy, explicit_statistical_limitations]
+    prohibit_test_before_pass: true
+
+epoch_selection:
+  policy: post_training_five_fold_mean_prediction_ce
+  splitter: {name: StratifiedKFold, folds: 5, shuffle: true, random_state: 42}
+  same_fold_membership_across_lambdas_and_model_seeds: true
+  population: train_only
+  unit: each_lambda_and_seed
+  epochs_per_fold: 256
+  use_early_stopping: false
+  monitor: unweighted_binary_prediction_cross_entropy_approved_positive
+  evaluation_mode: eval_no_grad
+  numerical_computation: stable_binary_ce_from_approved_minus_denied_logits
+  probability_clipping: prohibited_as_unapproved_alternative
+  fold_aggregation: unweighted_arithmetic_mean
+  required_finite_fold_epoch_values: 1280
+  selection: minimum_unrounded_mean_ce
+  exact_tie_break: earliest_epoch
+  epoch_cap_hit: selected_epoch_equals_256
+  epoch_cap_hit_action: report_only_no_automatic_budget_extension
+  fairness_metrics_role: monitoring_only
+  prohibit_adversarial_loss_or_project_validation_or_test_selection: true
+  cv_selection_optimism_limitation_required: true
+  full_train_refit:
+    epochs: selected_epoch
+    fresh_states: [preprocessing, predictor, adversary, optimizers, backend]
+    stopping_holdout: false
+    schedule_horizon:
+      status: user_locked
+      epochs: 256
+      applies_to: [learning_rate, weight_decay, dropout]
+      execution_budget: selected_epoch
+      compress_schedule_to_selected_epoch: false
+
+technical_spike:
+  source_path: src/dataset_b/mitigation/rq4b_spike.py
+  test_path: tests/test_dataset_b_rq4b_spike.py
+  disposable_root: scratch/rq4b_spike
+  fixture: synthetic_native_schema_no_project_validation_or_test
+  maximum_epochs_per_smoke_fit: 2
+  batch_size: 256
+  architecture: {hidden_sizes: [32], activation: relu, output_classes: 3, dropout: 0.0}
+  architecture_scope: historical_spike_fixture_production_lock_is_separate_above
+  baseline_equivalence: {rtol: 0.00001, atol: 0.000001}
+  baseline_equivalence_targets: [predictor_parameters, probabilities]
+  exact_comparisons: [record_ids, labels, masks, batch_order, configuration]
+  reload_probability_comparison: exact_same_environment_eval_mode
+  same_seed_smoke_repetitions_minimum: 2
+  failure_action: stop_and_write_immutable_disposable_failure_receipt
+  no_production_metrics_or_grid: true
+  codex_acceptance:
+    status: PASS
+    scope: synthetic_technical_spike_maximum_two_epochs_per_fit
+    evidence_root: scratch/rq4b_spike/r1_evidence_20261018_a1
+    preliminary_test_log: scratch/rq4b_spike/r1_pytest_20261018_a1/output.txt
+    independent_checks: [installed_lineage, signed_gradients, lambda_zero_equivalence, in_memory_reload, row_feature_group_alignment, nonfinite_before_step, mandatory_nonpass_rejection, epoch_selector, tolerance_boundary]
+    full_38_test_suite_independently_rerun: false
+    production_readiness_implied: false
+
+capability_assessment:
+  required_components: [synthetic_correctness_gate, independent_probe_vs_y_only]
+  architecture_search_on_inconclusive: false
+  inconclusive_status: capability_inconclusive
+  inconclusive_is_execution_failure: false
+  inconclusive_proves_no_group_information: false
+  real_probe:
+    source: frozen_rq1_realmlp_validation_predictions
+    frozen_run_id: realmlp_final_15f_20261004_01
+    groups: g3
+    architecture: fixed_2_32_relu_3_no_architecture_search
+    split:
+      fractions: {train: 0.60, validation: 0.20, holdout: 0.20}
+      stratify_by: [derived_race, y_approved]
+      random_state: 42
+      changes_project_split_membership: false
+    fitting:
+      optimizer: adamw
+      learning_rate: 0.001
+      maximum_epochs: 100
+      patience: 15
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+      epsilon: 0.00000001
+      amsgrad: false
+      maximize: false
+      capturable: false
+      differentiable: false
+      foreach: false
+      fused: false
+      batch_size: 256
+      device: cuda:0
+      random_state: 42
+      isolate_rng_from_predictor: true
+      monitor: unweighted_group_prediction_ce_on_probe_validation
+      monitor_mode: min
+      evaluation_mode: eval_no_grad
+      min_delta: 0.0
+      improvement: strictly_lower_ce
+      exact_tie_break: earliest_checkpoint
+      stopping: 15_consecutive_completed_epochs_without_improvement
+      restore_best_checkpoint_before_holdout: true
+      nonfinite_loss_or_gradient: stop_attempt_and_write_failure_receipt
+      skip_bad_batch_or_automatic_restart: false
+    y_only_comparator:
+      definition: conditional_group_probability_given_true_y
+      estimator: laplace_smoothed_group_counts_within_y
+      alpha: 1.0
+      fitted_on: probe_train_only
+    probe_fitted_on: probe_train_only
+    checkpoint_selected_on: probe_validation_only
+    gain_and_intervals_reported_on: probe_holdout_only
+    ce_gain: ce_y_only_minus_ce_probe
+    production_pass_fail_role: none_descriptive_only
+    prohibit_holdout_driven_architecture_or_protocol_changes: true
+    source_score_extraction:
+      prediction_path: artifacts/dataset_b/realmlp/final/realmlp_final_15f_20261004_01/validation/validation_predictions.csv
+      columns: [p_approved, p_denied]
+      dtype: float64
+      formula: log_p_approved_minus_log_p_denied
+      interpretation: reconstructed_margin_from_stored_probabilities_not_bitwise_original_logits
+      require_finite_probabilities: true
+      probability_bounds: strictly_positive_and_at_most_one
+      probability_sum_check: {target: 1.0, rtol: 0.0, atol: 0.000001}
+      require_finite_margin: true
+      invalid_input_action: stop_attempt_no_clipping_no_row_drop_no_new_inference
+  synthetic_correctness_gate:
+    fixture_source_and_generation:
+      type: fixed_synthetic_positive_control
+      rows: 6000
+      groups: g3
+      rows_per_group: 2000
+      rows_per_group_and_y: 1000
+      margin: group_center_plus_zero_mean_gaussian_noise
+      centers_in_g3_order: [-2.0, 0.0, 2.0]
+      noise_standard_deviation: 0.25
+      numpy_rng: default_rng
+      numpy_seed: 42
+      stable_synthetic_record_ids: true
+      split: {train: 0.60, validation: 0.20, holdout: 0.20}
+      stratify_by: [group, y]
+      split_seed: 42
+      probe_inputs: [synthetic_margin, true_y]
+      group_is_target_not_input: true
+      fit_and_comparator_policy: same_locked_probe_recipe
+      prohibit_fixture_retuning_after_results: true
+      observed_gate_result: PASS
+    ce_gain_minimum_nats: 0.05
+    ce_gain_comparison: greater_than_or_equal
+    lower_95_ci_gain: strictly_greater_than_zero
+    distinct_from_real_probe_gain_requirement: true
+  probe_uncertainty:
+    method: stratified_paired_bootstrap
+    strata: [derived_race, y_approved]
+    population: held_out_probe_rows
+    replicates: 1000
+    interval: percentile
+    confidence_level: 0.95
+    quantiles: [0.025, 0.975]
+    quantile_interpolation: linear
+    random_state: 42
+    round_before_quantiles_or_endpoint_comparison: false
+    minimum_valid_replicates: 1000
+    paired_quantities: [y_only_ce, probe_ce]
+    refit_probe_or_comparator_in_bootstrap: false
+    reuse_production_test_indices: false
+    invalid_quantity_action: ci_not_evaluable_no_replacement_replicates
+  use_test_to_design_or_select_probe: false
+
+execution_governance:
+  documentation_contract_config_owner: codex
+  historical_spike_implementer: claude
+  historical_independent_reviewer: codex
+  implementation_owner: codex
+  verification_owner: codex
+  verification_mode: self_review_with_separate_validation_pass
+  bugfix_owner: codex
+  technical_acceptance_report_owner: codex
+  real_fit_executor: claude_code_under_explicit_user_chat_authorization
+  real_fit_scope: [capability_probe, cv, full_train_refit]
+  command_handoff_owner: codex
+  post_training_artifact_verification_owner: codex
+  codex_may_launch_or_retry_real_fits: false
+  current_external_reviewer_dependency: false
+  operating_procedure: docs/handbook/runbooks/neural_training.md
+  approval_channel: chat
+  handover_scope: ownership_sync_synthetic_integration_verification_context_handoff
+  production_runtime_validation: not_verified
+  production_launch_authorized: true
+  production_launch_scope:
+    run_id: rq4b3_adv_20261022_01
+    role: track_b_seed44_continuation
+    units: [{lambda: 0, seed: 44}, {lambda: 0.01, seed: 44}]
+    require_preflight_and_capability_pass: true
+    prohibit_automatic_retry: true
+    require_lambda_zero_artifact_verification_before_lambda_0_01: true
+    selection_final_and_test_remain_closed: true
+  codex_handover_acceptance:
+    review_date: '2026-10-18'
+    review_mode: self_review_with_separate_validation_pass
+    authoritative_status: docs/handbook/STATUS.md
+    approval_channel: chat
+    g1:
+      result: PASS
+      scope: ownership_status_sync_only
+      tests_passed: 185
+      evidence: scratch/rq4b_implementation/CODEX_HANDOVER_1_b4f7f8b4953c49fe92ea79a5162ac79a/review.json
+    g2:
+      result: PASS
+      scope: synthetic_disk_fixtures_and_mocked_production_glue_only
+      integration_tests_passed: 57
+      related_regression_tests_passed: 233
+      runner_tests_passed: 42
+      runner_shell_exit: interrupted_after_pytest_reported_all_passed
+      production_source_changed: false
+      evidence: scratch/rq4b_implementation/CODEX_INTEGRATION_2_adf341da88fc4db99eaebf75c67ea8e8/review.json
+    g3:
+      result: PASS
+      scope: chat_review_and_context_handoff_only
+      context_delivery: chat
+    production_readiness_implied: false
+  implementer_report_language: English
+  production_training_launcher: claude_code_under_explicit_user_chat_authorization
+  spike_pass_does_not_authorize_production: true
+  t1_input_boundary_acceptance:
+    reviewer: codex
+    gate: C1
+    revision: T1-R1
+    result: PASS
+    review_date: '2026-10-18'
+    scope: production_contract_and_input_boundary_synthetic_validation_only
+    focused_tests_passed: 185
+    independent_locked_leaf_checks: 704
+    outside_write_scope_hashes_matched: 27
+    review_scratch_root: scratch/rq4b_implementation/T1_R1_C1_e8bfd4d9b56b4d1c8326026950918f11
+    authoritative_status: docs/handbook/STATUS.md
+    production_readiness_implied: false
+    next_task_requires_separate_assignment: true
+  t2_training_engine_acceptance:
+    reviewer: codex
+    gate: C2
+    revision: T2-R1
+    result: PASS
+    review_date: '2026-10-18'
+    scope: adversarial_training_cv_refit_engine_synthetic_validation_only
+    training_tests_passed: 82
+    input_regression_tests_passed: 185
+    combined_test_result: 267_passed_28_deprecation_warnings
+    combined_test_seconds: 38.05
+    independent_prior_finding_reproduction: rejected_before_preprocessing_and_engine
+    outside_write_scope_hashes_matched: 32
+    review_scratch_root: scratch/rq4b_implementation/T2_R1_C2_7c87d0f8b72945aebe5aed34c2afd678
+    implementation_sha256: 7af26e80a4171dbc0a4de287c86c55c8627e8b6241a9f7271d68a5a10befe3fe
+    tests_sha256: a9c1598bd59b5b4d793af195f28db8b611800f0f9996960685787debe97acb8e
+    authoritative_status: docs/handbook/STATUS.md
+    production_readiness_implied: false
+    next_task_requires_separate_assignment: true
+  t3_capability_probe_acceptance:
+    reviewer: codex
+    gate: C3
+    revision: T3-R2
+    result: PASS
+    review_date: '2026-10-18'
+    scope: probe_implementation_synthetic_gate_and_windows_attempt_failure_handling
+    focused_tests_passed: 53
+    focused_test_seconds: 10.84
+    outside_write_scope_hashes_matched: 39
+    review_scratch_root: scratch/rq4b_implementation/T3_R2_C3_4480ba14a8c245e2923d91cf7faa64f3
+    implementation_sha256: b6f1e803e4ad90dd2f0344e51ec0c267f4fe711c69cbaba366a5c4736329e7a0
+    tests_sha256: 995ac443a67e8b7a1f36c5c6b62931a377d7ffb0a0cd2bf078a1824fa66081bf
+    synthetic_gate:
+      result: PASS
+      evidence_path: scratch/rq4b_implementation/T3_synthetic_gate_5c041ca3b32e481f89574148ee0cbf7f/synthetic_gate_evidence.json
+      gate_producing_source_sha256: 02ed1280c365fa23aac71edbc3799d7497b187efe5b99ca2185da94ca3f08c1d
+      archived_source_path: scratch/rq4b_implementation/T3_R1_audit_f6913bbaca814a31a506af0368f79e50/rq4b_probe_gate_lineage_02ED1280.py.txt
+      ce_gain_nats: 1.0934503013695
+      ci_95: [1.0926187243623788, 1.0941724543148197]
+      valid_replicates: 1000
+      best_epoch: 100
+      stop_reason: maximum_epochs_100
+      rerun_during_codex_review: false
+    real_probe_fitted: false
+    real_capability_established: false
+    production_readiness_implied: false
+    real_probe_requires_separate_authorization: true
+    next_task_requires_separate_assignment: true
+    authoritative_status: docs/handbook/STATUS.md
+  t4_evaluation_logic_acceptance:
+    reviewer: codex
+    gate: C4
+    revision: T4-R1
+    result: PASS
+    review_date: '2026-10-18'
+    scope: pure_candidate_selection_and_test_evaluation_logic_synthetic_only
+    evaluation_tests_passed: 38
+    input_regression_tests_passed: 185
+    rq4a_metric_regression_tests_passed: 10
+    combined_tests_passed: 233
+    combined_test_seconds: 47.31
+    outside_write_scope_hashes_matched: 42
+    review_scratch_root: scratch/rq4b_implementation/T4_R1_C4_c61f2ec04ca947a7bb72c690a5a0dade
+    implementation_sha256: 7551c354f5289bccd519d680cde362f7fb5052664c9b0adf3ce16f66913a13d8
+    tests_sha256: e0c3c89b7e1e3938c883fa6127dfcad7af0cc01905bccb7015ca6f2d27d6a9ed
+    sex_input_representation: canonical_rq3_labels_explicit_normalization_required_for_raw_codes
+    locked_index_integrity_and_test_manifest_alignment: future_loader_gate
+    real_test_access_performed: false
+    production_readiness_implied: false
+    next_task_requires_separate_assignment: true
+    authoritative_status: docs/handbook/STATUS.md
+  t5_runner_acceptance:
+    reviewer: codex
+    gate: C5
+    revision: T5-R1
+    result: PASS
+    review_date: '2026-10-18'
+    scope: staged_runner_reporting_and_package_validation_fake_backend_synthetic_only
+    runner_tests_passed: 42
+    runner_test_seconds: 198.89
+    input_and_evaluation_regression_tests_passed: 223
+    regression_test_seconds: 13.19
+    outside_write_scope_hashes_matched: 44
+    implementation_sha256: 770029b6786757d6284d97fb463cd391dfc98f0ad78e8165b2ed680625d9ab03
+    tests_sha256: 9e2adef80be64f5acad419fd42f98482fafab7ef3e749e7b9009020a3b90b472
+    implementer_audit_root: scratch/rq4b_implementation/T5_R1_audit_703729e717d641878fe067adad1535ea
+    independent_review_reproduction_root: scratch/rq4b_implementation/T5_R1_C5_trace_eb1daf9865194922ab417a441fa4a7ab
+    closed_findings: [fairness_generalization_gap_export, status_lineage_gap_and_test_id_trace_validation]
+    production_backend_runtime_verified: false
+    production_launch_authorized: false
+    real_probe_authorized: false
+    production_readiness_implied: false
+    user_must_launch_each_production_stage_explicitly: true
+    authoritative_status: docs/handbook/STATUS.md
+  production_additional_gates: [gate_a_pass, per_run_preflight_pass, capability_pass, explicit_unit_command]
 
 threshold_calibration:
   partition: validation
@@ -94,6 +562,7 @@ threshold_calibration:
   global_threshold_only: true
 
 candidate_selection:
+  policy_status: blocked_pending_explicit_three_seed_methodological_approval
   evaluation_partition: validation
   matched_control: same_seed_lambda_zero
   eligibility_metric: mean_matched_delta_balanced_accuracy
@@ -105,18 +574,20 @@ candidate_selection:
   use_test_for_selection: false
   same_partition_as_threshold_calibration: true
   exploratory_optimism_limitation_required: true
+  prior_four_of_five_acceptance_satisfied_by_three_seeds: false
+  arbitrary_two_of_three_rule_prohibited: true
 
 configurations:
   RQ4b-3:
     role: primary
     group_roster: g3
-    readiness: blocked_pending_internal_extension_technical_spike
+    readiness: method_contract_locked_ready_for_scoped_implementation_not_training
   RQ4b-6:
     role: deferred_optional_sensitivity
     group_roster: g6
     readiness: deferred_optional_not_committed
     requires_separate_future_authorization: true
-    prerequisite: rq4b_3_gates_and_stable_diagnostics
+    prerequisite: rq4b_3_gates_and_separate_future_diagnostic_acceptance
     small_cell_warning: 2 or more minority races
     optional_weighted_sensitivity:
       enabled_by_default: false
@@ -129,9 +600,19 @@ fit_budget:
   reuse_lambda_zero_controls_across_g3_g6: true
   reuse_selected_lambda_artifacts_for_seeds: [42, 43, 44]
   retrain_reused_selected_lambda_artifacts: false
-  committed_rq4b_3_maximum_unique_full_fits_approx: 22
+  committed_rq4b_3_maximum_development_units: 9
+  retained_completed_development_units: 5
+  maximum_additional_development_units: 4
+  rq4b_3_maximum_cv_fold_fits_excluding_spike_and_retries: 45
+  rq4b_3_maximum_full_train_refits_excluding_spike_and_retries: 9
+  rq4b_3_maximum_total_fits_excluding_spike_and_retries: 54
+  capability_probe_fits_included_in_54: false
+  budget_basis: 5_retained_seed42_units_plus_4_additional_control_and_lambda_0_01_replications
+  superseded_budget_basis: 18_development_combinations_plus_up_to_4_final_seed_combinations
+  superseded_maximum_total_fits: 132
   future_rq4b_6_additional_primary_fits_approx: 17
   future_optional_weighted_rq4b_6_additional_fits: 5
+  future_rq4b_6_counts_are_refit_only_cv_budget_pending: true
   rq4b_6_outside_committed_budget: true
 
 runtime:
@@ -160,6 +641,10 @@ internal_extension_and_naming_gate:
     - finite_one_batch_forward_backward
     - serialization_and_reload
     - lambda_zero_equivalence
+    - roster_alignment_and_signed_gradient_flow
+    - cuda_fail_closed_and_nonfinite_failure_paths
+    - exact_seed_plumbing_and_short_smoke_repeatability
+    - synthetic_epoch_selection_and_schedule_horizon_feasibility
   preserve_realmlp_recipe_required: true
   if_recipe_not_preserved: do_not_name_adversarial_realmlp
 
@@ -192,18 +677,63 @@ metrics:
 uncertainty:
   within_seed:
     method: paired_test_bootstrap_vs_matched_lambda_zero
+    replicates: 1000
+    confidence_level: 0.95
+    interval: percentile
+    quantiles: [0.025, 0.975]
+    quantile_interpolation: linear
+    round_before_quantiles_or_endpoint_comparison: false
+    stratification: y_approved_as_in_locked_rq1_indices
+    do_not_regenerate_race_y_test_indices: true
+    minimum_valid_replicates_per_quantity: 1000
+    invalid_quantity_action: ci_not_evaluable_no_replacement_replicates
+    ci_invalidity_is_scientific_failure: false
+    refit_or_recalibrate_in_bootstrap: false
     indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
     reuse_locked_indices: true
     allow_regenerate_indices: false
   across_seed:
-    summaries: [mean, standard_deviation, range]
+    summaries: [mean, standard_deviation, min, max, range]
+    standard_deviation_ddof: 1
+    required_seed_count: 3
+    pool_bootstrap_replicates_across_seeds: false
   select_seed_from_test: false
   save_invalid_replicates_and_reasons: true
 
+scientific_assessment:
+  delta_direction: adversarial_minus_same_seed_lambda_zero
+  per_seed_point_criterion:
+    fairness: delta_eod3_strictly_less_than_zero
+    utility: full_test_delta_balanced_accuracy_greater_than_or_equal_to_minus_0_01
+    combination: both_required
+    missing_required_quantity: not_evaluable
+  strong_support:
+    status: blocked_pending_explicit_three_seed_methodological_approval
+    required_seed_count: null
+    final_seed_count: 3
+    superseded_rule: {required_seed_count: 4, final_seed_count: 5, satisfied_by_three_seeds: false}
+    arbitrary_two_of_three_rule_prohibited: true
+    same_seed_must_satisfy_both_ci_conditions: true
+    ci_conditions_status: retained_but_aggregate_decision_rule_pending
+    fairness_condition: upper_95_ci_delta_eod3_strictly_less_than_zero
+    utility_condition: lower_95_ci_delta_ba_strictly_greater_than_minus_0_01
+    invalid_ci_counts_as_support: false
+  stability_status: not_assessed
+  strong_support_implies_stable: false
+  scientific_conclusion_separate_from_execution_status: true
+
+reporting_contract:
+  required_evidence: [track_a_status, track_b_status, cv_ce_curves, selected_epoch, epoch_cap_hit, configurations, seeds, provenance, diagnostics, eod3, paired_same_seed_delta_eod3, balanced_accuracy_cost, eod6_safety_audit, per_seed_bootstrap_intervals, invalid_replicates_and_reasons, across_seed_summaries, training_stability_and_integrity, capability_assessment, statistical_limitations]
+  prohibit_best_seed_selection: true
+  prohibit_unfavorable_seed_exclusion: true
+  prohibit_test_driven_budget_extension: true
+
 status_contract:
   execution_status: [completed, failed, infeasible]
-  stability_status: [stable, unstable, not_assessed]
+  stability_status: [not_assessed]
   primary_criterion: [pass, fail, not_evaluable]
+  primary_criterion_scope: per_seed_point_criterion
+  strong_support_is_separate_field: true
   fields_are_independent: true
   reason_codes:
     - none
@@ -220,6 +750,7 @@ status_contract:
     - ba_budget_exceeded
     - unstable_diagnostics
     - runtime_failure
+    - capability_inconclusive
 
 prohibitions:
   prohibit_race_or_sex_as_predictor: true
