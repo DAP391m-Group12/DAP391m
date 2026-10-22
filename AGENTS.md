@@ -89,6 +89,24 @@ task; do not preload the full handbook, notebooks, artifacts, or reports.
 - Prefer targeted file search and focused source inspection over repository-wide
   content dumps.
 
+## Codex handover and chat approval
+
+- Codex owns current RQ4b implementation, testing, review and reporting. Claude
+  has no active implementer/verifier role or pending-work dependency. Preserve
+  historical authorship and independent-review evidence without relabeling it.
+- Approvals and acceptance for this handover are given in chat, not through
+  terminal Allow requests. Commands may execute approved tests; do not use the
+  terminal as an approval channel. Report any system permission barrier in chat.
+- Work only within the approved task contract and Write Scope. An explicit
+  approval of the full sequence permits progression only after each gate PASS;
+  an approval of one task does not open the next task automatically.
+- Complete implementation, then a separate self-review and validation pass.
+  Do not label Codex checking its own work as independent review.
+- Record only evidence-backed acceptance and limitations. STATUS remains the
+  sole current execution register. Preserve locked method decisions.
+- Handover approval does not authorize production preflight, training, real
+  inference/probe fitting, new experiments, or changes to frozen artifacts.
+
 ## Changes and validation
 
 - Preserve existing architecture and make the smallest change that satisfies
