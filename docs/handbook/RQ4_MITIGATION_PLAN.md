@@ -21,7 +21,7 @@ The four predeclared configurations are:
 |---|---|---|
 | RQ4a-3 | Primary post-processing analysis on G3 | `COMPLETE`; accepted run `rq4a3_postproc_20261017_01`; C6 review `PASS`; both models `completed / stable / pass`; reported in Notebook 11 and accepted by C8 `PASS` |
 | RQ4a-6 | Required post-processing sensitivity on G6 | `COMPLETE`; accepted run `rq4a6_postproc_20261017_01`; C7 review `PASS`; both models `completed / unstable / fail` as the predeclared sensitivity outcome; reported in Notebook 11 and accepted by C8 `PASS` |
-| RQ4b-3 | Primary adversarial RealMLP analysis on G3 | Implementation acceptance and evidence limits are registered in STATUS; method decisions remain locked. Codex owns remaining synthetic integration verification; real-data runtime and production launch are not implied |
+| RQ4b-3 | Primary adversarial RealMLP analysis on G3 | The 2026-10-21 parallel evaluation/training amendment is active, with the 2026-10-22 v4 continuation mechanism implemented for seed 44 under a separate run identity. Five seed-42 development units and two seed-43 units are retained; the two seed-44 control/`lambda=0.01` units are the remaining maximum scope. No seed-44 fit has been launched, and final selection/Test remain blocked by Gate C |
 | RQ4b-6 | Optional adversarial RealMLP sensitivity on G6 | Deferred and not committed; requires a separate later authorization after RQ4b-3 gates pass |
 
 The separate RQ1 paired-bootstrap prerequisite (T1) is `COMPLETE` and locked.
@@ -469,6 +469,7 @@ technical spike.
 
 The RQ4b-specific machine-readable contract is
 `config/dataset_b/rq4b_adversarial.yaml`, protocol
+`rq4b_adversarial_realmlp_v3_parallel_evaluation_training`. Its predecessor was
 `rq4b_adversarial_realmlp_v2_cv_epoch_selection`. This section supersedes the
 earlier RQ4b suggestions of fixed epoch 50, an inner-holdout selector, and
 patience-based stopping. It does not change the frozen RealMLP baseline,
@@ -494,6 +495,73 @@ stored-score extraction, synthetic fixture and percentile interpolation are
 also user-locked below. Consult STATUS for implementation acceptance and its
 synthetic evidence limits; acceptance is not real-data runtime verification
 or permission to train.
+
+### RQ4b-3 parallel evaluation and training amendment (2026-10-21)
+
+The user-approved amendment replaces both the original 18-development-unit
+protocol and the temporary 12-fit priority policy. The original protocol
+remains identifiable as
+`rq4b_adversarial_realmlp_v2_cv_epoch_selection`; the amended machine-readable
+protocol is `rq4b_adversarial_realmlp_v3_parallel_evaluation_training`. The
+amendment does not change the predictor/adversary architectures, optimization,
+five-fold epoch-selection and full-Train refit method, G3/G6 taxonomy, metric
+definitions, denominator rules, frozen thresholds, Validation/Test separation,
+or bootstrap definitions.
+
+Two independent tracks are authorized by contract. Track A reads the five
+frozen completed seed-42 development units and writes only authorized evaluation
+outputs for EOD3, paired same-seed delta EOD3 where defined, Balanced Accuracy
+cost, available diagnostics, fairness--utility evidence and training stability.
+It must not refit, rerun inference, regenerate or overwrite their checkpoints,
+predictions, epochs, receipts or manifests. Track B comprises only four new
+development units: `(lambda=0, seed=43)`, `(lambda=0.01, seed=43)`,
+`(lambda=0, seed=44)` and `(lambda=0.01, seed=44)`. Track B does not depend on
+Track A completion or outcome. The units may run concurrently only when paths,
+write ownership and resources are safe; otherwise queue the four units
+sequentially. An unfavorable preliminary EOD3 result does not cancel Track B.
+
+Gate A blocks Track B until the amended scope/budget, implementation and
+configuration are valid; run ID, seeds and lambdas are correct; artifact paths
+do not conflict; completed artifacts are protected; and no critical correctness
+or lineage issue remains. EOD3 evaluation is not part of Gate A. Gate B requires
+each new unit to complete five CV folds, one full-Train refit under the existing
+epoch-selection policy, development-validation, integrity and prediction-count
+checks, and artifact/receipt validation. An incomplete unit is never completed.
+Gate C blocks final arm/lambda selection and Test until all retained development
+units have evaluation evidence, EOD3, paired same-seed delta EOD3 and BA cost
+are available, EOD6 is audited, seed variability and training stability/integrity
+are assessed, statistical limitations are explicit, and a three-seed selection
+policy receives separate methodological approval.
+
+### Seed-44 lineage-preserving continuation (2026-10-22)
+
+Seed 44 must not resume or modify the completed v3 child run. Its execution
+identity is the v4 continuation `rq4b3_adv_20261022_01`, protocol
+`rq4b_adversarial_realmlp_v4_seed44_continuation`, decision revision
+`rq4b3_seed44_continuation_20261022`, and role
+`track_b_seed44_continuation`. This run may contain only `(lambda=0, seed=44)`
+and `(lambda=0.01, seed=44)`. The method, model architecture, data, split,
+epoch-selection policy and fit budget per unit are unchanged from v3.
+
+The continuation is a fresh run with no artifact migration and no fitted-state
+reuse. Its contract pins the SHA-256 of both source manifests, all published
+development/development-validation receipts from the five seed-42 and two
+seed-43 units, and the retained seed-43 failure receipt. Production create/open must verify those source digests before
+accepting the v4 run, then lock the current v4 config and code hashes in the
+new manifest. A source mismatch stops before create/open. A later v4 code or
+config change blocks resume; preserve the existing attempted run and use a new
+identity only under a separately approved revision. Never rewrite a source
+manifest or receipt to make validation pass.
+
+Execute seed 44 sequentially if a later execution task opens it: first
+`(lambda=0, seed=44)`, then verify its published development and
+development-validation artifacts, and only then permit `(lambda=0.01,
+seed=44)`. The runner enforces this by requiring intact upstream receipts,
+five CV folds plus one refit, and 43,995 Validation predictions before the
+positive-lambda unit can start. No automatic retry is allowed. Gate C lineage
+validation must explicitly map the seven source units and two continuation
+units before any cross-run aggregation. Selection, final-fit, Test and package
+validation remain closed.
 
 For every RQ4b candidate, predictor loss uses all Train rows. Adversarial loss
 is masked to the configured G3 or G6 roster. Race and sex never enter predictor
@@ -653,10 +721,14 @@ provides short feasibility evidence for separating these quantities; production
 implementation and validators must still prove the selected mechanism obeys
 the policy. This is not evidence of a completed 256-epoch production fit.
 
-The lambda grid is `[0, 0.01, 0.03, 0.1, 0.3, 1.0]`. Development seeds are
-`[42, 43, 44]`; final seeds are `[42, 43, 44, 45, 46]`.
+The amended retained lambda roster is `[0, 0.01, 0.03, 0.1, 0.3]`; `lambda=1`
+is removed from the execution queue. The five retained seed-42 development
+units cover that roster. `lambda=0.03`, `0.1` and `0.3` remain screening
+evidence at seed 42 only. Control (`lambda=0`) and `lambda=0.01` are replicated
+over seeds 42, 43 and 44. This is an explicit nine-unit sparse design, not the
+Cartesian product of five lambdas and three seeds.
 
-For each development seed and lambda candidate:
+For each development unit authorized by this sparse design:
 
 1. complete Train-only five-fold epoch selection and fresh full-Train refit above;
 2. calibrate one global threshold on the complete Validation partition using the frozen
@@ -664,26 +736,21 @@ For each development seed and lambda candidate:
 3. evaluate matched BA and EOD3 on the same complete Validation partition;
 4. compute matched delta BA against the same-seed lambda=0 control.
 
-A candidate is eligible only when its mean matched delta BA is at least -0.01.
-RQ4b-3 selects the eligible candidate with minimum mean EOD3. An exact tie
-chooses the smaller lambda. Lambda=0 is a valid winner. EOD6 is reported as an
-audit metric and cannot select lambda. RQ4b-6 is not part of the committed
-execution scope; a later separately authorized protocol must define its own
-diagnostic acceptance after the RQ4b-3 gates. RQ4b's descriptive variability
-and `not_assessed` stability label do not automatically open RQ4b-6.
+The earlier five-seed selection rule is superseded for this amended experiment,
+but no replacement aggregate rule is approved yet. The BA budget remains
+`-0.01`, EOD3 remains the primary fairness objective, EOD6 remains an audit and
+cannot select lambda, and Test cannot select a lambda, seed, threshold or
+architecture. Gate C therefore remains blocked until a selection rule suitable
+for the three replicated seeds is explicitly justified and approved. Do not
+silently substitute a two-of-three rule. RQ4b-6 remains outside the committed
+scope and requires separate authorization.
 
-Train lambda=0 controls for all five final seeds. For seeds 42-44, reuse the
-identical selected-lambda artifacts from development rather than retraining
-them. The committed RQ4b-3 plan requires at most approximately 22 unique full
-refits, plus at most 110 CV fold fits: 18 development combinations and up to
-four additional combinations for final seeds 45-46 (control and selected
-lambda). If lambda=0 wins, duplicate control/selected fits are not performed.
-The upper bound is 132 fits, excluding spike, retries and failed attempts; this
-is a fit-count budget, not an elapsed-time or memory estimate. A later RQ4b-6
-authorization would add approximately 17 primary refits under the older budget
-outline, but its new CV cost requires separate planning. It may
-reuse the lambda=0 controls. Its optional weighted sensitivity would add
-five more fits.
+The amended budget contains at most nine development units: five retained
+seed-42 units and the four additional Track B units. Each unit retains five CV
+fold fits and one full-Train refit, giving an upper bound of 45 CV fold fits and
+nine full-Train refits (54 fits total), excluding the capability probe, retries
+and failed attempts. Existing completed units are reused without retraining.
+No lambda, seed, architecture search or experimental method may be added.
 
 The primary adversary uses unweighted multiclass cross-entropy. If RQ4b-6 is
 separately authorized later, its optional weighted sensitivity may use
@@ -820,16 +887,15 @@ replicates/reasons; an insufficient-valid CI is not evaluable, must not be
 replaced or topped up, and is not itself evidence of scientific failure.
 Use `np.quantile(valid_deltas, [0.025,0.975], method="linear")`, without
 rounding before quantiles or endpoint comparisons, for both probe and Test CIs.
-Across all five final seeds use sample SD (`ddof=1`), mean, min, max and range;
-do not silently drop unfavorable or missing seeds. No CI was computed here.
-
-The user locked the strong-support count at at least **4 of 5 final seeds**,
-with BOTH CI conditions satisfied within each counted seed: upper 95% CI(delta
-EOD3) < 0 AND lower 95% CI(delta full-Test BA) **> -0.01**. These endpoint
-conditions are now user-locked. The strict CI utility inequality differs from
-the non-strict point utility criterion (`>= -0.01`); do not conflate them.
-An invalid CI cannot count as supporting a seed.
-No claim of a joint 95% confidence level across seeds follows from this count.
+Across the three replicated seeds use sample SD (`ddof=1`), mean, min, max and
+range; do not silently drop unfavorable or missing seeds. No CI was computed
+here. The earlier strong-support rule of at least **4 of 5 final seeds** is not
+satisfied or transferable to this three-seed amendment. The within-seed endpoint
+conditions remain upper 95% CI(delta EOD3) < 0 and lower 95% CI(delta full-Test
+BA) **> -0.01**, but their aggregation into a final selection/acceptance rule is
+pending explicit methodological justification and approval. Do not invent a
+two-of-three threshold. An invalid CI cannot be treated as support, and no joint
+95% confidence claim follows from counting seeds.
 
 Use `stability_status: not_assessed` for RQ4b; report seed variability instead
 of inventing a stable/unstable threshold. Strong support does not imply stable.
@@ -882,23 +948,26 @@ At minimum, reason codes include `none`, `prerequisite_rq1_paired_bootstrap_miss
    (T8/C8 `PASS`).
 8. RQ4b internal-extension technical spike, including CUDA/PyTabKit: accepted
    after R1 as C-spike `PASS` in synthetic two-epoch scope; see STATUS.
-9. RQ4b method decisions are locked. Use STATUS for accepted implementation
-   scope. Codex completes separately authorized integration verification and
-   self-review, fixes scoped bugs and reports technical acceptance. The user
-   runs real probe/CV/refit commands only after the scoped readiness handoff;
-   Codex checks artifacts afterward. The neural runbook owns stage commands
-   and recovery instructions; STATUS owns actual execution evidence. No
-   current task depends on Claude or on an external independent reviewer.
-10. Leave RQ4b-6 deferred. Open it only through a separate future authorization
+9. Apply the RQ4b-3 amendment as two independent tracks. Track A evaluates the
+   five frozen seed-42 units without refit or reinference. Track B uses the
+   immutable v3 child for the completed seed-43 units and the separate v4
+   continuation for seed 44. The continuation must run `(0,44)`, verify it,
+   then run `(0.01,44)`; it does not wait for Track A fairness results. STATUS
+   owns actual execution evidence and launch authorization.
+10. Keep Gate C blocking until all nine retained/new units have the required
+    evaluation, integrity, variability and stability evidence and a revised
+    three-seed selection policy is explicitly approved. Test remains closed.
+11. Leave RQ4b-6 deferred. Open it only through a separate future authorization
    after RQ4b-3 gates pass and a separate diagnostic acceptance policy is approved.
 
 RQ4a is closed after the accepted T2--T8 chain and C2--C8 reviews. Its two
 immutable production runs and reporting-only Notebook 11 provide the accepted
 runtime, mitigation-effect, stability, criterion, and uncertainty evidence.
-The RQ4b technical spike has been accepted in its limited scope and method
-decisions are locked; implementation/validation and launch gates are listed
-in Section 6 and the YAML. RQ4b-3 production
-has not run, and RQ4b-6 remains deferred.
+The RQ4b technical spike has been accepted in its limited scope. The amended
+contract identifies five completed seed-42 development units, but this contract
+recording does not independently validate those artifacts or produce Track A
+results. Track B and Gate C status are recorded in STATUS. Test remains closed,
+and RQ4b-6 remains deferred.
 
 ## 10. Interpretation boundary
 

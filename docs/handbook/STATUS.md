@@ -1,11 +1,153 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-10-20
+**Reconciled:** 2026-10-22
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
 
 ## Current RQ4b handover ownership
 
-### Temporary N5-to-RQ4b-3 12-fit priority policy — 2026-10-20
+### RQ4b-3 parallel evaluation and training amendment — 2026-10-21
+
+The user-approved RQ4b-3 amendment supersedes both the original
+18-development-unit protocol and the temporary 12-fit priority policy below.
+The amended execution uses two explicitly linked, non-overlapping run identities.
+`rq4b3_adv_20261019_02` is the immutable Track A source run for the retained
+seed-42 artifacts and remains on its historical v2 code lineage.
+`rq4b3_adv_20261021_01` is the immutable v3 Track B child run that contains the
+two seed-43 units. The seed-44 continuation uses the separate v4 identity
+`rq4b3_adv_20261022_01`; no stage has been created in that run. The maximum development
+scope is nine units: five retained completed seed-42 units at lambdas
+`[0, 0.01, 0.03, 0.1, 0.3]`, plus exactly four approved additional units:
+`(lambda=0, seed=43)`, `(lambda=0.01, seed=43)`, `(lambda=0, seed=44)` and
+`(lambda=0.01, seed=44)`. Lambda 1 is removed from the execution queue;
+lambdas 0.03, 0.1 and 0.3 remain screening evidence at seed 42 only. No
+additional lambda, seed, architecture search or experimental method is opened.
+
+Track A evaluates the five frozen completed seed-42 artifacts for EOD3, paired
+same-seed delta EOD3 where defined, Balanced Accuracy cost, available
+diagnostics, fairness--utility evidence and training stability. It must not
+refit, rerun inference, regenerate or overwrite completed checkpoints,
+predictions, epochs, receipts or manifests. Track A is `PENDING` in this status
+record: the contract identifies the five completed units, but this recording
+task did not independently inspect their artifacts or compute evaluation
+results.
+
+Track B is limited to the four new units above and Gate A is `PASS`. It does
+not depend on Track A completion, EOD3 results or fairness acceptance. Gate A
+does not require EOD3; it requires the amended configuration and implementation
+to agree, correct run/seed/lambda assignment, safe nonconflicting paths and
+write ownership, overwrite protection and no unresolved critical correctness
+or lineage issue. The v4 input validator and runner preserve the sparse
+nine-unit design while restricting the current production identity to the two
+seed-44 units. Cross-run aggregation remains blocked until Gate C lineage
+validation.
+
+The earlier seed-43 execution assignment is complete. The current task
+authorized implementation and synthetic validation of the seed-44 continuation
+mechanism only; it explicitly did not authorize launching a seed-44 fit. No
+automatic retry is authorized. Selection, final-fit, Test and package
+validation remain closed.
+
+Gate B requires each new unit to complete five CV folds, one full-Train refit,
+development-validation, integrity and prediction-count checks, and artifact
+and receipt validation. Gate C remains blocking before final lambda/arm
+selection or Test. It requires evaluation evidence for every retained/new
+development unit, EOD3, paired same-seed delta EOD3, BA cost, EOD6 safety
+audit, seed variability, training stability/integrity, explicit statistical
+limitations and a separately approved selection policy suitable for three
+seeds. The former 4/5 rule is not satisfied by three seeds and must not be
+silently replaced with 2/3. Test remains unopened by this contract-recording
+task. Execution completion, statistical evidence, fairness effectiveness,
+predictive utility and training stability remain separate statuses.
+
+### RQ4b-3 Track B seed-43 Gate B closure — 2026-10-22
+
+Both currently assigned seed-43 development units are `COMPLETE`, and their
+per-unit Gate B checks are `PASS`. In child run `rq4b3_adv_20261021_01`,
+`(lambda=0, seed=43)` and `(lambda=0.01, seed=43)` each have a published
+development stage with five completed CV folds and one completed full-Train
+refit, followed by a published development-validation stage with 43,995
+ordered Validation predictions. Their receipts are `PASS`; declared output
+hashes, upstream receipt links, unit identities, prediction counts and
+run-manifest code lineage were directly checked. Both Validation files have
+the expected schema, unique `record_id` values, binary labels, finite
+probabilities in `[0,1]`, and ordered-ID digest
+`f5331875e449fc2f940de5a845483d5ea0830ae2b5a8501df98e9814a2fa5875`.
+At the seed-43 closure audit, the then-current v3 configuration and all five
+code files covered by the child-run manifest matched its stored hashes. The
+later v4 continuation intentionally has new config/code lineage and never
+reopens that v3 run. No temporary stage remained at closure.
+
+The successful `(lambda=0, seed=43)` attempt selected and refit epoch 118; its
+Validation threshold is 0.766. Its earlier failed attempt remains unchanged at
+`failures/dev_l0_s43.ca0ec0704255402b9f2a7fb8779f57fa/`, with two CV starts,
+one completed CV fit, one partial CV fit and no refit. That failed compute is
+accounted separately from the successful published five-CV-plus-one-refit
+attempt and was not an automatic retry. The successful `(lambda=0.01,
+seed=43)` attempt selected and refit epoch 17; its Validation threshold is
+0.754. It has five completed CV folds, one completed refit, no partial fit and
+no prior failed attempt.
+
+The positive-lambda 256-epoch CV trajectories show a reproducible stability
+limitation rather than an artifact-completion failure. For seeds 42 and 43,
+the exact minimum of the five-fold mean Validation CE is epoch 17, while mean
+Validation CE first exceeds 1 at epoch 34 and later reaches approximately
+`1.11e8` and `1.20e8`, respectively. Predictor loss and adversary loss also
+become extremely large while remaining finite; the signed objective
+`L_prediction - lambda * L_adversary` becomes strongly negative. Each fresh
+full-Train refit executes only the selected 17 epochs, remains in the normal
+finite loss range, retains finite predictor/adversary parameters and passes
+exact prediction reload. This evidence supports Gate B execution acceptance
+but requires an explicit `training-unstable beyond selected epoch` limitation
+in Gate C. It does not establish an implementation defect or scientific
+fairness effectiveness.
+
+The user approved in chat the intended next execution order
+`(lambda=0, seed=44)` -> verify its published artifacts -> `(lambda=0.01,
+seed=44)`. Implementation of that mechanism is recorded below. No seed-44 fit
+was launched by the implementation task. Bypassing the runner check or silently
+changing a locked manifest remains prohibited. Selection, final-fit, Test,
+package validation and cross-run aggregation remain closed.
+
+### RQ4b-3 seed-44 continuation implementation — 2026-10-22
+
+The lineage-preserving v4 continuation mechanism is implemented and its
+focused synthetic validation is `PASS` (`304 passed`, `20 skipped`). The active
+protocol is `rq4b_adversarial_realmlp_v4_seed44_continuation`, decision revision
+`rq4b3_seed44_continuation_20261022`, and the only production run identity it
+accepts is `rq4b3_adv_20261022_01` with role
+`track_b_seed44_continuation`. The only authorized units in this identity are
+`(lambda=0, seed=44)` and `(lambda=0.01, seed=44)`.
+
+This is a continuation, not a migration or resume. The manifests for
+`rq4b3_adv_20261019_02` and `rq4b3_adv_20261021_01`, plus all published
+development/development-validation receipts for their seven completed units
+and the retained seed-43 failure receipt, are pinned by SHA-256 in the v4
+contract. Production create/open verifies every
+pinned digest before accepting the continuation. The v4 manifest records those
+source identities and digests, prohibits fitted-state reuse, and keeps
+cross-run aggregation blocked pending Gate C. Neither source manifest nor any
+published receipt was edited.
+
+The runner also enforces the approved order. `(lambda=0.01, seed=44)` cannot
+start until the `(lambda=0, seed=44)` development and
+development-validation receipts are published, their declared output hashes
+verify, fit accounting is exactly five CV folds plus one refit, and the
+Validation prediction count is 43,995. A source digest mismatch stops before
+run creation/open; a code or config change after creation blocks resume and
+requires preserving the attempted run under its existing identity. Automatic
+retry remains prohibited.
+
+No production run, preflight, capability stage, inference or fit was launched
+in this implementation task. Real execution remains unopened until a separate
+task authorizes it. The required first execution unit, if later opened, is
+`(lambda=0, seed=44)` only; it must pass artifact verification before any
+request to execute `(lambda=0.01, seed=44)`.
+
+### Superseded temporary N5-to-RQ4b-3 12-fit priority policy — 2026-10-20
+
+This subsection is retained as historical governance evidence only. It was
+superseded by the 2026-10-21 RQ4b-3 amendment above and is not an active
+execution or selection policy.
 
 The user temporarily replaces the 18-development-unit gate for the current
 N5-through-RQ4b-3 path with a 12-fit priority design. The original 18-unit gate

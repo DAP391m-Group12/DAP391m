@@ -2,6 +2,13 @@
 
 ## 1. Purpose and ownership
 
+**Current scoped chat authorization (2026-10-22):** implement and validate the
+seed-44 v4 continuation mechanism only. Do not create the production run or
+launch preflight, capability, inference, CV or refit. A later execution task
+must explicitly open `(lambda=0, seed=44)` before any real command is handed
+off. No automatic retry, source-run mutation, cross-run aggregation, selection,
+final-fit, Test or package validation is authorized.
+
 **Scoped chat override (2026-10-19):** the user authorized Codex to implement
 terminal reports every 120 seconds, retain detailed durable file logging, test
 and separately self-review, then execute one fresh real N4 probe, verify its
@@ -32,11 +39,11 @@ fixtures and at most two epochs per smoke fit; it does not execute production CV
 Codex owns current implementation, contracts/config, tests, self-review and
 reporting. Approvals for the handover are given in chat, not terminal Allow
 requests. Historical Claude implementation and Codex independent-review records
-retain their authorship. The user executes all real fits (capability probe, CV
-and full-Train refit) after the scoped readiness handoff. Codex supplies exact
+retain their authorship. Except for the current two-unit Claude Code assignment
+above, the user executes real fits after the scoped readiness handoff. Codex supplies exact
 commands, fixes scoped bugs, reports technical acceptance and checks saved
 artifacts after each user run. Codex does not launch or retry real fits. There
-is no current Claude assignment, reviewer role or verifier dependency.
+is no Claude reviewer or verifier dependency for the current assignment.
 Runtime/data checks and execution still need their own task scopes;
 documentation approval is not production authorization.
 The user locked production adversary `2 -> 32 ReLU -> 3`, no dropout/class
@@ -68,7 +75,10 @@ Run from `D:\Proj\DAP\DAP391m_GR12` using the existing GPU environment
 environment and pinned PyTabKit lineage against the locked configuration,
 mandatory acceptances and a finite operation on `cuda:0`; no CPU fallback or
 dependency installation is implied. Environment existence is not readiness.
-Set a fresh run ID only at execution, in the form `rq4b3_adv_<YYYYMMDD>_<NN>`.
+For the amended RQ4b-3 execution, the frozen sources are Track A run
+`rq4b3_adv_20261019_02` and seed-43 Track B run
+`rq4b3_adv_20261021_01`. Seed 44 uses only the v4 continuation
+`rq4b3_adv_20261022_01`; never resume either source run with current code.
 Finish required code fixes before creating the run: `open_run` rejects changes
 to any of the five recorded RQ4b source files. Do not edit manifests to bypass
 that check. Every CLI stage requires `--confirm-production`; this flag is an
@@ -89,6 +99,24 @@ invalid or failed, the stage fails rather than silently falling back.
 These are templates: replace placeholders at handoff and run one explicit unit
 at a time. There is no whole-grid command in this interface.
 
+For the seed-44 continuation, the active protocol is
+`rq4b_adversarial_realmlp_v4_seed44_continuation`. The runner rejects
+production create/open requests outside `rq4b3_adv_20261022_01`, verifies the
+pinned manifest and receipt digests of both source runs, and rejects a manifest
+whose continuation lineage differs. This does not replace the fresh
+per-run preflight and capability gates. Do not use the historical Cartesian-grid
+selection or seeds 45--46 routes.
+Track A requires an authorized read-only evaluation route over the five frozen
+seed-42 units; no such CLI command is approved by this runbook yet.
+
+The machine-readable v4 assignment contains only `(0,44)` and `(0.01,44)`, but
+the current implementation task does not authorize launching either unit.
+When a later task opens execution, `(0,44)` must complete development and
+development-validation first. The runner verifies its receipt/output hashes,
+five-CV-plus-one-refit accounting and 43,995 Validation rows before accepting
+`(0.01,44)`. Source runs are read only for pinned lineage verification; their
+fitted state is never reused. Cross-run aggregation is deferred to Gate C.
+
 Paths below are repository-relative. Let `R` be
 `artifacts/dataset_b/rq4/rq4b/<run_id>`. Each published stage lives at
 `R/stages/<key>/` with `receipt.json`; verify receipt identity, input lineage
@@ -100,16 +128,16 @@ can fail; keep the original exception, logs and any temporary directory.
 
 | CLI `--stage` | Prerequisites and inputs | Published output/key | Real work and stop check |
 |---|---|---|---|
-| `create` | Approved readiness handoff; unused run ID; locked YAML and current source | `R/run_manifest.json`, empty stages/failures directories | No fit/inference. Stop on collision, invalid ID or wrong namespace. |
+| `create` | Separately approved readiness handoff; unused continuation run ID; locked YAML/current source; exact pinned hashes for both immutable source runs | `R/run_manifest.json`, empty stages/failures directories | No fit/inference. Stop on collision, invalid ID, wrong namespace or any source manifest/receipt digest mismatch. |
 | `preflight` | Run manifest; T1-T5 acceptance records; spike/T1/source-lineage prerequisites; CUDA finite operation; locked index file and manifest presence | `preflight/preflight.json` | No fit/model inference. Stop unless every collected status is PASS. This stage does not validate all real input bodies or prove fit/reload readiness. |
 | `capability` | Verified preflight; retained synthetic gate; optional explicit `--real-probe-evidence` path | `capability/capability.json`, including the validated real evidence and invocation when supplied | No fit/model inference. Ingestion reconstructs the frozen population and verifies input/code lineage, split, settings, comparator, fit history and bootstrap arithmetic. Stop on invalid evidence; inconclusive capability is not a stop gate. |
-| `development` | Preflight/capability receipts; Train split, feature contract, manifest and audit join; one locked lambda/seed | `dev_l*_s*/`: preprocessor/model, CV curves, complete per-fold outputs, selection record, diagnostics, run log, JSONL/final history and fit ledger | User runs 5 Train-only CV folds of 256 epochs and 1 fresh refit; includes reload verification predictions. Stop on exception, nonfinite values, logging failure, invalid 5x256 curves, serialization/reload or lineage failure. |
+| `development` | Gate A PASS; preflight/capability receipts; Train split, feature contract, manifest and audit join; exactly one approved seed-44 unit; `(0.01,44)` additionally requires verified `dev_l0_s44` and `devval_l0_s44` receipts | `dev_l*_s*/`: preprocessor/model, CV curves, complete per-fold outputs, selection record, diagnostics, run log, JSONL/final history and fit ledger | A separately authorized operator runs 5 Train-only CV folds of 256 epochs and 1 fresh refit. Only `(0,44)` and `(0.01,44)` belong to v4; run the control first. Do not refit or reuse fitted state from seed 42/43. Stop on exception, nonfinite values, logging failure, invalid 5x256 curves, serialization/reload or lineage failure. |
 | `development_validation` | Matching development fit receipt/files; complete Validation split and audit metadata | `devval_l*_s*/validation_predictions.csv`, `threshold.json` | Validation inference and global calibration; no fit. Stop on population, probability, metadata or artifact validation error. |
-| `selection` | All 18 development Validation units, references and saved thresholds | `selection/candidates.json`, `selection_lock.json` | No fit/new model inference. Recompute locked Validation selection; stop if not evaluable or stored thresholds disagree. No Test-based selection. |
-| `final_fit` | Selection lock; only a unit listed in `required_new_fits`; Train inputs | `final_l*_s*/`: same fit payload types as development | User runs 5 CV folds and 1 fresh refit per required unit, with reload verification. Same fit stop conditions; do not refit reused development arms. |
-| `final_validation` | Required final fit and selection lock; complete Validation inputs | `finalval_l*_s*/validation_predictions.csv`, `threshold.json` | Validation inference/calibration; no fit. Same Validation stop conditions. |
-| `test_evaluation` | Selection, all required final Validation units and verified reused/final arms; Test split/audit join; locked indices and manifest | `test_evaluation/`: deduplicated Test predictions, `seed_42.json` through `seed_46.json`, `assessment.json`, `status.json` | Test inference and paired bootstrap; no fit. Stop on missing threshold locks, lineage/ID/index mismatch or runtime error. A valid criterion failure is reported, not retried to obtain a better result. |
-| `package_validation` | Published Test evaluation and all published receipts/saved reporting inputs | `package_validation/package_report.json` | No fit/new model inference. Check hashes, lineage, declared fit budget and reporting traces; stop if any package check fails. |
+| `selection` | Gate C prerequisites: evaluation evidence for all nine retained/new units, saved thresholds, EOD3/paired delta EOD3/BA cost, EOD6 audit, seed variability, training stability/integrity and an explicitly approved three-seed selection policy | `selection/candidates.json`, `selection_lock.json` | No fit/new model inference. The existing Cartesian-grid implementation must not be used. Stop while the revised selection policy is pending; no Test-based selection. |
+| `final_fit` | Not active in the amended nine-unit design unless a later approved selection policy explicitly requires a new fit | Historical v2 `final_l*_s*/` route | Do not run seeds 45--46 or add any lambda/seed. Any reactivation requires a separate contract amendment. |
+| `final_validation` | Not active unless an authorized `final_fit` exists under a later amendment | Historical v2 `finalval_l*_s*/` route | Do not run under the current amended contract. |
+| `test_evaluation` | Gate C PASS; approved selection lock; verified retained/new arms for seeds 42--44; Test split/audit join; locked indices and manifest | `test_evaluation/`: deduplicated Test predictions, `seed_42.json` through `seed_44.json`, `assessment.json`, `status.json` | Test inference and paired bootstrap; no fit. Stop on missing policy/threshold locks, lineage/ID/index mismatch or runtime error. A valid criterion failure is reported, not retried to obtain a better result. |
+| `package_validation` | Published Test evaluation and all published receipts/saved reporting inputs | `package_validation/package_report.json` | No fit/new model inference. Check hashes, lineage, the amended 45-CV/9-refit maximum budget and reporting traces; stop if any package check fails. |
 
 The loader resolves Train/Validation/Test from
 `data/dataset_b/split_v1/{train,validation,test}.csv`, with
@@ -184,11 +212,14 @@ error, not a negative scientific finding.
   explicitly scoped attempt after diagnosis. If source changes are required,
   the existing production run cannot continue across the code-lineage change.
 
-**Fit accounting and post-run review:** development is 6 lambdas
-`[0, 0.01, 0.03, 0.1, 0.3, 1.0]` by seeds `[42, 43, 44]` (18 units).
-Final seeds are `[42, 43, 44, 45, 46]`; reuse seeds 42-44 and execute only the
-up-to-four additional units required by the lock. Lambda=0 selection removes
-duplicate arms. The main-plan bound is 110 CV fold fits plus 22 refits.
+**Fit accounting and post-run review:** the amended development design has nine
+units, not a Cartesian product. Retain the five completed seed-42 units at
+lambdas `[0, 0.01, 0.03, 0.1, 0.3]`. Track B may add only `(0,43)`,
+`(0.01,43)`, `(0,44)` and `(0.01,44)`. Lambda 1 and seeds 45--46 are outside
+the execution queue. The amended maximum is 45 CV fold fits plus nine refits,
+including the five retained units; Track B itself accounts for at most 20 CV
+fold fits and four refits. Do not interpret the maximum as permission to refit
+retained units.
 Package counts are per-published-unit declarations, not a complete measure of
 all attempted compute. Keep a separate handoff/audit ledger for probe fits,
 spike, failed/partial fits and retries, including run/attempt IDs, unit, command,
@@ -196,8 +227,10 @@ timestamps, exit status and observed completed/started fits. Mark unknown
 partial counts unknown rather than zero; no retry allowance is automatic.
 Codex checks receipts, curves, epoch selection, reload diagnostics, predictions,
 thresholds and lineage after user execution, then reports whether the next
-stage's prerequisites are met. Preserve execution, capability, point criterion
-and strong support as separate conclusions; stability remains `not_assessed`.
+stage's prerequisites are met. Preserve execution, statistical evidence,
+fairness effectiveness, predictive utility, capability and training stability
+as separate conclusions. The old 4/5 strong-support rule is not satisfied by
+three seeds, and no 2/3 replacement is approved.
 
 This runbook is the operator-facing procedure for Dataset B neural training. It
 owns:
