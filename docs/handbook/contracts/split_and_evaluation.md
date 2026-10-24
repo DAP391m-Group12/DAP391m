@@ -482,6 +482,26 @@ bootstrap indices.
 
 ## 13. Source traceability
 
+### RQ4b-3 applicant-sex supplementary package
+
+The RQ4b-3 sex supplementary package is evaluation-only. It pins the closed
+production Test run `rq4b3_test_20261024_01`, the Gate C run and the three
+immutable source runs before reading any saved prediction. It uses exactly the
+nine approved arms and six same-seed nonzero-lambda comparisons. It reads the
+saved Test predictions, saved Validation predictions, locked thresholds, and
+the existing 1,000 RQ1 Test bootstrap indices. It may not construct a model
+backend, fit, refit, cross-validate, infer, choose thresholds, or regenerate
+indices.
+
+For `applicant_sex`, the exact fixed primary EOD roster is Male/Female. The
+full reporting coverage is the RQ3 mapping `1=Male`, `2=Female`, `3=Information
+not provided`, `4=Not applicable`, and `6=Applicant selected both male and
+female`. Every bootstrap replicate retains its identifier and valid/invalid
+payload. A package validator recomputes all output tables from saved
+predictions; it rejects forged outputs or receipts and publishes no result on
+failed validation. Supplementary publication is atomic and is kept separate
+from the closed production Test namespace.
+
 This contract was reconstructed from:
 
 - [Documentation migration record](../archive/documentation_migration_2026-09.md),

@@ -60,6 +60,38 @@ verifier agent checked Tasks 4–6 (`PASS`). This closure is checked by the
 same agent before acceptance. Per the handover note, Codex will re-check this
 work after its quota resets. That re-check is not recorded here.
 
+### RQ4b-3 applicant-sex supplementary evaluation — 2026-10-24
+
+The evaluation-only applicant-sex supplementary run
+`rq4b3_sex_supplementary_20261024_02` is `COMPLETE`; its package validation is
+`PASS`. It is published separately at
+`artifacts/dataset_b/rq4/rq4b/sex_supplementary/` and does not modify the
+closed production Test namespace.
+
+- Inputs were the nine saved Test predictions in
+  `rq4b3_test_20261024_01`, their corresponding saved Validation predictions,
+  locked thresholds, and the existing 1,000-replicate Test bootstrap index.
+  The run pins the Test manifest SHA-256
+  `d05fc298...e7595a4`, Test receipt SHA-256
+  `2f7c1ae8...e64632c4`, package receipt SHA-256
+  `d20fa9b1...f1e5800a`, and bootstrap SHA-256
+  `2ee377b6...84230fee1`.
+- The attribute is `applicant_sex`, using the RQ3 mapping
+  `1=Male`, `2=Female`, `3=Information not provided`, `4=Not applicable`,
+  and `6=Applicant selected both male and female`. EOD uses the fixed
+  Male/Female roster; coverage tables retain all five groups.
+- All nine arms and six same-seed nonzero-lambda comparisons are present.
+  Each sex-EOD delta bootstrap has 1,000 valid replicates and zero invalid
+  replicates. The package validator recomputed every output from saved
+  predictions with 0 local fits, 0 refits and 0 inference calls.
+- Execution status, exported metric values, and research interpretation are
+  separate. This status entry records no effectiveness, support, policy, or
+  research conclusion.
+- The earlier supplementary namespace run `_01` remains immutable but is not
+  the accepted supplementary evidence because its manifest did not list the
+  Gate C and source-run pins directly. Run `_02` supersedes it for this
+  supplementary package; no source or production artifact was changed.
+
 ### RQ4b-3 parallel evaluation and training amendment — 2026-10-21
 
 The user-approved RQ4b-3 amendment supersedes both the original

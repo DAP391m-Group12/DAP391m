@@ -1004,6 +1004,26 @@ by this plan. RQ4b-6 remains deferred.
 
 ## 10. Interpretation boundary
 
+### RQ4b-3 applicant-sex supplementary evaluation (locked 2026-10-24)
+
+This supplementary package evaluates the already closed nine-arm RQ4b-3 Test
+output only. It is a separate, immutable namespace and does not alter the
+production Test run, its receipts, or RQ3/RQ4a artifacts. The protected
+attribute is `applicant_sex`; it is not `derived_sex` and no race columns are
+combined or redefined. The locked RQ3 mapping is `1=Male`, `2=Female`,
+`3=Information not provided`, `4=Not applicable`, and `6=Applicant selected
+both male and female`.
+
+The fixed sex-EOD roster is exactly Male/Female. All five mapped labels are
+reported for coverage and group metrics. The package reads saved Test and
+Validation predictions plus the existing 1,000 locked Test bootstrap indices;
+it must not fit, refit, run CV, infer, select a threshold, or generate
+bootstrap indices. Per-arm output, same-seed nonzero-lambda deltas, decision
+changes, paired-bootstrap validity payloads, replicated-arm summaries, and
+Validation--Test gaps are descriptive outputs. Execution status, metric values,
+and research interpretation remain separate; the package records no research
+conclusion or recommendation.
+
 All RQ4 outputs are exploratory model-behavior evidence. They cannot establish
 legal compliance, discrimination, causal effects, creditworthiness, or default
 risk. A smaller observed fairness gap does not prove absence of unfairness, and
