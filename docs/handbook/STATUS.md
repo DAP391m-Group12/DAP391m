@@ -91,6 +91,12 @@ closed production Test namespace.
   the accepted supplementary evidence because its manifest did not list the
   Gate C and source-run pins directly. Run `_02` supersedes it for this
   supplementary package; no source or production artifact was changed.
+- Reporting: `notebooks/dataset_b/13_rq4b_applicant_sex_supplementary_results.ipynb`
+  (SHA-256 `f75e56a8...cdd1d7b`) presents run `_02` only and is separate from
+  the closure Notebook 12. It has 11 code cells with execution counts 1–11 in
+  order, no saved error or stderr output, and five embedded figures. It
+  performs no file writes, fit or inference. Its research-interpretation
+  section is reserved for the user.
 
 ### RQ4b-3 parallel evaluation and training amendment — 2026-10-21
 
