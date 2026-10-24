@@ -870,6 +870,14 @@ EOD as a safety audit; and decision-change counts/rates overall and by group.
 RQ4a additionally records inherited ROC-AUC/Brier without interpreting them as
 post-processing gains.
 
+The additional list above is the RQ4a reporting set. For RQ4b-3, the
+applicable outputs are defined completely by the user-selected Test output
+contract of 2026-10-24 (section 8 and the locked `required_output_files` in
+`rq4b_adversarial.yaml`). Denied F1/precision/recall, race selection rates and
+extrema groups are not RQ4b-3 outputs. The RQ4b-3 sex EOD safety audit is
+provided separately by the evaluation-only supplementary run
+`rq4b3_sex_supplementary_20261024_02` (see STATUS).
+
 ## 8. Uncertainty and reporting
 
 RQ4b uses within-seed paired Test bootstrap comparisons against the matched

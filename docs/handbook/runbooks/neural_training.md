@@ -2,14 +2,16 @@
 
 ## 1. Purpose and ownership
 
-**Current RQ4b state (2026-10-24):** all nine amended development units are
-published and Gate B is `PASS`. The seed-44 v4 continuation completed in the
-required order and is immutable; do not rerun or reopen either seed-44 unit.
-The next route is a separately authorized evaluation-only aggregation run that
-pins the immutable seed-42, seed-43 and seed-44 runs. Cross-run aggregation,
-selection, final-fit, Test and package validation remain closed until their
-Gate C contract and implementation gates pass. No automatic retry or source-run
-mutation is authorized.
+**Current RQ4b state (2026-10-24):** RQ4b-3 is closed. All nine amended
+development units are published and Gate B is `PASS`. Gate C aggregation
+(`rq4b3_gatec_20261024_01`), the cross-run Test run
+(`rq4b3_test_20261024_01`) and its package validation are complete, and
+Notebook 12 reports the results; see STATUS for the evidence. The separate
+evaluation-only applicant-sex supplementary run
+(`rq4b3_sex_supplementary_20261024_02`) is reported in Notebook 13. Do not
+rerun, reopen or mutate any source, Gate C, Test or supplementary run; no
+final-fit stage was run, and no automatic retry is authorized. RQ4b-6 remains
+deferred.
 
 **Scoped chat override (2026-10-19):** the user authorized Codex to implement
 terminal reports every 120 seconds, retain detailed durable file logging, test
