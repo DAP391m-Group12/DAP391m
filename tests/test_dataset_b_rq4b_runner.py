@@ -9,6 +9,7 @@ receipts are marked ``synthetic_test`` and cannot be validated as production.
 from __future__ import annotations
 
 import dataclasses
+import inspect
 import json
 import shutil
 import uuid
@@ -33,8 +34,8 @@ RUN_ID = "rq4b3_adv_20261018_01"
 
 def _partition(seed: int, prefix: str) -> ev.PartitionPredictions:
     rng = np.random.default_rng(seed)
-    y = np.tile(np.repeat(np.array([0, 1], dtype=np.int8), 60), len(ALL_GROUPS))
-    race = np.repeat(np.asarray(ALL_GROUPS, dtype=object), 120)
+    y = np.tile(np.repeat(np.array([0, 1], dtype=np.int8), 30), len(ALL_GROUPS))
+    race = np.repeat(np.asarray(ALL_GROUPS, dtype=object), 60)
     sex = np.where(rng.random(len(y)) < 0.5, "Male", "Female").astype(object)
     gap = np.where(np.isin(race, ["Asian", "American Indian or Alaska Native"]), -0.08, 0.0)  # baseline disparity
     p = np.clip(0.3 + 0.4 * y + gap + rng.normal(0, 0.15, len(y)), 0.0, 1.0)
@@ -152,11 +153,6 @@ def track_b_completed(contract):
     return _complete_track_b(_runner(contract))
 
 
-@pytest.fixture(scope="module")
-def completed():
-    pytest.skip("Legacy post-Gate-C package tests are inactive until the three-seed selection policy is explicitly approved.")
-
-
 # ---------------------------------------------------------------------------
 # End-to-end progression
 # ---------------------------------------------------------------------------
@@ -185,15 +181,15 @@ def test_required_track_b_evidence_is_exported(track_b_completed):
     assert {"threshold.json", "validation_predictions.csv", "receipt.json"} == {p.name for p in val.iterdir()}
 
 
-def test_selection_final_and_test_remain_closed_pending_policy(track_b_completed):
+def test_in_run_selection_final_and_test_remain_closed_under_nine_unit_contract(track_b_completed):
     runner = track_b_completed
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
+    with pytest.raises(rr.RQ4bStageOrderError, match="inactive under the nine-unit contract"):
         runner.validation_selection()
     with pytest.raises(rr.RQ4bStageOrderError, match="inactive"):
         runner.final_fit(0.0, 43)
     with pytest.raises(rr.RQ4bStageOrderError, match="inactive"):
         runner.final_validation(0.0, 43)
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
+    with pytest.raises(rr.RQ4bStageOrderError, match="local-run Test route is retired"):
         runner.test_evaluation()
     assert not any(c[0] == "predict" and c[2] == "test" for c in runner.backend.calls)
 
@@ -240,9 +236,9 @@ def test_gate_c_stays_locked_after_all_track_b_units(contract):
     runner.preflight()
     runner.capability()
     _development(runner)
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
+    with pytest.raises(rr.RQ4bStageOrderError, match="inactive under the nine-unit contract"):
         runner.validation_selection()
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
+    with pytest.raises(rr.RQ4bStageOrderError, match="local-run Test route is retired"):
         runner.test_evaluation()
     assert not any(c[0] in ("indices",) or (c[0] == "predict" and c[2] == "test") for c in runner.backend.calls)
 
@@ -386,131 +382,16 @@ def test_publication_failure_retains_attempt_and_preserves_exception(contract, m
 
 
 # ---------------------------------------------------------------------------
-# Package integrity and report tracing
+# Legacy local-run package route
 # ---------------------------------------------------------------------------
 
 
-def _copy_run(completed) -> rr.RQ4bRunner:
-    runner, _ = completed
-    root = _new_root()
-    shutil.copytree(runner.layout.run_dir, root / RUN_ID)
-    for path in (root / RUN_ID).rglob("*"):
-        if path.is_file():
-            path.chmod(0o666)
-    shutil.rmtree(root / RUN_ID / "stages" / "package_validation")
-    layout = rr.open_run(root, RUN_ID, rr.MODE_SYNTHETIC, runner.contract)
-    return rr.RQ4bRunner(layout, FakeBackend(), runner.contract)
-
-
-@pytest.mark.parametrize("damage", ["corrupt", "missing", "extra"])
-def test_missing_corrupt_or_extra_package_files_are_rejected(completed, damage):
-    copy = _copy_run(completed)
-    stage = copy.layout.stage_dir("test_evaluation")
-    if damage == "corrupt":
-        (stage / "seed_43.json").write_text("{}", encoding="utf-8")
-    elif damage == "missing":
-        (stage / "assessment.json").unlink()
-    else:
-        (stage / "notes.txt").write_text("x", encoding="utf-8")
-    with pytest.raises(rr.RQ4bPackageError):
-        copy.package_validation()
-    assert not copy.layout.stage_dir("package_validation").exists()
-
-
-def test_report_values_must_trace_to_saved_inputs(completed):
-    copy = _copy_run(completed)
-    stage = copy.layout.stage_dir("test_evaluation")
-    assessment = json.loads((stage / "assessment.json").read_text())
-    assessment["strong_support"]["supported_count"] += 1
-    (stage / "assessment.json").write_text(json.dumps(assessment), encoding="utf-8")
-    receipt = json.loads((stage / "receipt.json").read_text())
-    receipt["outputs"]["assessment.json"] = rr.sha256_file(stage / "assessment.json")  # forge a consistent receipt
-    (stage / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
-    with pytest.raises(rr.RQ4bPackageError, match="does not trace"):
-        copy.package_validation()
-
-
-def _forge(copy: rr.RQ4bRunner, name: str, mutate) -> None:
-    """Edit one test_evaluation output and rewrite its receipt hash so read_stage still passes."""
-    stage = copy.layout.stage_dir("test_evaluation")
-    payload = json.loads((stage / name).read_text(encoding="utf-8"))
-    mutate(payload)
-    (stage / name).write_text(json.dumps(payload), encoding="utf-8")
-    receipt = json.loads((stage / "receipt.json").read_text(encoding="utf-8"))
-    receipt["outputs"][name] = rr.sha256_file(stage / name)
-    (stage / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
-    rr.read_stage(copy.layout, "test_evaluation")  # the forgery is internally consistent
-
-
-def _set(path, value):
-    def mutate(payload):
-        node = payload
-        for key in path[:-1]:
-            node = node[key]
-        node[path[-1]] = value
-    return mutate
-
-
-@pytest.mark.parametrize(
-    "name, path, value, message",
-    [
-        ("status.json", ("execution_status",), "failed", "status.json"),
-        ("status.json", ("strong_support",), "supported_by_fiat", "status.json"),
-        ("status.json", ("stability_status",), "stable", "status.json"),
-        ("status.json", ("primary_criterion_per_seed", "42"), "pass_by_fiat", "status.json"),
-        ("seed_42.json", ("lineage", "control_threshold"), 0.123, "lineage"),
-        ("seed_43.json", ("lineage", "adversarial_artifact"), "forged_artifact_s43", "lineage"),
-        ("seed_44.json", ("lineage", "test_record_id_sha256"), "0" * 64, "lineage"),
-        ("seed_45.json", ("lineage", "deduplicated_lambda_zero"), True, "lineage"),
-        ("seed_42.json", ("fairness_generalization_gap", "control", "eod3", "value"), 0.5, "fairness_generalization_gap"),
-        ("seed_46.json", ("fairness_generalization_gap", "adversarial", "eod6", "validation_eod"), None, "fairness_generalization_gap"),
-        ("seed_43.json", ("fairness_generalization_gap", "adversarial", "threshold"), 0.9, "fairness_generalization_gap"),
-    ],
-    ids=["exec", "support", "stability", "criterion", "threshold", "artifact", "test_ids", "dedup", "gap_value", "gap_null", "gap_threshold"],
-)
-def test_forged_status_lineage_or_gap_is_rejected(completed, name, path, value, message):
-    copy = _copy_run(completed)
-    stage = copy.layout.stage_dir("test_evaluation")
-    before = (stage / name).read_bytes()
-    _forge(copy, name, _set(path, value))
-    assert json.loads((stage / name).read_text(encoding="utf-8")) != json.loads(before)  # the forgery really changed a value
-    with pytest.raises(rr.RQ4bPackageError, match=message):
-        copy.package_validation()
-    assert not copy.layout.stage_dir("package_validation").exists()
-
-
-@pytest.mark.parametrize("which", ["first", "last"])
-def test_forged_test_prediction_ids_are_rejected_per_artifact(completed, which):
-    copy = _copy_run(completed)
-    stage = copy.layout.stage_dir("test_evaluation")
-    files = sorted(stage.glob("test_predictions_*.csv"))
-    target = files[0] if which == "first" else files[-1]
-    lines = target.read_text(encoding="utf-8").splitlines(keepends=True)
-    target.write_text(lines[0] + "".join(lines[1:][::-1]), encoding="utf-8")  # same rows, different Test ID order
-    receipt = json.loads((stage / "receipt.json").read_text(encoding="utf-8"))
-    receipt["outputs"][target.name] = rr.sha256_file(target)
-    (stage / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
-    rr.read_stage(copy.layout, "test_evaluation")
-    with pytest.raises(rr.RQ4bPackageError, match="record IDs differ|different ordered Test IDs"):
-        copy.package_validation()
-
-
-def test_fairness_generalization_gap_is_exported_from_locked_thresholds(completed):
-    runner, _ = completed
-    seed = json.loads((runner.layout.stage_dir("test_evaluation") / "seed_42.json").read_text(encoding="utf-8"))
-    gap = seed["fairness_generalization_gap"]
-    assert set(gap) == {"control", "adversarial"}
-    for role, threshold_key in (("control", "control_threshold"), ("adversarial", "adversarial_threshold")):
-        entry = gap[role]
-        assert entry["threshold"] == seed["lineage"][threshold_key] and entry["development_partition"] == "validation"
-        for name in ("eod3", "eod6"):
-            assert entry[name]["value"] == entry[name]["test_eod"] - entry[name]["validation_eod"]
-        assert entry["eod3"]["test_eod"] == seed[role]["eod3"]["value"]  # same Test EOD as the reported arm metric
-    validation = rr.read_predictions(runner.layout.stage_dir(seed["lineage"]["control_artifact"].replace("dev_", "devval_", 1)) / "validation_predictions.csv")
-    expected = ev.core_quantities(validation, seed["lineage"]["control_threshold"])["eod3"].value
-    assert gap["control"]["eod3"]["validation_eod"] == expected
-    predict_calls = [c for c in runner.backend.calls if c[0] == "predict"]
-    assert len(predict_calls) == 32  # 22 Validation + 10 Test: the gap adds no inference
+def test_legacy_local_test_and_package_routes_are_retired(contract):
+    runner = _runner(contract)
+    with pytest.raises(rr.RQ4bStageOrderError, match="local-run Test route is retired"):
+        runner.test_evaluation()
+    with pytest.raises(rr.RQ4bStageOrderError, match="local-run package route is retired"):
+        runner.package_validation()
 
 
 def test_gap_preserves_undefined_values_and_reasons():
@@ -525,35 +406,6 @@ def test_gap_preserves_undefined_values_and_reasons():
     assert gap["eod3"]["value"] is None and gap["eod3"]["test_eod"] is None and gap["eod3"]["validation_eod"] is not None
     assert gap["eod3"]["undefined_reasons"] == {"test": {"reason": "required_group_metric_invalid", "invalid_groups": ["Asian"]}}
     assert gap["eod6"]["value"] is None and "test" in gap["eod6"]["undefined_reasons"]
-
-
-def test_changed_upstream_receipt_breaks_lineage(completed):
-    copy = _copy_run(completed)
-    receipt_path = copy.layout.stage_dir("selection") / "receipt.json"
-    receipt = json.loads(receipt_path.read_text())
-    receipt["finished_utc"] = "tampered"
-    receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-    with pytest.raises(rr.RQ4bPackageError, match="changed after use"):
-        copy.package_validation()
-
-
-def test_swapped_final_model_is_rejected_before_test_is_opened(contract):
-    runner = _runner(contract)
-    runner.preflight()
-    runner.capability()
-    _development(runner)
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
-        runner.validation_selection()
-    with pytest.raises(rr.RQ4bStageOrderError, match="inactive"):
-        runner.final_fit(0.0, 43)
-    with pytest.raises(rr.RQ4bStageOrderError, match="methodological approval"):
-        runner.test_evaluation()
-    assert not any(c[0] == "indices" or (c[0] == "predict" and c[2] == "test") for c in runner.backend.calls)
-
-
-def test_intact_copy_still_validates(completed):
-    copy = _copy_run(completed)
-    assert copy.package_validation()["status"] == "PASS"
 
 
 # ---------------------------------------------------------------------------
@@ -673,3 +525,529 @@ def test_cli_requires_explicit_production_stage_commands(argv):
     with pytest.raises(SystemExit):
         rr.main(argv)
     assert "all" not in rr.STAGE_COMMANDS
+
+
+# ---------------------------------------------------------------------------
+# Gate C evaluation-only aggregation (synthetic pinned source runs)
+# ---------------------------------------------------------------------------
+
+
+UNAUTHORIZED_GATE_C_ROOT = rr.PROJECT_ROOT / "artifacts" / "dataset_b" / "rq4" / "rq4b" / "unauthorized_gate_c"
+
+
+def _gate_c_predictions(lam: float, seed: int, base: ev.PartitionPredictions) -> ev.PartitionPredictions:
+    rng = np.random.default_rng(1000 * seed + int(round(lam * 100)))
+    effect = np.where(np.isin(base.race, ["Asian", "American Indian or Alaska Native"]), 0.08 * lam, 0.0)
+    p = np.clip(base.p_approved + effect + rng.normal(0, 0.005, len(base.y)), 0.0, 1.0)
+    return ev.PartitionPredictions(base.record_ids, base.y, p, base.race, base.sex)
+
+
+def _write_gate_c_unit(layout: rr.RunLayout, lam: float, seed: int, predictions: ev.PartitionPredictions) -> None:
+    """One completed source unit as the runner publishes it: fit receipt (5 CV + 1 refit) and Validation receipt."""
+    fit_key, val_key = rr.unit_key("dev", lam, seed), rr.unit_key("devval", lam, seed)
+    unit = {"adversary_lambda": lam, "model_seed": seed}
+    with rr.StageWriter(layout, fit_key, stage="synthetic_gate_c_source_fit_record", unit=unit, inputs={}) as writer:
+        writer.counts.update({"cv_fold_fits": 5, "refit_fits": 1})
+        writer.write_json("model.json", unit)
+        writer.path("estimator.joblib").write_bytes(f"estimator:{lam}:{seed}".encode())
+        writer.path("preprocessor.joblib").write_bytes(f"preprocessor:{lam}:{seed}".encode())
+    with rr.StageWriter(layout, val_key, stage="synthetic_gate_c_source_validation_record", unit=unit,
+                        inputs={fit_key: rr.receipt_sha(layout, fit_key)}) as writer:
+        writer.counts["predictions"]["validation_predictions.csv"] = {
+            "artifact": fit_key, "partition": "validation", "rows": len(predictions.record_ids),
+            "record_id_sha256": rr.sha256_ids(predictions.record_ids)}
+        writer.write_predictions("validation_predictions.csv", predictions)
+        writer.write_json("threshold.json", {"threshold": ev.calibrate_threshold(predictions.y, predictions.p_approved).threshold})
+
+
+def _build_gate_c_sources(contract, root: Path, predictions_for=_gate_c_predictions) -> Path:
+    base = _partition(1, "1")
+    for run_id, seed in rr.gate_c_source_seeds(contract).items():
+        layout = rr.create_run(root, run_id, rr.MODE_SYNTHETIC, contract)
+        for lam, unit_seed in ev.DEVELOPMENT_UNITS:
+            if unit_seed == seed:
+                _write_gate_c_unit(layout, lam, seed, predictions_for(lam, seed, base))
+    return root
+
+
+def _pin_gate_c_sources(contract, root: Path):
+    """Exact pins computed from the synthetic sources, in the same shape as the production contract."""
+    pins = {}
+    for run_id, seed in rr.gate_c_source_seeds(contract).items():
+        run_dir = root / run_id
+        receipts = {}
+        for lam, unit_seed in ev.DEVELOPMENT_UNITS:
+            for prefix in ("dev", "devval"):
+                if unit_seed == seed:
+                    relative = f"stages/{rr.unit_key(prefix, lam, seed)}/{rr.RECEIPT_FILE}"
+                    receipts[relative] = rr.sha256_file(run_dir / relative)
+        pins[run_id] = {"manifest_sha256": rr.sha256_file(run_dir / rr.MANIFEST_FILE), "receipt_sha256": receipts}
+    base = _partition(1, "1")
+    return dataclasses.replace(contract, aggregation_source_pins=pins, aggregation_validation_rows=len(base.record_ids),
+                               aggregation_validation_record_id_sha256=rr.sha256_ids(base.record_ids))
+
+
+def _tree(root: Path) -> dict[str, str]:
+    return {p.relative_to(root).as_posix(): rr.sha256_file(p) for p in sorted(root.rglob("*")) if p.is_file()}
+
+
+def _tree_state(root: Path) -> tuple[bool, dict[str, str]]:
+    """Snapshot existence and file digests without assuming publication state."""
+    return root.exists(), _tree(root) if root.exists() else {}
+
+
+def _forbid_backend(monkeypatch) -> None:
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Gate C aggregation must not construct a backend, fit, infer or open a partition.")
+
+    class ForbiddenProductionBackend:
+        def __init__(self, *args, **kwargs):
+            forbidden()
+
+    monkeypatch.setattr(rr, "ProductionBackend", ForbiddenProductionBackend)
+    monkeypatch.setattr(ri, "StageAccess", forbidden)
+    monkeypatch.setattr(ri, "load_partition", forbidden)
+    for name in ("preflight", "fit_unit", "predict", "load_test_indices"):
+        monkeypatch.setattr(FakeBackend, name, forbidden)
+
+
+@pytest.fixture(scope="module")
+def gate_c_template(contract):
+    return _build_gate_c_sources(contract, _new_root() / "sources")
+
+
+def _gate_c_case(contract, template: Path):
+    base = _new_root()
+    sources = base / "sources"
+    shutil.copytree(template, sources)
+    return sources, base / "gate_c_aggregation", _pin_gate_c_sources(contract, sources)
+
+
+def test_gate_c_aggregation_publishes_from_exactly_three_pinned_sources(contract, gate_c_template, monkeypatch):
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    before = _tree(sources)
+    _forbid_backend(monkeypatch)
+    layout = rr.aggregate_gate_c_sources(sources, target, scoped)
+    assert {p.name for p in target.iterdir()} == {scoped.aggregation_run_id} and layout.mode == "evaluation_aggregation_synthetic_test"
+    assert _tree(layout.run_dir).keys() == {rr.MANIFEST_FILE, "stages/gate_c_aggregation/receipt.json", "stages/gate_c_aggregation/gate_c_selection.json"}
+    receipt = rr.read_stage(layout, rr.GATE_C_STAGE)
+    assert receipt["counts"]["cv_fold_fits"] == receipt["counts"]["refit_fits"] == receipt["counts"]["probe_fits"] == 0
+    assert receipt["counts"]["predictions"] == {}
+    assert receipt["counts"]["source_fit_accounting"] == {"cv_fold_fits": 45, "refit_fits": 9}
+    expected_inputs = {f"{run_id}:{relative.split('/')[1]}": digest
+                       for run_id, pin in scoped.aggregation_source_pins.items() for relative, digest in pin["receipt_sha256"].items()}
+    assert receipt["inputs"] == expected_inputs and len(expected_inputs) == 18
+    manifest = rr.read_json(layout.run_dir / rr.MANIFEST_FILE)
+    assert manifest["source_run_ids"] == list(scoped.aggregation_source_run_ids)
+    assert manifest["source_pins"] == rr.jsonable(scoped.aggregation_source_pins) and manifest["source_mode"] == rr.MODE_SYNTHETIC
+    assert (manifest["evaluation_only"], manifest["prohibit_fit"], manifest["prohibit_inference"]) == (True, True, True)
+    selection = rr.read_json(layout.stage_dir(rr.GATE_C_STAGE) / rr.GATE_C_SELECTION_FILE)
+    # Independent recomputation from the saved Validation predictions under the unchanged locked policy.
+    run_for_seed = {seed: run_id for run_id, seed in rr.gate_c_source_seeds(scoped).items()}
+    evaluations = []
+    for lam, seed in ev.DEVELOPMENT_UNITS:
+        saved = rr.read_predictions(sources / run_for_seed[seed] / "stages" / rr.unit_key("devval", lam, seed) / "validation_predictions.csv")
+        evaluations.append(ev.evaluate_candidate(saved, adversary_lambda=lam, model_seed=seed))
+    expected = rr.jsonable(ev.select_lambda(evaluations))
+    assert {key: selection[key] for key in expected} == expected
+    assert [row["adversary_lambda"] for row in selection["candidates"]] == [0.0, 0.01]
+    assert selection["screening_only_lambdas"] == [0.03, 0.1, 0.3] and selection["eod6_role"] == "audit_only"
+    assert selection["selected_lambda"] in (0.0, 0.01) and len(selection["units"]) == 9
+    assert selection["validation_record_id_sha256"] == scoped.aggregation_validation_record_id_sha256
+    assert selection["test_status"] == manifest["test_status"] == "blocked_pending_separate_methodological_gate"
+    assert _tree(sources) == before  # source runs are read-only evidence
+    with pytest.raises(rr.RQ4bStageOrderError, match="already published"):
+        rr.aggregate_gate_c_sources(sources, target, scoped)
+
+
+def test_gate_c_aggregation_has_no_backend_fit_inference_or_test_path(contract, gate_c_template, monkeypatch):
+    assert list(inspect.signature(rr.aggregate_gate_c_sources).parameters) == ["source_root", "aggregation_root", "contract"]
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    _forbid_backend(monkeypatch)
+    layout = rr.aggregate_gate_c_sources(sources, target, scoped)
+    assert not any("test" in name.split("/")[-1] for name in _tree(layout.run_dir))
+    assert not any("test" in name for name in _tree(sources))  # no Test prediction or index in any source either
+    selection = rr.read_json(layout.stage_dir(rr.GATE_C_STAGE) / rr.GATE_C_SELECTION_FILE)
+    assert selection["test_status"] == "blocked_pending_separate_methodological_gate"
+    runner = rr.RQ4bRunner(rr.RunLayout(sources, scoped.production_run_id, rr.MODE_SYNTHETIC), FakeBackend(), scoped)
+    with pytest.raises(rr.RQ4bStageOrderError, match="local-run Test route is retired"):
+        runner.test_evaluation()
+    with pytest.raises(rr.RQ4bStageOrderError, match="inactive under the nine-unit contract"):
+        runner.validation_selection()
+
+
+def _missing_source_run(sources, scoped):
+    shutil.rmtree(sources / scoped.production_run_id)
+    return scoped
+
+
+def _rewrite_manifest_identity(sources, scoped):
+    path = sources / scoped.track_b_child_run_id / rr.MANIFEST_FILE
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["run_id"] = scoped.production_run_id
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+    return _pin_gate_c_sources(scoped, sources)  # pins match: only the identity is wrong
+
+
+def _reorder_source_run_ids(sources, scoped):
+    return dataclasses.replace(scoped, aggregation_source_run_ids=tuple(reversed(scoped.aggregation_source_run_ids)))
+
+
+def _tamper_manifest(sources, scoped):
+    path = sources / scoped.track_a_source_run_id / rr.MANIFEST_FILE
+    path.write_text(path.read_text(encoding="utf-8") + " ", encoding="utf-8")
+    return scoped
+
+
+def _tamper_receipt(sources, scoped):
+    path = sources / scoped.production_run_id / "stages" / "dev_l0p01_s44" / rr.RECEIPT_FILE
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    receipt["finished_utc"] = "tampered"
+    path.write_text(json.dumps(receipt), encoding="utf-8")
+    return scoped
+
+
+def _tamper_output(sources, scoped):
+    path = sources / scoped.track_b_child_run_id / "stages" / "devval_l0_s43" / "validation_predictions.csv"
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    fields = lines[1].split(",")
+    fields[2] = "0.5"
+    path.write_text(lines[0] + ",".join(fields) + "".join(lines[2:]), encoding="utf-8")
+    return scoped
+
+
+def _add_unit(lam, seed):
+    def damage(sources, scoped):
+        layout = rr.RunLayout(sources, scoped.track_b_child_run_id, rr.MODE_SYNTHETIC)
+        _write_gate_c_unit(layout, lam, seed, _gate_c_predictions(lam, seed, _partition(1, "1")))
+        return scoped
+    return damage
+
+
+def _remove_stages(*keys):
+    def damage(sources, scoped):
+        for key in keys:
+            shutil.rmtree(sources / scoped.production_run_id / "stages" / key)
+        return scoped
+    return damage
+
+
+def _wrong_pinned_population(sources, scoped):
+    return dataclasses.replace(scoped, aggregation_validation_record_id_sha256="0" * 64)
+
+
+GATE_C_DAMAGE = {
+    "missing_source_run": (_missing_source_run, "source run rq4b3_adv_20261022_01 is missing"),
+    "source_run_id_mismatch": (_rewrite_manifest_identity, "identity or mode differs"),
+    "source_run_order_mismatch": (_reorder_source_run_ids, "source run ids differ"),
+    "manifest_digest_mismatch": (_tamper_manifest, "manifest digest differs"),
+    "receipt_digest_mismatch": (_tamper_receipt, "receipt digest differs"),
+    "output_changed": (_tamper_output, "corrupt"),
+    "duplicate_development_unit": (_add_unit(0.0, 42), "Duplicate Gate C development units"),
+    "unexpected_development_unit": (_add_unit(0.03, 43), "Unexpected Gate C development units"),
+    "missing_development_unit": (_remove_stages("dev_l0p01_s44", "devval_l0p01_s44"), "Missing Gate C development units"),
+    "unpaired_development_unit": (_remove_stages("devval_l0_s44"), "unpaired"),
+    "pinned_population_mismatch": (_wrong_pinned_population, "pinned ordered population"),
+}
+
+
+@pytest.mark.parametrize("case", sorted(GATE_C_DAMAGE))
+def test_gate_c_source_validation_failures_publish_nothing(contract, gate_c_template, monkeypatch, case):
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    damage, message = GATE_C_DAMAGE[case]
+    scoped = damage(sources, scoped)
+    before = _tree(sources)
+    _forbid_backend(monkeypatch)
+    with pytest.raises(rr.RQ4bRunnerError, match=message):
+        rr.aggregate_gate_c_sources(sources, target, scoped)
+    assert not target.exists()  # validation fails before any aggregation file or directory is created
+    assert _tree(sources) == before
+
+
+def _variant_predictions(kind: str):
+    def predictions_for(lam, seed, base):
+        out = _gate_c_predictions(lam, seed, base)
+        if (lam, seed) != (0.01, 44):
+            return out
+        if kind == "population":
+            return ev.PartitionPredictions((*out.record_ids[:-1], "dataset_b-999999999"), out.y, out.p_approved, out.race, out.sex)
+        order = np.arange(len(out.y))[::-1]
+        return ev.PartitionPredictions(tuple(np.asarray(out.record_ids)[order]), out.y[order], out.p_approved[order], out.race[order], out.sex[order])
+    return predictions_for
+
+
+@pytest.mark.parametrize("kind, message", [("population", "Validation population differs"), ("ordering", "Validation record ID ordering differs")])
+def test_gate_c_rejects_inconsistent_validation_population_or_order(contract, monkeypatch, kind, message):
+    base = _new_root()
+    sources = _build_gate_c_sources(contract, base / "sources", _variant_predictions(kind))
+    scoped = _pin_gate_c_sources(contract, sources)  # receipts and outputs are internally consistent
+    target = base / "gate_c_aggregation"
+    _forbid_backend(monkeypatch)
+    with pytest.raises(rr.RQ4bPackageError, match=message):
+        rr.aggregate_gate_c_sources(sources, target, scoped)
+    assert not target.exists()
+
+
+def test_gate_c_publication_failure_leaves_no_run_or_partial_manifest(contract, gate_c_template, monkeypatch):
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    original = rr.os.rename
+
+    def rename(src, dst):
+        if Path(dst).parent == target.resolve():
+            raise PermissionError("simulated publish failure")
+        return original(src, dst)
+
+    monkeypatch.setattr(rr.os, "rename", rename)
+    with pytest.raises(PermissionError, match="simulated publish failure"):
+        rr.aggregate_gate_c_sources(sources, target, scoped)
+    assert list(target.iterdir()) == []  # no run directory, temporary tree or manifest survives
+
+
+def test_gate_c_rejects_unauthorized_roots(contract, gate_c_template):
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    production_run = scoped.aggregation_namespace / scoped.aggregation_run_id
+    production_before = _tree_state(production_run)
+    with pytest.raises(rr.RQ4bRunnerError, match="not authorized"):
+        rr.aggregate_gate_c_sources(sources, UNAUTHORIZED_GATE_C_ROOT, scoped)
+    with pytest.raises(rr.RQ4bRunnerError, match="declared RQ4b artifact namespace"):
+        rr.aggregate_gate_c_sources(sources, scoped.aggregation_namespace, scoped)
+    assert not UNAUTHORIZED_GATE_C_ROOT.exists()
+    assert _tree_state(production_run) == production_before
+
+
+def test_published_gate_c_sources_match_exact_pins(contract):
+    """Read-only: manifests, roster and all 18 receipt digests of the real source runs equal the locked pins."""
+    production_run = contract.aggregation_namespace / contract.aggregation_run_id
+    production_before = _tree_state(production_run)
+    layouts = rr.verify_gate_c_source_pins(contract.artifact_namespace, contract)
+    assert list(layouts) == list(contract.aggregation_source_run_ids)
+    assert sum(len(pin["receipt_sha256"]) for pin in contract.aggregation_source_pins.values()) == 18
+    assert _tree_state(production_run) == production_before
+
+
+def test_cli_gate_c_stage_is_the_official_evaluation_only_path(contract, gate_c_template, monkeypatch, capsys):
+    sources, target, scoped = _gate_c_case(contract, gate_c_template)
+    production_run = contract.aggregation_namespace / contract.aggregation_run_id
+    production_before = _tree_state(production_run)
+    calls = []
+    real = rr.aggregate_gate_c_sources
+
+    def recording(source_root, aggregation_root, active):
+        calls.append((source_root, aggregation_root, active))
+        return real(sources, target, scoped)  # redirected to synthetic roots; production is never touched
+
+    monkeypatch.setattr(rr, "aggregate_gate_c_sources", recording)
+    monkeypatch.setattr(rr.ri, "load_contract", lambda: contract)
+    _forbid_backend(monkeypatch)
+    base = ["--stage", rr.GATE_C_STAGE, "--confirm-production"]
+    rejected = (
+        (["--run-id", RUN_ID], "pinned run id"),
+        (["--run-id", contract.aggregation_run_id, "--lambda", "0", "--seed", "42"], "takes no"),
+        (["--run-id", contract.aggregation_run_id, "--new-attempt-after-failure"], "takes no"),
+    )
+    for argv, message in rejected:
+        with pytest.raises(rr.RQ4bRunnerError, match=message):
+            rr.main(base + argv)
+    assert calls == []
+    assert rr.main(base + ["--run-id", contract.aggregation_run_id]) == 0
+    assert calls == [(contract.artifact_namespace, contract.aggregation_namespace, contract)]
+    report = json.loads(capsys.readouterr().out)
+    assert report["stage"] == rr.GATE_C_STAGE and report["status"] == "PASS" and report["counts"]["refit_fits"] == 0
+    assert _tree_state(production_run) == production_before
+
+
+# ---------------------------------------------------------------------------
+# Cross-run Test evaluation and package validation
+# ---------------------------------------------------------------------------
+
+
+def _test_case(contract):
+    base = _new_root()
+    sources = _build_gate_c_sources(contract, base / "sources")
+    scoped = _pin_gate_c_sources(contract, sources)
+    gate_root, test_root = base / "gate", base / "test"
+    gate_layout = rr.aggregate_gate_c_sources(sources, gate_root, scoped)
+    test = FakeBackend().test
+    rng = np.random.default_rng(42)
+    denied, approved = np.flatnonzero(test.y == 0), np.flatnonzero(test.y == 1)
+    indices = np.asarray([np.concatenate([rng.choice(denied, len(denied)), rng.choice(approved, len(approved))])
+                          for _ in range(1000)], dtype=np.int32)
+    bootstrap = base / "rq1_test_bootstrap_indices.npz"
+    np.savez(bootstrap, indices=indices)
+    bootstrap_sha = rr.sha256_file(bootstrap)
+    (base / "rq1_test_bootstrap_manifest.json").write_text(json.dumps({
+        "indices_sha256": bootstrap_sha, "test_record_id_sha256": rr.sha256_ids(test.record_ids), "test_rows": len(test.record_ids)
+    }), encoding="utf-8")
+    test_pins = {run_id: {"manifest_sha256": pin["manifest_sha256"],
+                          "evaluated_arm_receipt_sha256": pin["receipt_sha256"]}
+                 for run_id, pin in scoped.aggregation_source_pins.items()}
+    scoped = dataclasses.replace(
+        scoped, test_source_pins=test_pins, test_bootstrap_path=bootstrap,
+        test_bootstrap_sha256=bootstrap_sha,
+        test_gate_c_manifest_sha256=rr.sha256_file(gate_layout.run_dir / rr.MANIFEST_FILE),
+        test_gate_c_receipt_sha256=rr.sha256_file(gate_layout.stage_dir(rr.GATE_C_STAGE) / rr.RECEIPT_FILE),
+        test_gate_c_selection_sha256=rr.sha256_file(gate_layout.stage_dir(rr.GATE_C_STAGE) / rr.GATE_C_SELECTION_FILE),
+    )
+    return base, sources, gate_root, test_root, scoped
+
+
+@pytest.fixture(scope="module")
+def cross_run_completed(contract):
+    base, sources, gate_root, test_root, scoped = _test_case(contract)
+    backend = FakeBackend()
+    source_before = _tree(sources)
+    layout = rr.evaluate_cross_run_test(sources, gate_root, test_root, backend, scoped)
+    return base, sources, gate_root, test_root, scoped, backend, layout, source_before
+
+
+def _copy_cross_run(case):
+    _, sources, gate_root, test_root, scoped, _, _, _ = case
+    base = _new_root()
+    copied_sources, copied_gate, copied_test = base / "sources", base / "gate", base / "test"
+    shutil.copytree(sources, copied_sources)
+    shutil.copytree(gate_root, copied_gate)
+    shutil.copytree(test_root, copied_test)
+    bootstrap = base / scoped.test_bootstrap_path.name
+    shutil.copy2(scoped.test_bootstrap_path, bootstrap)
+    shutil.copy2(scoped.test_bootstrap_path.parent / "rq1_test_bootstrap_manifest.json", base / "rq1_test_bootstrap_manifest.json")
+    return copied_sources, copied_gate, copied_test, dataclasses.replace(scoped, test_bootstrap_path=bootstrap)
+
+
+def test_cross_run_test_publishes_nine_arms_without_fit_and_preserves_sources(cross_run_completed):
+    _, sources, _, _, _, backend, layout, source_before = cross_run_completed
+    receipt = rr.read_stage(layout, rr.TEST_STAGE)
+    predict_calls = [call for call in backend.calls if call[0] == "predict" and call[2] == "test"]
+    assert len(predict_calls) == len(set(predict_calls)) == 9
+    assert not any(call[0] == "fit" for call in backend.calls)
+    assert receipt["counts"]["cv_fold_fits"] == receipt["counts"]["refit_fits"] == 0
+    assert receipt["counts"]["source_fit_accounting"] == {"cv_fold_fits": 45, "refit_fits": 9}
+    assert len(receipt["counts"]["predictions"]) == 9 and _tree(sources) == source_before
+    stage = layout.stage_dir(rr.TEST_STAGE)
+    assert len(list(stage.glob("test_predictions_*.csv"))) == 9
+    assert sum(1 for _ in (stage / "bootstrap_replicates.csv").open(encoding="utf-8")) == 6001
+    assert not (layout.stage_dir(rr.PACKAGE_STAGE)).exists()
+
+
+def test_cross_run_outputs_are_neutral_and_complete(cross_run_completed):
+    *_, layout, _ = cross_run_completed
+    stage = layout.stage_dir(rr.TEST_STAGE)
+    manifest = rr.read_json(layout.run_dir / rr.MANIFEST_FILE)
+    assert manifest["research_interpretation_owner"] == "user"
+    assert not any(name in {"assessment.json", "status.json", "research_interpretation.json"} for name in rr.read_stage(layout, rr.TEST_STAGE)["outputs"])
+    assert len(__import__("pandas").read_csv(stage / "arm_metrics.csv")) == 9
+    assert len(__import__("pandas").read_csv(stage / "matched_deltas.csv")) == 6
+    assert set(__import__("pandas").read_csv(stage / "generalization_gaps.csv")["quantity"]) == {"balanced_accuracy", "eod3", "eod6"}
+
+
+@pytest.mark.parametrize("pin", ["manifest", "receipt", "selection"])
+def test_gate_c_pin_mismatch_blocks_test_and_publishes_nothing(contract, pin):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+    scoped = dataclasses.replace(scoped, **{f"test_gate_c_{pin}_sha256": "0" * 64})
+    with pytest.raises(rr.RQ4bPackageError, match="Gate C"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, FakeBackend(), scoped)
+    assert not test_root.exists()
+
+
+@pytest.mark.parametrize("kind", ["model", "receipt"])
+def test_changed_model_or_receipt_blocks_test_before_inference(contract, kind):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+    fit = sources / scoped.track_a_source_run_id / "stages" / "dev_l0_s42"
+    target = fit / ("estimator.joblib" if kind == "model" else rr.RECEIPT_FILE)
+    target.write_bytes(target.read_bytes() + b"tamper")
+    backend = FakeBackend()
+    with pytest.raises(rr.RQ4bPackageError, match="corrupt|receipt digest differs"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, backend, scoped)
+    assert not any(call[0] == "predict" for call in backend.calls) and not test_root.exists()
+
+
+def test_missing_arm_or_seed_blocks_test(contract):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+    shutil.rmtree(sources / scoped.track_b_child_run_id / "stages" / "devval_l0p01_s43")
+    with pytest.raises(rr.RQ4bPackageError, match="unpaired|Missing"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, FakeBackend(), scoped)
+    assert not test_root.exists()
+
+
+@pytest.mark.parametrize("kind", ["order", "population"])
+def test_test_id_or_order_mismatch_fails_without_publication(contract, kind):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+
+    class BadIds(FakeBackend):
+        def predict(self, fit_dir, partition):
+            out = super().predict(fit_dir, partition)
+            if fit_dir.name != "dev_l0p3_s42":
+                return out
+            order = np.arange(len(out.y))[::-1] if kind == "order" else np.arange(len(out.y))
+            ids = tuple(np.asarray(out.record_ids)[order])
+            if kind == "population":
+                ids = (*ids[:-1], "dataset_b-999999999")
+            return ev.PartitionPredictions(ids, out.y[order], out.p_approved[order], out.race[order], out.sex[order])
+
+    with pytest.raises(rr.RQ4bPackageError, match="different ordered Test IDs"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, BadIds(), scoped)
+    assert not test_root.exists()
+
+
+def test_bootstrap_digest_mismatch_blocks_before_inference(contract):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+    scoped.test_bootstrap_path.write_bytes(scoped.test_bootstrap_path.read_bytes() + b"tamper")
+    backend = FakeBackend()
+    with pytest.raises(rr.RQ4bPackageError, match="bootstrap digest"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, backend, scoped)
+    assert not any(call[0] == "predict" for call in backend.calls) and not test_root.exists()
+
+
+def test_inference_failure_leaves_no_test_run(contract):
+    _, sources, gate_root, test_root, scoped = _test_case(contract)
+
+    class Failing(FakeBackend):
+        def predict(self, fit_dir, partition):
+            if fit_dir.name == "dev_l0p03_s42":
+                raise RuntimeError("simulated inference failure")
+            return super().predict(fit_dir, partition)
+
+    with pytest.raises(RuntimeError, match="simulated inference failure"):
+        rr.evaluate_cross_run_test(sources, gate_root, test_root, Failing(), scoped)
+    assert not test_root.exists()
+
+
+def test_package_recomputes_all_outputs_without_inference(cross_run_completed, monkeypatch):
+    sources, gate, test, scoped = _copy_cross_run(cross_run_completed)
+    monkeypatch.setattr(rr.ProductionBackend, "predict", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("inference forbidden")))
+    receipt = rr.validate_cross_run_test_package(sources, gate, test, scoped)
+    assert receipt["status"] == "PASS" and receipt["counts"]["cv_fold_fits"] == receipt["counts"]["refit_fits"] == 0
+    report = rr.read_json(rr.RunLayout(test, scoped.test_run_id, rr.TEST_LAYOUT_MODES[rr.MODE_SYNTHETIC]).stage_dir(rr.PACKAGE_STAGE) / "package_report.json")
+    assert report["inference_performed"] is False and report["recomputed_from_saved_predictions"] is True
+
+
+@pytest.mark.parametrize("name", ["arm_metrics.csv", "matched_deltas.csv", "bootstrap_summary.csv", "generalization_gaps.csv"])
+def test_forged_output_and_receipt_are_rejected(cross_run_completed, name):
+    sources, gate, test, scoped = _copy_cross_run(cross_run_completed)
+    layout = rr.RunLayout(test, scoped.test_run_id, rr.TEST_LAYOUT_MODES[rr.MODE_SYNTHETIC])
+    stage = layout.stage_dir(rr.TEST_STAGE)
+    lines = (stage / name).read_text(encoding="utf-8").splitlines()
+    fields = lines[1].split(",")
+    fields[-1] = "999"
+    (stage / name).write_text("\n".join([lines[0], ",".join(fields), *lines[2:]]) + "\n", encoding="utf-8")
+    receipt = rr.read_json(stage / rr.RECEIPT_FILE)
+    receipt["outputs"][name] = rr.sha256_file(stage / name)
+    (stage / rr.RECEIPT_FILE).write_text(json.dumps(receipt), encoding="utf-8")
+    rr.read_stage(layout, rr.TEST_STAGE)
+    with pytest.raises(rr.RQ4bPackageError, match="does not match recomputation"):
+        rr.validate_cross_run_test_package(sources, gate, test, scoped)
+    assert not layout.stage_dir(rr.PACKAGE_STAGE).exists()
+
+
+def test_forged_prediction_receipt_is_rejected(cross_run_completed):
+    sources, gate, test, scoped = _copy_cross_run(cross_run_completed)
+    layout = rr.RunLayout(test, scoped.test_run_id, rr.TEST_LAYOUT_MODES[rr.MODE_SYNTHETIC])
+    stage = layout.stage_dir(rr.TEST_STAGE)
+    target = sorted(stage.glob("test_predictions_*.csv"))[0]
+    lines = target.read_text(encoding="utf-8").splitlines()
+    target.write_text("\n".join([lines[0], *reversed(lines[1:])]) + "\n", encoding="utf-8")
+    receipt = rr.read_json(stage / rr.RECEIPT_FILE)
+    receipt["outputs"][target.name] = rr.sha256_file(target)
+    (stage / rr.RECEIPT_FILE).write_text(json.dumps(receipt), encoding="utf-8")
+    with pytest.raises(rr.RQ4bPackageError, match="different ordered IDs|bootstrap manifest"):
+        rr.validate_cross_run_test_package(sources, gate, test, scoped)
+    assert not layout.stage_dir(rr.PACKAGE_STAGE).exists()

@@ -176,27 +176,44 @@ partition boundary.
 
 ## 5. Validation threshold boundary
 
-For RQ4b only, repeat the fresh refit boundary for each predeclared candidate.
-The complete project Validation partition calibrates each candidate's global
-threshold and selects lambda from the locked grid under the matched BA/EOD3
-rule in the RQ4 plan. This is an explicit exception to the generic prohibition
-on Validation configuration selection below, not permission for open-ended
-tuning. Do not select predictor epochs, seeds or adversary architecture using
-project Validation/Test. Report shared calibration/selection optimism; Test is
-opened only after lambda, thresholds, seeds and production policies are locked.
+For RQ4b only, repeat the fresh refit boundary for each unit in the approved
+sparse nine-unit design: seed 42 at lambdas `[0, 0.01, 0.03, 0.1, 0.3]` and
+seeds 43 and 44 at lambdas `[0, 0.01]`. This is not a five-by-three Cartesian
+grid. The complete project Validation partition calibrates each candidate's
+global threshold and supplies the locked matched BA/EOD3 development evidence
+defined in the RQ4 plan. The evaluation-only three-seed policy considers only
+replicated lambdas 0 and 0.01: mean matched BA delta must be >= -0.01, then
+minimum mean EOD3 wins with exact smaller-lambda ties. Lambda zero may win;
+0.03, 0.1 and 0.3 are screening-only and EOD6 is audit-only. This is an
+explicit exception to the generic prohibition on Validation
+configuration selection below, not permission for open-ended tuning. Do not
+select predictor epochs, seeds or adversary architecture using project
+Validation/Test. Report shared calibration/selection optimism; Test is opened
+only after lambda, thresholds, seeds and production policies are locked.
+
+This selection runs only in the evaluation-only Gate C aggregation
+(`rq4b3_gatec_20261024_01`). It reads saved Validation predictions only after
+it verifies the exact pins of the three immutable source runs: run IDs,
+manifest and all 18 unit-receipt SHA-256 values, and one common ordered
+Validation population. It never fits, infers or opens Test. Any failed check
+publishes no aggregation run. This is implementation readiness only; see
+[STATUS](../STATUS.md) for execution state.
 
 RQ4b Test assessment uses adversarial-minus-same-seed-control deltas: the
 per-seed point criterion requires delta EOD3 < 0 and full-Test delta BA >= -0.01.
 Report 1,000 locked paired-bootstrap replicates per seed, percentile 95% CIs
-and separate across-five-seed mean/SD (`ddof=1`)/min/max/range; never pool seeds'
-bootstrap rows. Preserve the existing Y-stratified RQ1 Test indices, not new
-race-by-Y indices. Every CI quantity requires 1,000/1,000 valid replicates;
-otherwise it is not evaluable, without replacement sampling or an automatic
-scientific-failure conclusion. At least 4/5 seeds must each satisfy upper CI
-of delta EOD3 < 0 AND lower CI of full-Test delta BA > -0.01. Do not substitute
-point criteria for those CI conditions. Use quantiles 0.025/0.975 with
-`method="linear"`, without rounding before CI calculation or endpoint comparison. Stability
-is `not_assessed`; scientific support and capability are distinct from execution.
+and separate across-three-seed mean/SD (`ddof=1`)/min/max/range; never pool
+seeds' bootstrap rows. Preserve the existing Y-stratified RQ1 Test indices,
+not new race-by-Y indices. Every CI quantity requires 1,000/1,000 valid
+replicates; otherwise it is not evaluable, without replacement sampling or an
+automatic scientific-failure conclusion. The per-seed CI conditions remain
+upper CI of delta EOD3 < 0 AND lower CI of full-Test delta BA > -0.01. The
+superseded 4/5 aggregate rule is not satisfied by three seeds, and no 2/3 or
+other aggregate strong-support rule may be used until separately approved.
+Do not substitute point criteria for the retained per-seed CI conditions. Use
+quantiles 0.025/0.975 with `method="linear"`, without rounding before CI
+calculation or endpoint comparison. Stability is `not_assessed`; scientific
+support and capability are distinct from execution.
 
 The separate capability probe may split the frozen RQ1 RealMLP Validation G3
 population 60/20/20, stratified by `(race,Y)`, seed 42. Fit probe and Y-only
@@ -274,6 +291,41 @@ Denied-oriented metric is calculated, `y_denied = 1 - y_approved` and
 to calculate final metrics, but they must not alter preprocessing, model,
 configuration, or threshold.
 
+### 6.1 RQ4b-3 cross-run Test evaluation exception
+
+RQ4b-3 uses a separate immutable evaluation identity,
+`rq4b3_test_20261024_01`, under
+`artifacts/dataset_b/rq4/rq4b/test_evaluation/`. This is a narrow exception to
+the generic same-`run_id` packaging rule above: the Test run does not claim to
+own or recreate fitted state. Its manifest must instead link exactly to the
+Gate C manifest and receipt, each of the three immutable source-run manifests,
+and the model/development-validation receipt pair for every evaluated arm.
+Those exact SHA-256 values are locked in
+`config/dataset_b/rq4b_adversarial.yaml`. Any missing, additional or changed arm
+or pin fails before Test is read.
+
+The user-selected roster contains all nine saved development arms: lambdas 0,
+0.01, 0.03, 0.1 and 0.3 at seed 42, and lambdas 0 and 0.01 at seeds 43 and 44
+(nine maximum model-artifact Test inferences). Lambda 0 is the stored Gate C
+selection; lambda 0.01 is the replicated comparator; and the three
+screening-only lambdas are explicitly requested for numerical reporting at
+their available seed 42. The route performs no fit, CV, refit, threshold
+calibration or model selection.
+
+The route must export, with the exact file/column schema in the machine-readable
+config: per-arm full-Test BA, EOD3 and audit EOD6; fixed-roster group TPR/FPR
+and group counts; every same-seed nonzero-lambda-minus-lambda-0 matched delta
+BA/EOD3/EOD6; overall and per-group decision-change counts/rates; exactly 1,000
+paired bootstrap replicates plus validity reasons and CI endpoints for each of
+the six matched comparisons; three-seed mean, sample SD (`ddof=1`), min, max
+and range for only the replicated lambdas 0/0.01 and their matched deltas; and
+Validation-to-Test gaps (`Test - Validation`) for BA, EOD3 and EOD6 for all
+nine arms. Screening lambdas with seed 42 only must not receive fabricated
+across-seed summaries. The run must keep execution status and numeric metric
+tables separate. Machine code must not emit research pass/fail, effectiveness,
+support, recommendation or narrative interpretation; those decisions belong to
+the user.
+
 ## 7. Bootstrap and uncertainty boundary
 
 RQ1 uses a 95% confidence interval with 1,000 bootstrap replicates. Bootstrap
@@ -298,6 +350,10 @@ The following rules are mandatory:
   use `rtol = 0`, `atol = 1.0e-14`; point metrics use `rtol = 0`,
   `atol = 1.0e-12`. No other metric uses decimal rounding;
 - the existing locked bootstrap indices must not be regenerated;
+- RQ4b-3 must verify the locked index file SHA-256 as
+  `2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1`
+  before any Test access and use exactly 1,000 paired replicates per matched
+  nonzero-lambda-versus-same-seed-control comparison (6,000 rows total);
 - SHA, digest, raw-byte identity, and the probability row-sum tolerance are
   not numerical-equivalence gates for metrics or confidence intervals.
 

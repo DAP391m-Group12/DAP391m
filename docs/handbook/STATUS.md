@@ -1,9 +1,64 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-10-22
+**Reconciled:** 2026-10-24
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
 
 ## Current RQ4b handover ownership
+
+### RQ4b-3 closure — 2026-10-24
+
+RQ4b-3 (primary adversarial RealMLP analysis on G3) is **closed** for
+execution, validation and reporting. The closure was reconciled directly
+against the production receipts, the package report and Notebook 12. Each
+status below is separate. None of them is a research conclusion.
+
+| Component | Status | Evidence (details in the dated sections below) |
+|---|---|---|
+| Development execution (nine sparse units) | `COMPLETE`; Gate B `PASS` | Immutable source runs `rq4b3_adv_20261019_02` (seed 42), `rq4b3_adv_20261021_01` (seed 43) and `rq4b3_adv_20261022_01` (seed 44): 45 CV fits, nine full-Train refits, 18 `PASS` receipts |
+| Gate C aggregation and Validation selection | `COMPLETE`; receipt `PASS` | `rq4b3_gatec_20261024_01` (manifest `5d072d7f...931b`, receipt `14f602bb...1448f13`, selection `76af4d07...c8c615`). The stored selection is `selected_lambda = 0.0` under the approved `candidate_selection` policy. On Validation, mitigation effectiveness is recorded as not established. |
+| Production Test evaluation | `COMPLETE`; receipt `PASS` | `rq4b3_test_20261024_01` stage `test_evaluation` (receipt `2f7c1ae8...32c4`). Nine arms, nine inferences, 0 fit/refit/CV, 43,996 rows per prediction, 1,000/1,000 valid replicates for all six comparisons and three quantities |
+| Production package validation | `PASS` | Stage `package_validation` (receipt `d20fa9b1...800a`, report `02af1bc6...db32403`). No inference, recomputation from saved predictions, byte- and tolerance-identical. Local fits 0; source accounting 45 CV / nine refits |
+| Reporting | `COMPLETE` | `notebooks/dataset_b/12_rq4b_adversarial_results.ipynb` (SHA-256 `2876b1ae...2032`): 15 sequential cells, no saved error, key values equal the stored artifacts |
+| Research interpretation of Test results | Not recorded; user-owned | Code assigns no pass/fail, effectiveness, support or recommendation label. Notebook 12 section 14 is reserved for the user |
+| RQ4b-6 (optional G6 sensitivity) | Deferred, optional, not committed | Not opened. It may start only as a new, separately authorized stream |
+
+Closure reconciliation on 2026-10-24 (read-only):
+
+- All three production receipts have status `PASS`, and their SHA-256 values
+  equal the values above.
+- The 160 source-run, Gate C and bootstrap files, and the 20 `test_evaluation`
+  files, still equal their pre-Test snapshots. The Test run holds 22 files and
+  an empty `failures/` directory.
+- The Notebook 12 self-check reconciliation of its printed key values against
+  the stored artifacts reports exact equality.
+
+Limitations carried into any use of these results:
+
+- Threshold calibration and Gate C lambda selection share the complete
+  Validation partition, so the Validation values are optimistic.
+- The replicated lambdas 0 and 0.01 have only three seeds. Lambdas 0.03, 0.1
+  and 0.3 are single-seed (seed 42) screening arms and have no across-seed
+  summary.
+- Within-seed paired-bootstrap intervals and across-seed summaries are
+  separate uncertainty views and are not pooled.
+- The `training-unstable beyond selected epoch` label applies to lambda > 0
+  units. Stability status is `not_assessed`.
+- The real-data capability probe has not been fitted. Capability remains
+  `capability_inconclusive`.
+- `config/dataset_b/rq4b_adversarial.yaml` still carries its pre-execution
+  `test_evaluation.execution_status: not_run` and `authorization_status`
+  fields. They were deliberately left unchanged, because the Test manifest pins
+  the config SHA-256 and the package validator checks it. This register
+  supersedes those fields.
+- The outputs describe approval-prediction behaviour for the documented HMDA
+  cohort only. They are not default-risk, creditworthiness, legal-compliance,
+  discrimination or causal evidence.
+
+Process note: Tasks 4–7 (Test launch, package validation, Notebook 12 and
+this closure) ran during a temporary handover from Codex. The read-only
+verifier agent checked Tasks 4–6 (`PASS`). This closure is checked by the
+same agent before acceptance. Per the handover note, Codex will re-check this
+work after its quota resets. That re-check is not recorded here.
 
 ### RQ4b-3 parallel evaluation and training amendment — 2026-10-21
 
@@ -13,8 +68,8 @@ The amended execution uses two explicitly linked, non-overlapping run identities
 `rq4b3_adv_20261019_02` is the immutable Track A source run for the retained
 seed-42 artifacts and remains on its historical v2 code lineage.
 `rq4b3_adv_20261021_01` is the immutable v3 Track B child run that contains the
-two seed-43 units. The seed-44 continuation uses the separate v4 identity
-`rq4b3_adv_20261022_01`; no stage has been created in that run. The maximum development
+two seed-43 units. The completed seed-44 continuation uses the separate v4
+identity `rq4b3_adv_20261022_01`. The maximum development
 scope is nine units: five retained completed seed-42 units at lambdas
 `[0, 0.01, 0.03, 0.1, 0.3]`, plus exactly four approved additional units:
 `(lambda=0, seed=43)`, `(lambda=0.01, seed=43)`, `(lambda=0, seed=44)` and
@@ -26,10 +81,11 @@ Track A evaluates the five frozen completed seed-42 artifacts for EOD3, paired
 same-seed delta EOD3 where defined, Balanced Accuracy cost, available
 diagnostics, fairness--utility evidence and training stability. It must not
 refit, rerun inference, regenerate or overwrite completed checkpoints,
-predictions, epochs, receipts or manifests. Track A is `PENDING` in this status
-record: the contract identifies the five completed units, but this recording
-task did not independently inspect their artifacts or compute evaluation
-results.
+predictions, epochs, receipts or manifests. Artifact integrity and Gate B
+execution evidence for the five units have now been directly checked and are
+`PASS`. Formal Gate C evaluation outputs are now published by the separate
+evaluation-only aggregation run `rq4b3_gatec_20261024_01`; see the Gate C
+aggregation execution section below.
 
 Track B is limited to the four new units above and Gate A is `PASS`. It does
 not depend on Track A completion, EOD3 results or fairness acceptance. Gate A
@@ -38,26 +94,398 @@ to agree, correct run/seed/lambda assignment, safe nonconflicting paths and
 write ownership, overwrite protection and no unresolved critical correctness
 or lineage issue. The v4 input validator and runner preserve the sparse
 nine-unit design while restricting the current production identity to the two
-seed-44 units. Cross-run aggregation remains blocked until Gate C lineage
-validation.
+seed-44 units. Cross-run aggregation was blocked until Gate C lineage
+validation; it has since run in `rq4b3_gatec_20261024_01` (below).
 
-The earlier seed-43 execution assignment is complete. The current task
-authorized implementation and synthetic validation of the seed-44 continuation
-mechanism only; it explicitly did not authorize launching a seed-44 fit. No
-automatic retry is authorized. Selection, final-fit, Test and package
-validation remain closed.
+All four additional Track B units are complete. The two seed-43 units remain
+in the immutable v3 child run and the two seed-44 units are published in the
+immutable v4 continuation. Gate B is `PASS` for the complete nine-unit sparse
+design. No automatic retry is authorized. Cross-run Gate C evaluation and
+Validation-only selection have since been executed in
+`rq4b3_gatec_20261024_01` (below). No final-fit is authorized. The later
+user-selected Test output contract and cross-run implementation are complete.
+Production Test evaluation and production package validation have since each
+run once in `rq4b3_test_20261024_01` (see the Test evaluation and package
+validation execution sections below).
 
 Gate B requires each new unit to complete five CV folds, one full-Train refit,
 development-validation, integrity and prediction-count checks, and artifact
-and receipt validation. Gate C remains blocking before final lambda/arm
-selection or Test. It requires evaluation evidence for every retained/new
+and receipt validation. Gate C required evaluation evidence for every retained/new
 development unit, EOD3, paired same-seed delta EOD3, BA cost, EOD6 safety
 audit, seed variability, training stability/integrity, explicit statistical
 limitations and a separately approved selection policy suitable for three
-seeds. The former 4/5 rule is not satisfied by three seeds and must not be
-silently replaced with 2/3. Test remains unopened by this contract-recording
-task. Execution completion, statistical evidence, fairness effectiveness,
-predictive utility and training stability remain separate statuses.
+seeds; those aggregation requirements are now complete. The former 4/5 rule is
+not satisfied by three seeds and must not be silently replaced with 2/3. The
+Test contract below exports neutral numbers and assigns no replacement rule or
+research conclusion. That contract-recording task did not open Test. Test
+was later executed once, package-validated and reported (see the RQ4b-3
+closure above). Execution completion, statistical evidence, fairness effectiveness, predictive
+utility and training stability remain separate statuses.
+
+### RQ4b-3 nine-unit Gate B closure — 2026-10-24
+
+The amended nine-unit development roster is `COMPLETE`, and Gate B is `PASS`
+on direct production-artifact evidence. The accepted roster is seed 42 at
+lambdas `[0, 0.01, 0.03, 0.1, 0.3]`, seed 43 at lambdas `[0, 0.01]`, and seed
+44 at lambdas `[0, 0.01]`. Every unit has one published development stage with
+five completed CV folds and one completed fresh full-Train refit, plus one
+matching development-validation stage with 43,995 ordered Validation
+predictions. Successful fit accounting is 45 CV fits and nine refits.
+
+All 18 stage receipts are `PASS`. Receipt-declared output hashes, prerequisite
+links, unit identities and run-manifest lineage were checked directly. Each
+Validation file has the required five-column schema, 43,995 unique nonblank
+`record_id` values in the same order, binary labels, complete audit groups and
+finite probabilities in `[0,1]`; every ordered-ID digest is
+`f5331875e449fc2f940de5a845483d5ea0830ae2b5a8501df98e9814a2fa5875`.
+The seed-44 manifest's pinned source-manifest, source-receipt and retained
+seed-43 failure-receipt digests also match the immutable source runs.
+
+The seed-44 control selected/refit epoch 120 and published Validation threshold
+0.753. The seed-44 `lambda=0.01` unit selected/refit epoch 17 and published
+threshold 0.766. Its five-fold mean Validation CE first exceeds 1 at epoch 32
+and later reaches approximately `8.34e8` while remaining finite. Its 17-epoch
+fresh refit remains in the normal finite loss range, retains finite predictor
+and adversary parameters and passes exact prediction reload. Together with the
+same observed pattern for seeds 42 and 43, this is a required
+`training-unstable beyond selected epoch` Gate C limitation, not a Gate B
+artifact failure.
+
+This closure establishes development execution, validation coverage, integrity
+and lineage only. It does not establish mitigation effectiveness. The later
+evaluation-only aggregation run `rq4b3_gatec_20261024_01` pins all three
+immutable source runs. Its locked Validation policy selects only replicated
+lambdas 0 and 0.01 by mean matched BA eligibility (>= -0.01), then minimum
+mean EOD3 with exact smaller-lambda ties; 0.03/0.1/0.3 are screening-only and
+EOD6 is an audit. The subsequent user authorization of the Test output
+contract is recorded below; it does not retroactively change this Gate B
+closure or the stored Gate C artifact.
+
+### RQ4b-3 Gate C aggregation execution — 2026-10-24
+
+Production Gate C aggregation run `rq4b3_gatec_20261024_01` is `COMPLETE`.
+It was executed once through the official evaluation-only path
+`python -m src.dataset_b.mitigation.rq4b_runner --stage gate_c_aggregation
+--run-id rq4b3_gatec_20261024_01 --confirm-production` (exit 0, empty
+stderr). Before execution the run directory did not exist and the read-only
+source-pin test passed. The run is published at
+`artifacts/dataset_b/rq4/rq4b/gate_c_aggregation/rq4b3_gatec_20261024_01/`
+with no leftover temporary tree.
+
+Direct read-only verification:
+
+- `read_stage` on stage `gate_c_aggregation` returns `PASS` (mode
+  `evaluation_aggregation`).
+- The manifest `source_pins` and `source_run_ids` equal the contract pins.
+  `evaluation_only`, `prohibit_fit` and `prohibit_inference` are true.
+  `test_status` is `blocked_pending_separate_methodological_gate`. The
+  manifest config and code SHA-256 values equal the current files.
+- Receipt counts: 0 CV fits, 0 refits, 0 probe fits, empty predictions, and
+  source fit accounting of 45 CV fits and nine refits. The receipt has 18
+  source receipt inputs.
+- Independent re-hashing confirms that all three source manifests and all 18
+  source receipts still equal their pins.
+- Every unit was evaluated on the same 43,995-row ordered Validation
+  population (digest `f5331875...fa5875`). The fail-closed check that the
+  recomputed threshold exactly equals the stored threshold passed for all
+  nine units.
+
+Validation-only selection result (`gate_c_selection.json`, status
+`selected`): **`selected_lambda = 0.0`** (`lambda_zero_selected: true`).
+
+| lambda | seeds | mean matched delta BA | mean EOD3 | eligible |
+|---|---|---|---|---|
+| 0 | 42, 43, 44 | 0.000000 | 0.099633 | yes |
+| 0.01 | 42, 43, 44 | -0.005011 | 0.102641 | yes |
+
+Both candidates meet the BA eligibility bound (>= -0.01). Lambda 0 has the
+lower mean EOD3, so the policy selects it. Per seed, lambda 0.01 has a lower
+EOD3 than its matched control for seeds 42 and 43, and a higher one for seed
+44. The selection artifact also records the nine unit rows, the
+screening-only lambdas `[0.03, 0.1, 0.3]` and the EOD6 role `audit_only`.
+It records `arbitrary_two_of_three_rule_used: false`.
+
+These are separate statuses:
+
+- Gate C aggregation execution: `COMPLETE`.
+- Mitigation effectiveness: **not established**. On Validation, the
+  replicated adversarial candidate (lambda 0.01) did not lower mean EOD3
+  relative to the matched control.
+- At Gate C publication, Test was blocked on its separate methodological gate
+  and was not opened. No final-fit, Test access or package stage was run. The
+  later Test output-contract authorization is recorded below and does not
+  alter the stored Gate C receipt.
+
+Limitations:
+
+- Threshold calibration and lambda selection share the complete Validation
+  partition, so the selection is optimistic.
+- Only three seeds are available.
+- The `training-unstable beyond selected epoch` label applies to every
+  lambda > 0 unit. Its evidence for lambdas 0.03, 0.1 and 0.3 was not
+  re-verified in this task.
+- The results are approval-prediction fairness diagnostics only. They are not
+  default risk, creditworthiness or causal/legal discrimination evidence.
+
+The earlier Gate C post-run test closure was `PASS` at 296 passed and 20
+legacy post-Gate-C skips. Those skips are superseded by the implemented
+cross-run Test/package route below. The three Gate C tests that previously assumed the production
+run did not exist now snapshot its existence and file SHA-256 values and
+confirm that unauthorized-root checks, source-pin verification and the
+synthetic CLI path neither create nor change the published production run.
+
+### RQ4b-3 production Test evaluation execution — 2026-10-24
+
+Production Test evaluation run `rq4b3_test_20261024_01` is execution
+`COMPLETE` with stage receipt `PASS`. It was launched once, under the user's
+Task 4 contract, through the official route
+`.venv-realmlp-gpu\Scripts\python.exe -m src.dataset_b.mitigation.rq4b_runner
+--stage test_evaluation --run-id rq4b3_test_20261024_01 --confirm-production`
+(exit 0; started 2026-10-24T08:51:50Z, finished 2026-10-24T09:00:15Z; stderr
+held only library/progress messages on the CUDA RTX 5050 device and the
+existing quality-gate note `Dataset B LTV >1000% retained for 11 rows`, once
+per inference). No retry
+occurred. The run is published at
+`artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/`
+with no leftover `.tmp_*` tree and an empty `failures/` directory.
+
+Preflight before launch (read-only): the run path did not exist; code, config
+and plan/contract SHA-256 values equalled the handoff pins; Gate C manifest,
+receipt and selection digests matched; three source manifests, all 18
+model/Validation receipts and all nine estimator/preprocessor hashes matched;
+the nine arms resolved to nine unique artifacts; the RQ1 bootstrap index digest
+`2ee377b6...30fee1` and its manifest matched (1,000 replicates, 43,996 Test
+rows); `cuda:0` was available in the GPU environment.
+
+Direct post-run verification (read-only):
+
+- Receipt `stages/test_evaluation/receipt.json` (SHA-256
+  `2f7c1ae8b31d8df82b9342182cb40fb9b3c18aa783a31ff53eeeaf54e64632c4`):
+  status `PASS`; 18 declared outputs, all re-hashed equal; 22 lineage inputs;
+  0 CV fits, 0 refits, 0 probe fits; source accounting 45 CV fits / nine
+  refits. Run manifest SHA-256
+  `d05fc2980986452428b5fc656aaba89c8bad698923cab7da67f5ff241e7595a4`;
+  its code and config digests equal the current files, its Gate C pins equal
+  the locked values and it records the nine locked Validation thresholds.
+- `execution_status.json`: `completed`, reason `none`, inference count 9,
+  fit/refit/CV counts 0, 43,996 Test rows.
+- All nine saved Test prediction files have 43,996 unique rows in one shared
+  order whose ordered-ID digest equals the locked bootstrap manifest
+  (`47dc6722...7c081d`), with finite probabilities in `[0,1]`.
+- Output roster complete: nine arm rows, 81 group rows (no undefined TPR/FPR),
+  six matched-delta rows, 60 decision-change rows, 6,000 bootstrap replicate
+  rows with 1,000/1,000 valid replicates for every comparison and quantity
+  (delta BA, EOD3, EOD6), 18 CI rows, nine across-seed rows (lambdas 0 and 0.01
+  and their matched deltas only) and 27 generalization-gap rows; all metric,
+  delta, CI and gap values are finite.
+- Pre/post SHA-256 snapshots of all 160 files in the three source runs, the
+  Gate C namespace and the bootstrap index/manifest are identical.
+
+Separate statuses: production Test execution `COMPLETE`; production package
+validation `PASS` (section below); notebook/report **not created**. Metric
+values are recorded only in the published files. Research interpretation,
+mitigation effectiveness and any conclusion remain with the user and are not
+established by this execution.
+
+### RQ4b-3 production package validation execution — 2026-10-24
+
+Production package validation for `rq4b3_test_20261024_01` is `PASS`. It ran
+once through
+`.venv-realmlp-gpu\Scripts\python.exe -m src.dataset_b.mitigation.rq4b_runner
+--stage package_validation --run-id rq4b3_test_20261024_01 --confirm-production`
+(exit 0, empty stderr; 2026-10-24T09:29:47Z to 09:33:26Z). No retry occurred.
+The route constructs no backend and performs no fit or inference. It re-verified
+the manifest identity, code/config/protocol lineage, output schema, Gate C
+pins, three source manifests, all 18 model/Validation receipts, the nine-arm
+model/threshold lineage, the bootstrap pin, the receipt input/output roster
+and per-file prediction records. It then recomputed every locked table and
+`execution_status.json` from the nine saved Test predictions and the source
+Validation predictions, and compared each stored file to its recomputation.
+
+Evidence:
+
+- Stage `stages/package_validation/` holds `receipt.json` (SHA-256
+  `d20fa9b13cd4f9b9e5e52e4c387f49a63791f4c95af3fa9903caecdbf1e5800a`; status
+  `PASS`; input `test_evaluation` receipt `2f7c1ae8...32c4`; 0 CV fits, 0
+  refits, 0 probe fits, no predictions; source accounting 45 CV fits / nine
+  refits) and `package_report.json` (SHA-256 `02af1bc6...db32403`;
+  `inference_performed: false`, `recomputed_from_saved_predictions: true`,
+  local fit counts 0, nine verified outputs). `failures/` is empty.
+- The built-in gate compares stored and recomputed files byte for byte. A
+  separate read-only comparison under the locked `split_and_evaluation.md`
+  section 7 tolerances (point metrics `atol = 1.0e-12`; replicate values and
+  CI endpoints `atol = 1.0e-14`; identifiers, counts and validity flags exact)
+  found identical shapes and a maximum absolute difference of 0 for every
+  table: 9 arm, 81 group, 6 delta, 60 decision-change, 6,000 replicate, 18 CI,
+  9 across-seed and 27 gap rows. Every seed, arm, metric and replicate in the
+  locked roster is present.
+- All 20 `test_evaluation` files are unchanged. The run gained only the two
+  package files. The 160 source-run, Gate C and bootstrap files equal their
+  pre-Task-4 snapshot.
+
+Notebook/report creation and all research interpretation remained pending
+separate user authorization at package-validation time; the reporting notebook
+is recorded below.
+
+### RQ4b-3 reporting notebook — 2026-10-24
+
+Reporting-only `notebooks/dataset_b/12_rq4b_adversarial_results.ipynb` is
+`COMPLETE` (executed and validated; SHA-256
+`2876b1aed5f8621f4656b0219bceb1967e4b772059bcc07e9acd407a04ae2032`). It
+reads only the accepted Gate C stage outputs, the Test run manifest, the
+`test_evaluation` tables and receipt, the `package_validation` receipt and
+report, and `rq4b_adversarial.yaml` for locked pins. It does not read raw data,
+splits, model/preprocessor files or bootstrap indices. Prediction CSVs are
+hashed for receipt integrity and never parsed. It performs no fit, inference,
+bootstrap or metric recomputation.
+
+It presents the following:
+
+- package integrity and lineage;
+- execution status and fit accounting;
+- the nine-arm roster with thresholds and receipt pins;
+- Validation results by lambda and seed, with the stored selection record and
+  training-stability labels;
+- Test BA/EOD3/audit EOD6 by arm and seed;
+- G3/G6 group TPR/FPR and counts;
+- six matched deltas with 95% paired bootstrap intervals and the
+  6,000-replicate evidence;
+- decision changes;
+- stored across-seed summaries;
+- Validation-to-Test gaps;
+- a seed-42 screening-arm section;
+- a key-value reconciliation dump.
+
+The notebook ends with an interpretation boundary and an empty, user-owned
+research-interpretation section. Code assigns no pass/fail, effectiveness,
+support or recommendation label.
+
+Validation (all `PASS`):
+
+- Built from a generator into a new file (it refused to overwrite) and
+  executed top to bottom with `nbclient` (kernel `python3`, Anaconda Python
+  3.13.9, pandas 2.3.3, matplotlib 3.10.6). It has 15 code cells with
+  execution counts 1-15 in order, no saved error and no stderr output, and
+  embeds five figures.
+- In-notebook assertions pass for the following:
+  - every stage file matches its receipt;
+  - the Gate C digests match the locked pins;
+  - the Test manifest Gate C and bootstrap pins match the configuration;
+  - the arm roster equals the locked contract;
+  - each table has the expected row count;
+  - replicate validity counts equal `bootstrap_summary.csv`;
+  - the derived Validation means equal the stored Gate C candidate means;
+  - the stored gap values equal Gate C units and `arm_metrics.csv` within
+    `atol = 1e-12`.
+- An implementer self-check script (AST scan; not an independent review) found
+  imports limited to pathlib, hashlib, json,
+  platform, sys, matplotlib, numpy, pandas, yaml and IPython. It found no fit,
+  predict, transform, load, write, save, delete or subprocess call. The only
+  flagged token, `estimator`, is the displayed lineage column
+  `estimator_sha256`.
+- An implementer self-check reconciliation, which parses the stored artifacts
+  separately from the notebook, compared the printed key values and found
+  exact equality for the Gate C selection, execution status,
+  package report, nine arm metrics and thresholds, and 18 delta/CI/valid-count
+  entries.
+- `nbconvert --to html` renders the notebook. Its only warning is missing alt
+  text on the five images.
+- All 160 source-run, Gate C and bootstrap files and all 22 Test-run files are
+  unchanged.
+
+Research interpretation and any conclusion remain with the user.
+
+### RQ4b-3 cross-run Test implementation — 2026-10-24
+
+Status: **`IMPLEMENTED / SYNTHETIC VALIDATION PASS`**; the production run
+recorded above is the only production execution of this route.
+The cross-run Test output contract is implemented for the user-selected nine
+arms. Production Test data was not read, production inference was not run, no
+fit/CV/refit occurred, and no production Test run or artifact directory was
+created by this implementation task.
+
+The reserved Test run is `rq4b3_test_20261024_01` under the separate namespace
+`artifacts/dataset_b/rq4/rq4b/test_evaluation/`. Its user-selected roster is
+exactly all nine saved development arms: lambdas 0, 0.01, 0.03, 0.1 and 0.3 at
+seed 42, plus lambdas 0 and 0.01 at seeds 43 and 44, for at most nine
+saved-model Test inferences. Lambda 0 is the stored Gate C selection, lambda
+0.01 is the replicated comparator, and the screening lambdas are explicitly
+included at seed 42 for complete numerical reporting.
+
+The contract pins the Gate C manifest
+`5d072d7ff094817b8a281d2ea5b6527682678f97d09fa538b88013aae218931b`
+and receipt
+`14f602bb0ef59d7cbfb22e8b5fbdaf6604e5a90c295370bac212b965e1448f13`,
+all three source-run manifests, and the model/Validation receipt pairs for all
+nine arms (18 receipts). It also pins the locked RQ1 Test bootstrap index at SHA-256
+`2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1`;
+regeneration is prohibited.
+
+Required neutral outputs are per-arm BA/EOD3/audit-EOD6 and group TPR/FPR plus
+counts for all nine arms; every same-seed nonzero-lambda-minus-lambda-0 delta
+BA/EOD3/EOD6; overall and per-group decision changes; 1,000 paired bootstrap
+rows and CI endpoints for each of six matched comparisons (6,000 rows total);
+three-seed mean/sample-SD/min/max/range for the replicated lambdas 0 and 0.01
+and their matched deltas only; and Test-minus-Validation gaps for all nine
+arms. The single-seed screening lambdas receive no across-seed summary. Exact
+file names and columns are locked in `config/dataset_b/rq4b_adversarial.yaml`.
+
+Execution status, metric values and research interpretation are separate.
+Machine code may emit operational status and neutral numbers only. It may not
+assign research pass/fail, mitigation effectiveness, strong support,
+recommendations or a narrative conclusion; the user owns those decisions.
+Implementation and synthetic validation are complete. The Test route verifies
+the three exact Gate C hashes (manifest, receipt and selection output), three
+source manifests, all 18 model/Validation receipts, model-file hashes, locked
+thresholds, ordered Test IDs and the bootstrap digest before atomic
+publication. It deduplicates inference by artifact, records local fit counts
+as zero and source accounting as 45 CV fits/nine refits. The package validator
+performs no inference and recomputes every metric and bootstrap output from
+saved Test predictions before publishing its PASS receipt.
+
+Validation is `PASS`: the three required RQ4b test files report **321 passed,
+0 skipped, 0 failed**. Compile checks passed. The tests cover valid three-run
+lineage, Gate C pin drift, model/receipt drift, missing arm/seed, Test ID/order
+mismatch, bootstrap digest drift, zero local fitting, nine non-duplicated
+inferences, immutable source trees, failed-run nonpublication, package
+recomputation and forged output/receipt rejection. Synthetic runs were confined
+to `scratch/rq4b_implementation`; direct read-only production-lineage checking
+confirmed all nine arms and 18 receipt pins without creating
+`rq4b3_test_20261024_01`.
+
+Production launch, Test access/inference and production package validation
+have since each been executed once (sections above). Notebook reporting and
+all research interpretation remain pending separate authorization/execution.
+Execution success does not determine a research conclusion.
+
+### RQ4b-3 Gate C aggregation implementation readiness — 2026-10-24
+
+*Historical (superseded by the execution section above).* At readiness,
+production Gate C aggregation had not been executed. No `gate_c_aggregation`
+run, selection artifact or Gate C result existed, and no lambda had been
+selected.
+
+The contract `gate_c_aggregation` section now pins all three immutable source
+runs exactly: run IDs, manifest SHA-256 for each run (including the seed-44
+manifest `f6ebf429...a53249`), all 18 development/development-validation
+receipt SHA-256 values covering 45 CV fits and nine refits, and the ordered
+Validation population (43,995 rows, digest `f5331875...fa5875`). The seed-42
+and seed-43 pins must equal the existing continuation source evidence.
+
+The official path is `--stage gate_c_aggregation --run-id
+rq4b3_gatec_20261024_01 --confirm-production`. It constructs no backend and
+cannot fit, infer or open Test. Before anything is created it rejects a missing
+source run, source ID/order or mode mismatch, manifest or receipt digest
+mismatch, changed output, missing/extra/duplicate/unpaired development unit,
+Validation population mismatch, Validation ID ordering mismatch and pinned
+population mismatch. It then publishes one run by a single directory rename;
+a failure leaves no run, temporary tree or partial manifest. The locked
+selection policy is unchanged. In-run `selection` is now explicitly inactive
+under the nine-unit contract.
+
+Historical validation at this readiness point was `296 passed, 20 skipped`.
+The later cross-run Test implementation above replaces those 20 legacy skips;
+its current closure is 321 passed with no skips.
 
 ### RQ4b-3 Track B seed-43 Gate B closure — 2026-10-22
 
@@ -101,12 +529,15 @@ but requires an explicit `training-unstable beyond selected epoch` limitation
 in Gate C. It does not establish an implementation defect or scientific
 fairness effectiveness.
 
-The user approved in chat the intended next execution order
+At the time of the seed-43 closure, the user approved the execution order
 `(lambda=0, seed=44)` -> verify its published artifacts -> `(lambda=0.01,
-seed=44)`. Implementation of that mechanism is recorded below. No seed-44 fit
-was launched by the implementation task. Bypassing the runner check or silently
-changing a locked manifest remains prohibited. Selection, final-fit, Test,
-package validation and cross-run aggregation remain closed.
+seed=44)`. That sequence subsequently completed and is recorded in the
+nine-unit Gate B closure above. No seed-44 fit was launched by the earlier
+implementation-only task. Bypassing the runner check or silently changing a
+locked manifest remains prohibited. At that time selection, final-fit, Test,
+package validation and cross-run aggregation were closed. Cross-run
+aggregation, Test and package validation later ran (see the RQ4b-3 closure
+above). No final-fit stage was run.
 
 ### RQ4b-3 seed-44 continuation implementation — 2026-10-22
 
@@ -138,10 +569,9 @@ requires preserving the attempted run under its existing identity. Automatic
 retry remains prohibited.
 
 No production run, preflight, capability stage, inference or fit was launched
-in this implementation task. Real execution remains unopened until a separate
-task authorizes it. The required first execution unit, if later opened, is
-`(lambda=0, seed=44)` only; it must pass artifact verification before any
-request to execute `(lambda=0.01, seed=44)`.
+in that implementation-only task. The later authorized execution completed in
+the required order and is recorded in the nine-unit Gate B closure above. Both
+published seed-44 units are now immutable and must not be rerun or reopened.
 
 ### Superseded temporary N5-to-RQ4b-3 12-fit priority policy — 2026-10-20
 
@@ -326,7 +756,9 @@ chat authorization above now governs the next N4 sequence; stop before N5.
 G2 closes the earlier gap in synthetic/mock coverage of ProductionBackend,
 index loading and CLI dispatch. It does not close real-data runtime validation:
 production context/CUDA, real fit/inference/reload, frozen inputs and the real
-capability probe remain unexecuted in this handover. The historical T5 row
+capability probe remain unexecuted in this handover. (Real fit, inference and
+reload were later executed; see the RQ4b-3 closure. The real capability probe
+remains unfitted.) The historical T5 row
 below describes evidence available at C5 acceptance; this section records the
 later G2 evidence. Real capability remains `capability_inconclusive` while its
 probe has not run. RQ4b-6 remains deferred.
@@ -414,7 +846,7 @@ Statuses describe only the named workstream and evidence scope. A completed expe
 | RQ1 paired-bootstrap cross-model comparison | COMPLETE | All 15 pairwise comparisons among the six frozen final 15-feature models are complete on the ordered `split_v1` Test partition using the locked shared Test bootstrap rows and the accepted ten-metric RQ1 contract. | `notebooks/dataset_b/07_model_total_review.ipynb`; six frozen final Test prediction and bootstrap-metric packages; `artifacts/dataset_b/rq1_test_bootstrap_indices.npz` | The saved notebook covers `15 × 10 = 150` pair/metric rows, with exactly 1,000 shared paired replicate IDs for every comparison. Percentile 95% CIs exclude zero for 131 rows and contain zero for 19 rows. Five RF `calibration_slope` comparisons retain 1,000 paired rows but have 998 finite paired differences because two frozen RF slope payloads are invalid. Notebook JSON and all code cells validate, execution counts are sequential `1–13`, no saved error is present, and no fit, prediction, inference, or bootstrap-index generation call appears. | Evidence is metric-specific and does not authorize an absolute-best model claim, a fairness-based model choice, or any causal, legal-discrimination, creditworthiness, or default-risk conclusion. The standard `nbconvert` launcher remained unverified on this Windows host; the saved notebook completed through the verified Python 3.12.13 sequential executor. | Preserve the paired-comparison evidence. The RQ1 prerequisite for RQ4 is satisfied; RQ4 follow-up is tracked in the RQ4 row. | 2026-10-17 |
 | RQ2 | COMPLETE | Production run `rq2_cpu_production_20261009_01` completed the locked six-model CPU GSV/interventional Shapley--Lorenz protocol in order for LR, RF, XGBoost, PlainMLP, RealMLP, and TabMmini. The results notebook presents only the accepted saved artifacts. | `artifacts/dataset_b/rq2/rq2_cpu_production_20261009_01/`; `config/dataset_b/rq2_protocol.yaml`; `docs/handbook/contracts/rq2_explanation.md`; `notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb`; `src/dataset_b/gsv_sl/{cpu_inference,predictors,exact_methods,runner}.py`; `tests/test_dataset_b_rq2_{contract,predictors,runner,toy_fixtures}.py` | Final validation passed 91 checks with zero failures: the sample is 256 unique Validation IDs; donors use a 128-row Train pool; Test IDs are absent; the shared bootstrap index is `1000 x 256`; all six cubes are `4096 x 256`, `float64`, finite, and within `[0,1]`; every model has 24 importance rows, four bootstrap rows with 1,000 valid replicates per metric, ten checkpoint pairs, and `status.json = PASS`; runtime has six ordered rows totaling `4817.4179849` seconds; cross-model stability has 60 rows. Benchmark evidence is separate and frozen artifacts predate production. The executed notebook has 12 code cells with execution counts `1–12`, nine PNG outputs, no saved errors, and reads production tables only. | Agreement and stability are descriptive properties of the frozen models under the locked replacement game; they are not ground truth, causal validity, fairness, or proof that an explanation is correct. | Preserve the accepted run, frozen inputs, and read-only notebook boundary. | 2026-10-09 |
 | RQ3 | COMPLETE | Production run `rq3_fairness_20261010_01` completed the locked six-model descriptive audit for `applicant_sex` and `derived_race` on the fixed Test partition. Approved remains the positive outcome throughout RQ1-RQ3, and the results notebook reads accepted outputs only. | `artifacts/dataset_b/rq3/rq3_fairness_20261010_01/`; `config/dataset_b/rq3_protocol.yaml`; `docs/handbook/contracts/{rq3_fairness,data_contract,split_and_evaluation}.md`; `notebooks/dataset_b/09_rq3_fairness_results.ipynb`; `src/dataset_b/fairness/{metrics,audit_data,runner}.py`; `tests/test_dataset_b_rq3_{contract,toy_fixtures,audit_data,runner,production}.py`; `../Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx` | Final validation passed 24 tests with zero failures. The audit view contains 43,996 ordered Test rows; all six model statuses are `PASS`; outputs contain 588 group rows, 420 pairwise/global gap rows, 1,008 bootstrap summaries, and six runtime rows totaling 686.7488264 seconds. The runner recorded zero fit calls, zero prediction calls, and no bootstrap-index generation. Notebook 09 has eight executed code cells with execution counts `1-8`, ten embedded PNG outputs, no saved errors, and a successful 1,499,758-byte HTML render; it reads accepted RQ1/RQ3 artifacts only. | Results are descriptive model-audit evidence only. Coverage-only and denominator-ineligible results remain explicitly undefined; no causal, legal-discrimination, creditworthiness, or default-risk claim is allowed. | Preserve the accepted production directory, frozen inputs and thresholds, locked bootstrap indices, Approved-positive orientation, and visualization-only notebook boundary. | 2026-10-10 |
-| RQ4 Equalized-Odds mitigation (RQ4a executed; RQ4b open) | PARTIAL | RQ4a production execution and reporting are `COMPLETE`; Codex final review C8 is `PASS`, and the manuscript-equivalent RQ3a is closed. RQ4a-3 (primary, fixed G3) run `rq4a3_postproc_20261017_01`: XGBoost and RealMLP are each `completed / stable / pass` with reason `none`. RQ4a-6 (required sensitivity, fixed G6) run `rq4a6_postproc_20261017_01`: XGBoost and RealMLP are each `completed / unstable / fail` with `target_eod_reduction_not_demonstrated`, `ba_budget_exceeded`, and `unstable_diagnostics`; this is a predeclared criterion outcome, not an execution failure, and RQ4a-6 is not promoted to primary. Notebook 11 presents both runs from their `reporting/` directories only. RQ4b technical spike R1 has C-spike PASS in synthetic two-epoch scope. RQ4b-3 method decisions are locked; T1-R1 input boundary has Codex C1 PASS and T2-R1 training/CV/refit engine has Codex C2 PASS and T3-R2 capability-probe implementation has Codex C3 PASS in synthetic validation scope (retained synthetic gate PASS; real probe not fitted); T4-R1 pure selection/evaluation logic has Codex C4 PASS and T5-R1 staged runner/reporting has Codex C5 PASS on synthetic fixtures. T1-T5 implementation gates are accepted within their documented synthetic scopes; production runtime/data integration remains unverified and explicit user launch is still required; RQ4b-6 remains deferred, optional, and not committed. | `docs/handbook/RQ4_MITIGATION_PLAN.md`; `config/dataset_b/{rq4a_postprocessing,rq4b_adversarial}.yaml`; `src/dataset_b/mitigation/{inputs,metrics,postprocessing,runner}.py`; `tests/test_dataset_b_rq4a_{inputs,metrics,postprocessing,runner}.py`; `artifacts/dataset_b/rq4/rq4a/{rq4a3_postproc_20261017_01,rq4a6_postproc_20261017_01}/`; `notebooks/dataset_b/11_rq4a_equalized_odds_results.ipynb` | Governance and tooling: T2 contract delta `COMPLETE` (C2 `PASS`); T3 CPU environment/Fairlearn smoke `COMPLETE` (C3 `PASS`, run `rq4a_cpu_env_smoke_20261016_02`, Fairlearn `0.15.0` in `.venv-rq4a-cpu`); T4 pure core `COMPLETE` (C4 `PASS`); T5 runner `COMPLETE` (C5 `PASS`). Production: both runs used the CPU environment (Python 3.13.14, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, scikit-learn 1.9.1, PyYAML 6.0.3, joblib 1.6.0, Fairlearn 0.15.0, recorded in each `artifact_index.json`), re-ran the input preflight, published 16 files each atomically, passed the runner package validator, and wrote no failure receipt. Each run has 43,995 Validation / 43,996 Test rows per model with exact frozen `record_id`/`y_approved`/`p_approved` lineage, baseline decisions equal to `p_approved >= frozen threshold`, unchanged decisions outside the target roster, no base-model fit or inference, and 1,000/1,000 valid replicates for target EOD, audit EOD, and BA cost (minimum 950). RQ4a-3 Test paired deltas (point [95% CI]): XGBoost delta EOD3 -0.0738 [-0.1075, -0.0246], BA cost 0.00135 [0.00013, 0.00629]; RealMLP delta EOD3 -0.0594 [-0.0839, -0.0079], BA cost 0.00295 [0.00097, 0.00681]; audit EOD6 is unchanged because its FPR extrema lie on G6 groups outside G3. RQ4a-6 Test paired deltas: XGBoost delta EOD6 -0.0867 [-0.1574, 0.0915], BA cost 0.00307 [0.00108, 0.01388]; RealMLP delta EOD6 -0.0656 [-0.2213, 0.1446], BA cost 0.00512 [0.00209, 0.03150]. C6 technical verification of RQ4a-3 is `PASS`; C7 technical verification of RQ4a-6 is `PASS`; RQ4a-3 artifacts kept identical SHA-256 and modification times through the RQ4a-6 run. C8 final review is `PASS`. Notebook 11: JSON and all 14 code cells validate, execution counts are sequential `1–14`, no saved error is present, reporting-file hashes match each run's artifact index, the saved key values match the reporting artifacts exactly, and the notebook imports no Fairlearn and reads no raw data, predictions, decision files, or bootstrap indices. | The C6 extrema interpretation is resolved: stored `*_extremum_role` values span all reported race groups including coverage-only groups, whereas EOD uses only the fixed roster; the RealMLP G6 FPR minimum is AIAN. The RQ4a-6 invalid-replicate path was not exercised in production (no G6 TPR/FPR gate failure in the locked Test rows) and is evidenced only by synthetic tests. Notebook 11 executed through the Anaconda `nbconvert` launcher with kernel `python3`, which resolved to Python 3.13.9 (pandas 2.3.3, matplotlib 3.10.6), not the RQ4a production environment. pytest is not part of the locked RQ4a environment. RQ4 outputs are exploratory model-behaviour evidence and do not establish legal compliance, discrimination, causal effects, creditworthiness, or default risk. RQ4b must report its Validation reuse optimism limitation. Its architecture, seed, refit horizon, full probe optimizer/stopping, stored-score log-ratio, fixed synthetic fixture, linear percentile CI/validity rules and strong-support endpoints are user-locked in the RQ4 plan/YAML. Probe capability and production performance have not been established by these documentation updates. Stability is not_assessed. | RQ4a and the manuscript-equivalent RQ3a are closed after C8 `PASS`. Preserve both RQ4a run roots and notebook 11 unchanged. C-spike is accepted only in its documented synthetic scope; complete production implementation/validation gates before the user launches RQ4b-3. RQ4b-6 requires a separate later authorization. | 2026-10-18 |
+| RQ4 Equalized-Odds mitigation (RQ4a closed; RQ4b-3 closed; RQ4b-6 deferred) | COMPLETE | RQ4a production execution and reporting are `COMPLETE`; Codex final review C8 is `PASS`, and the manuscript-equivalent RQ3a is closed. RQ4a-3 (primary, fixed G3) run `rq4a3_postproc_20261017_01`: XGBoost and RealMLP are each `completed / stable / pass` with reason `none`. RQ4a-6 (required sensitivity, fixed G6) run `rq4a6_postproc_20261017_01`: XGBoost and RealMLP are each `completed / unstable / fail` with `target_eod_reduction_not_demonstrated`, `ba_budget_exceeded`, and `unstable_diagnostics`; this is a predeclared criterion outcome, not an execution failure, and RQ4a-6 is not promoted to primary. Notebook 11 presents both runs from their `reporting/` directories only. RQ4b technical spike R1 has C-spike PASS in synthetic two-epoch scope. RQ4b-3 method decisions are locked; T1-R1 input boundary has Codex C1 PASS and T2-R1 training/CV/refit engine has Codex C2 PASS and T3-R2 capability-probe implementation has Codex C3 PASS in synthetic validation scope (retained synthetic gate PASS; real probe not fitted); T4-R1 pure selection/evaluation logic has Codex C4 PASS and T5-R1 staged runner/reporting has Codex C5 PASS on synthetic fixtures. T1-T5 implementation gates are accepted within their documented synthetic scopes. RQ4b-3 production closure (2026-10-24): nine development units `COMPLETE` with Gate B `PASS`; Gate C run `rq4b3_gatec_20261024_01` `COMPLETE` (stored `selected_lambda = 0.0`; Validation mitigation effectiveness recorded as not established); Test run `rq4b3_test_20261024_01` `COMPLETE` with receipt `PASS`; production package validation `PASS`; Notebook 12 reports all neutral outputs. RQ4b-3 research interpretation is user-owned and not recorded. RQ4b-6 remains deferred, optional, and not committed. | `docs/handbook/RQ4_MITIGATION_PLAN.md`; `config/dataset_b/{rq4a_postprocessing,rq4b_adversarial}.yaml`; `src/dataset_b/mitigation/{inputs,metrics,postprocessing,runner}.py`; `tests/test_dataset_b_rq4a_{inputs,metrics,postprocessing,runner}.py`; `artifacts/dataset_b/rq4/rq4a/{rq4a3_postproc_20261017_01,rq4a6_postproc_20261017_01}/`; `notebooks/dataset_b/11_rq4a_equalized_odds_results.ipynb`; RQ4b-3: `src/dataset_b/mitigation/rq4b_{inputs,evaluation,runner,training,probe}.py`; `artifacts/dataset_b/rq4/rq4b/{rq4b3_adv_20261019_02,rq4b3_adv_20261021_01,rq4b3_adv_20261022_01}/`; `artifacts/dataset_b/rq4/rq4b/gate_c_aggregation/rq4b3_gatec_20261024_01/`; `artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/`; `notebooks/dataset_b/12_rq4b_adversarial_results.ipynb` | RQ4b-3: see the "RQ4b-3 closure — 2026-10-24" section, which records three `PASS` production receipts (Gate C, Test, package), unchanged source/Gate C/bootstrap snapshots, and Notebook 12 with 15 sequential cells, no saved error and exact key-value reconciliation. Governance and tooling: T2 contract delta `COMPLETE` (C2 `PASS`); T3 CPU environment/Fairlearn smoke `COMPLETE` (C3 `PASS`, run `rq4a_cpu_env_smoke_20261016_02`, Fairlearn `0.15.0` in `.venv-rq4a-cpu`); T4 pure core `COMPLETE` (C4 `PASS`); T5 runner `COMPLETE` (C5 `PASS`). Production: both runs used the CPU environment (Python 3.13.14, NumPy 2.5.2, pandas 3.0.5, SciPy 1.18.1, scikit-learn 1.9.1, PyYAML 6.0.3, joblib 1.6.0, Fairlearn 0.15.0, recorded in each `artifact_index.json`), re-ran the input preflight, published 16 files each atomically, passed the runner package validator, and wrote no failure receipt. Each run has 43,995 Validation / 43,996 Test rows per model with exact frozen `record_id`/`y_approved`/`p_approved` lineage, baseline decisions equal to `p_approved >= frozen threshold`, unchanged decisions outside the target roster, no base-model fit or inference, and 1,000/1,000 valid replicates for target EOD, audit EOD, and BA cost (minimum 950). RQ4a-3 Test paired deltas (point [95% CI]): XGBoost delta EOD3 -0.0738 [-0.1075, -0.0246], BA cost 0.00135 [0.00013, 0.00629]; RealMLP delta EOD3 -0.0594 [-0.0839, -0.0079], BA cost 0.00295 [0.00097, 0.00681]; audit EOD6 is unchanged because its FPR extrema lie on G6 groups outside G3. RQ4a-6 Test paired deltas: XGBoost delta EOD6 -0.0867 [-0.1574, 0.0915], BA cost 0.00307 [0.00108, 0.01388]; RealMLP delta EOD6 -0.0656 [-0.2213, 0.1446], BA cost 0.00512 [0.00209, 0.03150]. C6 technical verification of RQ4a-3 is `PASS`; C7 technical verification of RQ4a-6 is `PASS`; RQ4a-3 artifacts kept identical SHA-256 and modification times through the RQ4a-6 run. C8 final review is `PASS`. Notebook 11: JSON and all 14 code cells validate, execution counts are sequential `1–14`, no saved error is present, reporting-file hashes match each run's artifact index, the saved key values match the reporting artifacts exactly, and the notebook imports no Fairlearn and reads no raw data, predictions, decision files, or bootstrap indices. | The C6 extrema interpretation is resolved: stored `*_extremum_role` values span all reported race groups including coverage-only groups, whereas EOD uses only the fixed roster; the RealMLP G6 FPR minimum is AIAN. The RQ4a-6 invalid-replicate path was not exercised in production (no G6 TPR/FPR gate failure in the locked Test rows) and is evidenced only by synthetic tests. Notebook 11 executed through the Anaconda `nbconvert` launcher with kernel `python3`, which resolved to Python 3.13.9 (pandas 2.3.3, matplotlib 3.10.6), not the RQ4a production environment. pytest is not part of the locked RQ4a environment. RQ4 outputs are exploratory model-behaviour evidence and do not establish legal compliance, discrimination, causal effects, creditworthiness, or default risk. RQ4b-3 reports its Validation reuse optimism limitation (shared threshold calibration and lambda selection). It has only three seeds for lambdas 0/0.01 and single-seed screening arms, the `training-unstable beyond selected epoch` label for lambda > 0, `stability_status: not_assessed`, and a real capability probe that is not fitted (`capability_inconclusive`). Its architecture, seed, refit horizon, full probe optimizer/stopping, stored-score log-ratio, fixed synthetic fixture, linear percentile CI/validity rules and strong-support endpoints are user-locked in the RQ4 plan/YAML. | RQ4a and the manuscript-equivalent RQ3a are closed after C8 `PASS`. Preserve both RQ4a run roots and notebook 11 unchanged. RQ4b-3 is closed: preserve its three source runs, the Gate C run, the Test run and Notebook 12 unchanged, and do not rerun or regenerate. The user records the RQ4b-3 research interpretation (Notebook 12 section 14). Codex post-handover re-check of RQ4b-3 Tasks 4–7 is pending. RQ4b-6 requires a separate new-stream authorization. | 2026-10-24 |
 | RQ4b production contract and input boundary (T1-R1) | COMPLETE | Codex C1 re-review PASS on 2026-10-18; limited to T1 input-boundary implementation and synthetic validation. | `src/dataset_b/mitigation/rq4b_inputs.py`; `tests/test_dataset_b_rq4b_inputs.py`; `scratch/rq4b_implementation/T1_R1_C1_e8bfd4d9b56b4d1c8326026950918f11/`; implementer audit `scratch/rq4b_implementation/T1_R1_audit_b2b8f2858aad422e817e9b031f97c9f8/` | Codex reran focused pytest: 185 passed in 6.71s, exit 0; 704 independent locked-leaf mutation/deletion checks rejected invalid contracts; 27/27 outside-scope baseline hashes matched; both target hashes matched the implementer report; git diff --check found no whitespace errors. Both original C1 findings are closed: execution-critical contract coverage and authorized loader-resource binding. | No real split or frozen-prediction body reads, model fitting, inference, CUDA validation or scientific capability assessment. Successful Test-partition loading was not exercised. Contract objects remain caller-controlled; test docstring still understates YAML reads. Review command output is retained in the chat; the scratch root contains synthetic fixtures, not a saved Codex review log. | T1 accepted only. T2 requires separate assignment; remaining production implementation/validation and explicit user training launch remain required. RQ4b-6 stays deferred. | 2026-10-18 |
 | RQ4b adversarial training and CV/refit engine (T2-R1) | COMPLETE | Codex C2 re-review PASS on 2026-10-18; T2 engine implementation accepted only within synthetic technical validation scope. | `src/dataset_b/mitigation/rq4b_training.py`; `tests/test_dataset_b_rq4b_training.py`; Codex scratch `scratch/rq4b_implementation/T2_R1_C2_7c87d0f8b72945aebe5aed34c2afd678/`; implementer audit `scratch/rq4b_implementation/T2_R1_audit_8f5a028f76f44e5db36087b760b65340/` | Codex reran T2 and T1 suites together: 267 passed (82 T2 plus 185 T1), 28 deprecation warnings, 38.05s, exit 0. Independent reproduction of the prior C2 finding now rejects foreign population IDs before preprocessing and engine calls; matching membership passes. Both target SHA-256 values match the implementer report; 32/32 outside-scope baseline files match; git diff --check found no whitespace errors. | GPU evidence is synthetic smoke of at most two epochs per fit. No production fit, 256-epoch execution or real Train/Validation/Test access. Full 5x256 bookkeeping is test-double evidence only. Membership digest covers fold-validation IDs under the locked label-stratified policy, not feature values; population loading and derived-race join integration remain outside T2. No scientific capability or production-readiness conclusion. Review command output is retained in the chat; the Codex scratch root contains test outputs, not a saved review transcript. | Prior C2 lineage finding closed. T3 requires separate assignment; remaining production implementation/validation and explicit user launch remain required. RQ4b-6 remains deferred. | 2026-10-18 |
 | RQ4b capability probe (T3-R2) | COMPLETE | Codex C3 re-review PASS on 2026-10-18 for probe implementation, retained synthetic correctness gate and Windows attempt failure handling. Real-data capability remains unassessed. | `src/dataset_b/mitigation/rq4b_probe.py`; `tests/test_dataset_b_rq4b_probe.py`; `scratch/rq4b_implementation/T3_R2_C3_4480ba14a8c245e2923d91cf7faa64f3/`; retained `scratch/rq4b_implementation/T3_synthetic_gate_5c041ca3b32e481f89574148ee0cbf7f/synthetic_gate_evidence.json`; archived gate-producing source `scratch/rq4b_implementation/T3_R1_audit_f6913bbaca814a31a506af0368f79e50/rq4b_probe_gate_lineage_02ED1280.py.txt` | Codex reran the probe suite: 53 passed in 10.84s, exit 0. Independent injected failures confirm partial evidence is not published and a receipt is retained; receipt-write failure preserves the original exception identity and exposes the secondary error. Source/test hashes match the report; 39/39 outside-scope baseline files match, including retained gate and source lineage. Method functions remain unchanged since the gate; changed experiment/writer wrappers were reviewed. Retained gate: gain 1.0934503013695 nats, linear percentile 95% CI [1.0926187243623788, 1.0941724543148197], 1000/1000 valid replicates; best epoch 100, stopped at cap. Stored interval arithmetic independently matches. | Gate was not rerun; its producing code hash is 02ED1280C365FA23AAC71EDBC3799D7497B187EFE5B99CA2185DA94CA3F08C1D, distinct from current wrapper code. No real data/frozen prediction-body access or real-probe fitting. Real-route tests use synthetic data. No-overwrite publication is accepted on Windows; POSIX race safety is not established. Invocation-writing failures occur before fitting and may leave no receipt; receipt-writing failure cannot guarantee a receipt, but preserves the primary exception and secondary diagnostic. T1/T2 regression suites were not rerun in this re-review. Review outputs are retained in the chat, not a saved review log. | C3 findings closed. Real frozen-Validation probe fitting and the next implementation task require separate authorization. No production training authorization; RQ4b-6 remains deferred. | 2026-10-18 |

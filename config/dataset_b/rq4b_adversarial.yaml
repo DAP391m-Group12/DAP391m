@@ -3,9 +3,9 @@ dataset: dataset_b
 protocol_version: rq4b_adversarial_realmlp_v4_seed44_continuation
 repository_question: RQ4b
 manuscript_equivalent: RQ3b
-status: seed44_continuation_implementation_approved_execution_not_launched
-decision_revision: rq4b3_seed44_continuation_20261022
-method_contract_state: user_approved_amendment_recorded_selection_policy_pending
+status: gate_c_complete_test_output_contract_authorized_pending_implementation
+decision_revision: rq4b3_test_output_contract_20261024
+method_contract_state: user_selected_test_arms_metrics_lineage_and_schema_locked
 artifact_namespace: artifacts/dataset_b/rq4/rq4b
 prohibit_rq3_artifact_namespace_reuse: true
 
@@ -562,7 +562,7 @@ threshold_calibration:
   global_threshold_only: true
 
 candidate_selection:
-  policy_status: blocked_pending_explicit_three_seed_methodological_approval
+  policy_status: approved_evaluation_only_three_seed_validation_selection
   evaluation_partition: validation
   matched_control: same_seed_lambda_zero
   eligibility_metric: mean_matched_delta_balanced_accuracy
@@ -577,11 +577,168 @@ candidate_selection:
   prior_four_of_five_acceptance_satisfied_by_three_seeds: false
   arbitrary_two_of_three_rule_prohibited: true
 
+gate_c_aggregation:
+  run_id: rq4b3_gatec_20261024_01
+  protocol_version: rq4b_adversarial_gate_c_evaluation_only_v1
+  artifact_namespace: artifacts/dataset_b/rq4/rq4b/gate_c_aggregation
+  source_run_ids: [rq4b3_adv_20261019_02, rq4b3_adv_20261021_01, rq4b3_adv_20261022_01]
+  evaluation_only: true
+  prohibit_fit: true
+  prohibit_inference: true
+  test_status: blocked_pending_separate_methodological_gate
+  test_status_scope: status_at_gate_c_publication
+  current_test_contract_status: authorized_pending_implementation
+  # Exact immutable evidence for all nine units (18 receipts: 45 CV fits and 9 refits).
+  validation_rows: 43995
+  validation_record_id_sha256: f5331875e449fc2f940de5a845483d5ea0830ae2b5a8501df98e9814a2fa5875
+  source_pins:
+    rq4b3_adv_20261019_02:
+      manifest_sha256: b84f5d018cd308a97d0918dd9ba336e8f449a8b5c16a7ca319c6207829c004bc
+      receipt_sha256:
+        stages/dev_l0_s42/receipt.json: 0734ace391cee86112039640a5b6cc6c7c63a98e0da63c697a931859b3435e1f
+        stages/devval_l0_s42/receipt.json: 99f6d38f9cb05a095422f8ec4a0e4b612593e09f207ffe90587f33a266d625b6
+        stages/dev_l0p01_s42/receipt.json: 2fbf721f352fef151c00e512e288223411d04b48f84a19cb11864323eaa001b3
+        stages/devval_l0p01_s42/receipt.json: 90da727f27b88e42626a9719bd9f64abae8bc0895c12d3b62807cb88e56fd645
+        stages/dev_l0p03_s42/receipt.json: 0fe741be9b855bd5ea013c720677cfd2359e6728604373606ed27e8e1d6c7843
+        stages/devval_l0p03_s42/receipt.json: e6e7c55bd4b3921c8b8bdda9cef1c6a270e404479a0e224242ebaa48157ab5dd
+        stages/dev_l0p1_s42/receipt.json: 54a26511089fc82d5fbce445246c6205678900216faaba38555e205c6990de11
+        stages/devval_l0p1_s42/receipt.json: fed37b989d0e3ae900ac9ee4a3e988860e38730491938fe5718bfa62facbfb94
+        stages/dev_l0p3_s42/receipt.json: 98e9aaa0de00f4f10469b12f24867432ef4a597d86a2459c45171a1a9b79e377
+        stages/devval_l0p3_s42/receipt.json: 8ec1b31a442f8c3070a7f66cde94e78b0723559b0fcddd0131c526a00efbc6e4
+    rq4b3_adv_20261021_01:
+      manifest_sha256: 315bd175e1239230992c459fb937f8de9ca4f995527a5e0a6aef63f9e3f11dfc
+      receipt_sha256:
+        stages/dev_l0_s43/receipt.json: 3525c6605e5be3f4d59472fa3f538c7c3daa94e48df742b7c7450918a4b43f84
+        stages/devval_l0_s43/receipt.json: b34dd1b9e0a322a35a20748361e34517de666f8080b1f36d4538c64a60d423ca
+        stages/dev_l0p01_s43/receipt.json: cb3cd1bf6c75825bd7d44716799b709f68b4fa4ea3a9199bf002a80e4d09724a
+        stages/devval_l0p01_s43/receipt.json: 043e4fc03fa0e743dabce9d87be8deaac46658ca33aab1204a94f3a9d75192a5
+    rq4b3_adv_20261022_01:
+      manifest_sha256: f6ebf429d4d0a5ec2b4abd08e247a6afa75b381da2da38f78cd5185b70a53249
+      receipt_sha256:
+        stages/dev_l0_s44/receipt.json: 5f5bf597283ffea13b05d42c147371b5bae92349cf0250a5db0238bf73a41200
+        stages/devval_l0_s44/receipt.json: 82e34c7f7ade0926ac9841b6b0f32427248fec01cbba8fb9ea73e8c5dc35f648
+        stages/dev_l0p01_s44/receipt.json: e3c39216e7c1e09322fada1c5be5c1dd087830cd493a32463a1556e01e5ed021
+        stages/devval_l0p01_s44/receipt.json: 6053990156cfdd8a5fb5da41f70121faae631c421db6706ea1fc78f1fced5f4a
+
+test_evaluation:
+  authorization_status: authorized_pending_implementation
+  execution_status: not_run
+  run_id: rq4b3_test_20261024_01
+  protocol_version: rq4b_adversarial_cross_run_test_evaluation_v1
+  artifact_namespace: artifacts/dataset_b/rq4/rq4b/test_evaluation
+  run_path: artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01
+  cross_run_evaluation: true
+  prohibit_fit: true
+  prohibit_refit: true
+  prohibit_cv: true
+  prohibit_threshold_recalibration: true
+  prohibit_bootstrap_index_regeneration: true
+  max_test_inferences: 9
+  test_read_during_contract_task: false
+  production_execution_requires_separate_explicit_launch: true
+  evaluation_arms:
+    - {role: gate_c_selected_control, adversary_lambda: 0.0, seeds: [42, 43, 44], provenance: gate_c_selected_lambda}
+    - {role: user_requested_comparator, adversary_lambda: 0.01, seeds: [42, 43, 44], provenance: explicit_user_test_request}
+    - {role: user_requested_screening, adversary_lambda: 0.03, seeds: [42], provenance: explicit_user_test_request}
+    - {role: user_requested_screening, adversary_lambda: 0.1, seeds: [42], provenance: explicit_user_test_request}
+    - {role: user_requested_screening, adversary_lambda: 0.3, seeds: [42], provenance: explicit_user_test_request}
+  evaluation_arm_count: 9
+  matched_comparison_count: 6
+  matched_comparisons:
+    - {seed: 42, comparator_lambda: 0.01, control_lambda: 0.0}
+    - {seed: 42, comparator_lambda: 0.03, control_lambda: 0.0}
+    - {seed: 42, comparator_lambda: 0.1, control_lambda: 0.0}
+    - {seed: 42, comparator_lambda: 0.3, control_lambda: 0.0}
+    - {seed: 43, comparator_lambda: 0.01, control_lambda: 0.0}
+    - {seed: 44, comparator_lambda: 0.01, control_lambda: 0.0}
+  lineage:
+    gate_c_run_id: rq4b3_gatec_20261024_01
+    gate_c_manifest_sha256: 5d072d7ff094817b8a281d2ea5b6527682678f97d09fa538b88013aae218931b
+    gate_c_receipt_sha256: 14f602bb0ef59d7cbfb22e8b5fbdaf6604e5a90c295370bac212b965e1448f13
+    source_pins:
+      rq4b3_adv_20261019_02:
+        manifest_sha256: b84f5d018cd308a97d0918dd9ba336e8f449a8b5c16a7ca319c6207829c004bc
+        evaluated_arm_receipt_sha256:
+          stages/dev_l0_s42/receipt.json: 0734ace391cee86112039640a5b6cc6c7c63a98e0da63c697a931859b3435e1f
+          stages/devval_l0_s42/receipt.json: 99f6d38f9cb05a095422f8ec4a0e4b612593e09f207ffe90587f33a266d625b6
+          stages/dev_l0p01_s42/receipt.json: 2fbf721f352fef151c00e512e288223411d04b48f84a19cb11864323eaa001b3
+          stages/devval_l0p01_s42/receipt.json: 90da727f27b88e42626a9719bd9f64abae8bc0895c12d3b62807cb88e56fd645
+          stages/dev_l0p03_s42/receipt.json: 0fe741be9b855bd5ea013c720677cfd2359e6728604373606ed27e8e1d6c7843
+          stages/devval_l0p03_s42/receipt.json: e6e7c55bd4b3921c8b8bdda9cef1c6a270e404479a0e224242ebaa48157ab5dd
+          stages/dev_l0p1_s42/receipt.json: 54a26511089fc82d5fbce445246c6205678900216faaba38555e205c6990de11
+          stages/devval_l0p1_s42/receipt.json: fed37b989d0e3ae900ac9ee4a3e988860e38730491938fe5718bfa62facbfb94
+          stages/dev_l0p3_s42/receipt.json: 98e9aaa0de00f4f10469b12f24867432ef4a597d86a2459c45171a1a9b79e377
+          stages/devval_l0p3_s42/receipt.json: 8ec1b31a442f8c3070a7f66cde94e78b0723559b0fcddd0131c526a00efbc6e4
+      rq4b3_adv_20261021_01:
+        manifest_sha256: 315bd175e1239230992c459fb937f8de9ca4f995527a5e0a6aef63f9e3f11dfc
+        evaluated_arm_receipt_sha256:
+          stages/dev_l0_s43/receipt.json: 3525c6605e5be3f4d59472fa3f538c7c3daa94e48df742b7c7450918a4b43f84
+          stages/devval_l0_s43/receipt.json: b34dd1b9e0a322a35a20748361e34517de666f8080b1f36d4538c64a60d423ca
+          stages/dev_l0p01_s43/receipt.json: cb3cd1bf6c75825bd7d44716799b709f68b4fa4ea3a9199bf002a80e4d09724a
+          stages/devval_l0p01_s43/receipt.json: 043e4fc03fa0e743dabce9d87be8deaac46658ca33aab1204a94f3a9d75192a5
+      rq4b3_adv_20261022_01:
+        manifest_sha256: f6ebf429d4d0a5ec2b4abd08e247a6afa75b381da2da38f78cd5185b70a53249
+        evaluated_arm_receipt_sha256:
+          stages/dev_l0_s44/receipt.json: 5f5bf597283ffea13b05d42c147371b5bae92349cf0250a5db0238bf73a41200
+          stages/devval_l0_s44/receipt.json: 82e34c7f7ade0926ac9841b6b0f32427248fec01cbba8fb9ea73e8c5dc35f648
+          stages/dev_l0p01_s44/receipt.json: e3c39216e7c1e09322fada1c5be5c1dd087830cd493a32463a1556e01e5ed021
+          stages/devval_l0p01_s44/receipt.json: 6053990156cfdd8a5fb5da41f70121faae631c421db6706ea1fc78f1fced5f4a
+    locked_test_bootstrap_indices:
+      path: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+      sha256: 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1
+      array: indices
+      replicates: 1000
+      matched_comparisons: 6
+      expected_total_replicate_rows: 6000
+      regeneration_allowed: false
+  delta_direction: each_nonzero_lambda_minus_same_seed_lambda_0
+  generalization_gap_direction: test_minus_validation
+  group_metric_rosters: [g3, g6]
+  decision_change_rosters: [overall, g3, g6]
+  overall_row_encoding: {roster: overall, group: __all__}
+  undefined_numeric_encoding: null
+  invalid_reason_encoding: explicit_reason_code
+  required_output_files:
+    run_manifest.json: [run_id, protocol_version, mode, config_sha256, code_sha256, gate_c_pins, source_pins, bootstrap_index_pin, evaluation_arms]
+    stages/test_evaluation/receipt.json: [status, inputs, outputs, counts, started_utc, finished_utc]
+    stages/test_evaluation/arm_metrics.csv: [seed, adversary_lambda, role, request_provenance, source_run_id, model_receipt_sha256, validation_receipt_sha256, threshold, test_rows, test_record_id_sha256, balanced_accuracy, eod3, eod6_audit]
+    stages/test_evaluation/group_metrics.csv: [seed, adversary_lambda, roster, group, row_count, actual_approved_count, actual_denied_count, predicted_approved_count, predicted_denied_count, tpr_approved, fpr_approved, tpr_valid, fpr_valid, invalid_reason]
+    stages/test_evaluation/matched_deltas.csv: [seed, comparator_lambda, control_lambda, delta_balanced_accuracy, delta_eod3, delta_eod6]
+    stages/test_evaluation/decision_changes.csv: [seed, comparator_lambda, control_lambda, roster, group, row_count, unchanged_count, changed_count, denied_to_approved_count, approved_to_denied_count, change_rate]
+    stages/test_evaluation/bootstrap_replicates.csv: [seed, comparator_lambda, control_lambda, replicate_id, sample_size, delta_balanced_accuracy, delta_eod3, delta_eod6, balanced_accuracy_valid, eod3_valid, eod6_valid, invalid_reasons]
+    stages/test_evaluation/bootstrap_summary.csv: [seed, comparator_lambda, control_lambda, quantity, valid_replicates, invalid_replicates, confidence_level, lower, upper, quantile_method]
+    stages/test_evaluation/across_seed_summary.csv: [scope, adversary_lambda, comparator_lambda, control_lambda, quantity, seed_count, mean, standard_deviation, ddof, min, max, range]
+    stages/test_evaluation/generalization_gaps.csv: [seed, adversary_lambda, quantity, validation_value, test_value, test_minus_validation]
+    stages/test_evaluation/execution_status.json: [execution_status, reason_codes, test_rows, inference_count, fit_count, refit_count, cv_fit_count]
+  required_point_quantities:
+    per_arm: [balanced_accuracy, eod3, eod6_audit]
+    per_group: [tpr_approved, fpr_approved, row_count, actual_approved_count, actual_denied_count, predicted_approved_count, predicted_denied_count]
+    matched_deltas: [delta_balanced_accuracy, delta_eod3, delta_eod6]
+    decision_changes: [unchanged_count, changed_count, denied_to_approved_count, approved_to_denied_count, change_rate]
+    bootstrap_deltas: [delta_balanced_accuracy, delta_eod3, delta_eod6]
+    across_seed_summaries: [mean, standard_deviation, min, max, range]
+    generalization_gaps: [balanced_accuracy, eod3, eod6]
+  across_seed_summary_scopes:
+    - {scope: per_arm, eligible_lambdas: [0.0, 0.01], required_seed_count: 3, quantities: [balanced_accuracy, eod3, eod6_audit], group_by: [adversary_lambda]}
+    - {scope: matched_delta, eligible_comparator_lambdas: [0.01], control_lambda: 0.0, required_seed_count: 3, quantities: [delta_balanced_accuracy, delta_eod3, delta_eod6], group_by: [comparator_lambda, control_lambda]}
+  screening_single_seed_reporting:
+    lambdas: [0.03, 0.1, 0.3]
+    seed: 42
+    required_outputs: [point_metrics, group_metrics, matched_deltas, decision_changes, paired_bootstrap_replicates, confidence_interval_endpoints, validation_test_generalization_gaps]
+    across_seed_summary: not_applicable_single_seed
+  interpretation_boundary:
+    execution_status_is_not_research_conclusion: true
+    metric_values_are_neutral_outputs: true
+    research_interpretation_owner: user
+    code_must_not_assign_research_pass_fail: true
+    code_must_not_assign_effectiveness_or_support_conclusion: true
+    machine_generated_research_interpretation_file: prohibited
+
 configurations:
   RQ4b-3:
     role: primary
     group_roster: g3
-    readiness: method_contract_locked_ready_for_scoped_implementation_not_training
+    readiness: gate_c_complete_test_output_contract_authorized_pending_implementation
   RQ4b-6:
     role: deferred_optional_sensitivity
     group_roster: g6
@@ -690,6 +847,7 @@ uncertainty:
     ci_invalidity_is_scientific_failure: false
     refit_or_recalibrate_in_bootstrap: false
     indices: artifacts/dataset_b/rq1_test_bootstrap_indices.npz
+    indices_sha256: 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1
     reuse_locked_indices: true
     allow_regenerate_indices: false
   across_seed:
@@ -701,39 +859,31 @@ uncertainty:
   save_invalid_replicates_and_reasons: true
 
 scientific_assessment:
-  delta_direction: adversarial_minus_same_seed_lambda_zero
-  per_seed_point_criterion:
-    fairness: delta_eod3_strictly_less_than_zero
-    utility: full_test_delta_balanced_accuracy_greater_than_or_equal_to_minus_0_01
-    combination: both_required
-    missing_required_quantity: not_evaluable
-  strong_support:
-    status: blocked_pending_explicit_three_seed_methodological_approval
-    required_seed_count: null
-    final_seed_count: 3
-    superseded_rule: {required_seed_count: 4, final_seed_count: 5, satisfied_by_three_seeds: false}
-    arbitrary_two_of_three_rule_prohibited: true
-    same_seed_must_satisfy_both_ci_conditions: true
-    ci_conditions_status: retained_but_aggregate_decision_rule_pending
-    fairness_condition: upper_95_ci_delta_eod3_strictly_less_than_zero
-    utility_condition: lower_95_ci_delta_ba_strictly_greater_than_minus_0_01
-    invalid_ci_counts_as_support: false
+  ownership: user
+  automated_research_conclusion: prohibited
+  automated_primary_criterion: prohibited
+  automated_strong_support_classification: prohibited
+  code_scope: export_execution_status_lineage_and_neutral_metrics_only
+  delta_direction: lambda_0_01_minus_same_seed_lambda_zero
+  final_seed_count: 3
   stability_status: not_assessed
-  strong_support_implies_stable: false
   scientific_conclusion_separate_from_execution_status: true
+  interpretation_must_not_be_inferred_from_execution_success: true
 
 reporting_contract:
-  required_evidence: [track_a_status, track_b_status, cv_ce_curves, selected_epoch, epoch_cap_hit, configurations, seeds, provenance, diagnostics, eod3, paired_same_seed_delta_eod3, balanced_accuracy_cost, eod6_safety_audit, per_seed_bootstrap_intervals, invalid_replicates_and_reasons, across_seed_summaries, training_stability_and_integrity, capability_assessment, statistical_limitations]
+  required_evidence: [execution_status, evaluation_arms, source_and_gate_c_lineage, test_bootstrap_index_lineage, balanced_accuracy, eod3, eod6_audit, group_tpr_fpr_and_counts, matched_delta_ba_eod3_eod6, decision_change_counts_and_rates, paired_bootstrap_replicates, confidence_interval_endpoints, across_seed_summaries, validation_test_generalization_gaps]
   prohibit_best_seed_selection: true
   prohibit_unfavorable_seed_exclusion: true
   prohibit_test_driven_budget_extension: true
+  prohibit_automated_research_interpretation: true
 
 status_contract:
   execution_status: [completed, failed, infeasible]
   stability_status: [not_assessed]
-  primary_criterion: [pass, fail, not_evaluable]
-  primary_criterion_scope: per_seed_point_criterion
-  strong_support_is_separate_field: true
+  metric_values_are_separate_from_execution_status: true
+  research_interpretation_owner: user
+  primary_criterion_output: prohibited_for_rq4b3_test
+  strong_support_output: prohibited_for_rq4b3_test
   fields_are_independent: true
   reason_codes:
     - none

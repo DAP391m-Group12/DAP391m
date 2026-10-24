@@ -83,7 +83,24 @@ def test_real_contract_validates_locked_fields(contract):
     assert contract.development_units == ri.DEVELOPMENT_UNITS
     assert contract.authorized_production_units == ri.SEED44_PRODUCTION_UNITS == ((0.0, 44), (0.01, 44))
     assert set(contract.source_run_evidence) == {"track_a_seed42", "track_b_seed43"}
-    assert contract.selection_policy_status == "blocked_pending_explicit_three_seed_methodological_approval"
+    assert contract.selection_policy_status == "approved_evaluation_only_three_seed_validation_selection"
+    assert contract.aggregation_source_run_ids == ("rq4b3_adv_20261019_02", "rq4b3_adv_20261021_01", "rq4b3_adv_20261022_01")
+    assert tuple(contract.aggregation_source_pins) == contract.aggregation_source_run_ids
+    assert {run_id: len(pin["receipt_sha256"]) for run_id, pin in contract.aggregation_source_pins.items()} == {
+        "rq4b3_adv_20261019_02": 10, "rq4b3_adv_20261021_01": 4, "rq4b3_adv_20261022_01": 4}
+    assert contract.aggregation_source_pins["rq4b3_adv_20261022_01"]["manifest_sha256"] == "f6ebf429d4d0a5ec2b4abd08e247a6afa75b381da2da38f78cd5185b70a53249"
+    for label, run_id in (("track_a_seed42", "rq4b3_adv_20261019_02"), ("track_b_seed43", "rq4b3_adv_20261021_01")):
+        evidence = contract.source_run_evidence[label]
+        assert contract.aggregation_source_pins[run_id] == {"manifest_sha256": evidence["manifest_sha256"], "receipt_sha256": evidence["receipt_sha256"]}
+    assert contract.aggregation_validation_rows == 43_995
+    assert contract.aggregation_validation_record_id_sha256 == "f5331875e449fc2f940de5a845483d5ea0830ae2b5a8501df98e9814a2fa5875"
+    assert contract.test_run_id == ri.TEST_RUN_ID == "rq4b3_test_20261024_01"
+    assert contract.test_protocol_version == ri.TEST_PROTOCOL_VERSION
+    assert contract.test_evaluation_units == ri.TEST_EVALUATION_UNITS and len(contract.test_evaluation_units) == 9
+    assert contract.test_matched_comparisons == ri.TEST_MATCHED_COMPARISONS and len(contract.test_matched_comparisons) == 6
+    assert sum(len(pin["evaluated_arm_receipt_sha256"]) for pin in contract.test_source_pins.values()) == 18
+    assert contract.test_bootstrap_replicates == 1000
+    assert contract.test_bootstrap_sha256 == "2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1"
     assert (contract.cv_folds, contract.cv_random_state, contract.epochs_per_fold) == (5, 42, 256)
     assert (contract.batch_size, contract.predict_batch_size, contract.device) == (256, 1024, "cuda:0")
     assert contract.resources["frozen_probe_validation_predictions"] == PROJECT_ROOT / ri.PROBE_PREDICTION_PATH
@@ -140,6 +157,11 @@ def _set(config: dict, path: tuple[str, ...], value) -> dict:
         (("fit_budget", "rq4b_3_maximum_cv_fold_fits_excluding_spike_and_retries"), 120),
         (("uncertainty", "within_seed", "allow_regenerate_indices"), True),
         (("configurations", "RQ4b-3", "group_roster"), "g6"),
+        (("gate_c_aggregation", "source_pins", "rq4b3_adv_20261022_01", "manifest_sha256"), "0" * 64),
+        (("gate_c_aggregation", "source_pins", "rq4b3_adv_20261019_02", "receipt_sha256", "stages/dev_l0p3_s42/receipt.json"), KeyError),
+        (("gate_c_aggregation", "source_pins", "rq4b3_adv_20261021_01"), KeyError),
+        (("gate_c_aggregation", "validation_record_id_sha256"), "0" * 64),
+        (("gate_c_aggregation", "validation_rows"), 43_994),
     ],
 )
 def test_malformed_or_conflicting_config_is_rejected(raw_config, rq3_protocol, path, value):
@@ -150,6 +172,23 @@ def test_malformed_or_conflicting_config_is_rejected(raw_config, rq3_protocol, p
 def test_non_mapping_config_is_rejected(rq3_protocol):
     with pytest.raises(ri.RQ4bInputError):
         ri.validate_contract(["not", "a", "mapping"], rq3_protocol)
+
+
+@pytest.mark.parametrize(
+    ("path", "value", "message"),
+    [
+        (("test_evaluation", "run_id"), "rq4b3_test_20261024_99", "run identity"),
+        (("test_evaluation", "max_test_inferences"), 8, "count differs"),
+        (("test_evaluation", "evaluation_arms", 4, "seeds"), [42, 43], "nine-arm roster"),
+        (("test_evaluation", "matched_comparison_count"), 5, "six-comparison"),
+        (("test_evaluation", "lineage", "locked_test_bootstrap_indices", "sha256"), "0" * 64, "bootstrap digest"),
+        (("test_evaluation", "required_output_files", "stages/test_evaluation/arm_metrics.csv"), ["seed"], "output schema"),
+        (("test_evaluation", "interpretation_boundary", "code_must_not_assign_research_pass_fail"), False, "interpretation boundary"),
+    ],
+)
+def test_cross_run_test_contract_rejects_count_lineage_schema_or_interpretation_drift(raw_config, rq3_protocol, path, value, message):
+    with pytest.raises(ri.RQ4bInputError, match=message):
+        ri.validate_contract(_set(raw_config, path, value), rq3_protocol)
 
 
 @pytest.mark.parametrize(
@@ -186,8 +225,8 @@ def test_conflicting_rq3_raw_source_is_rejected(raw_config, rq3_protocol):
 
 # C1 finding 1: locked decisions previously outside the validator, plus analogous rules.
 C1_LOCKED_RULES = [
-    (("scientific_assessment", "strong_support", "fairness_condition"), "upper_95_ci_delta_eod3_less_than_or_equal_to_zero"),
-    (("scientific_assessment", "strong_support", "utility_condition"), "lower_95_ci_delta_ba_greater_than_or_equal_to_minus_0_01"),
+    (("scientific_assessment", "ownership"), "code"),
+    (("scientific_assessment", "automated_research_conclusion"), "allowed"),
     (("capability_assessment", "synthetic_correctness_gate", "lower_95_ci_gain"), "greater_than_or_equal_to_zero"),
     (("epoch_selection", "numerical_computation"), "clipped_probability_ce"),
     (("denominators", "minimum_actual_approved"), 20),
@@ -196,11 +235,11 @@ C1_LOCKED_RULES = [
     (("denominators", "minimum_group_rows"), 50),
     (("denominators", "insufficient_result"), 0),
     (("denominators", "never_replace_undefined_with_zero"), False),
-    (("scientific_assessment", "per_seed_point_criterion", "fairness"), "delta_eod3_less_than_or_equal_to_zero"),
-    (("scientific_assessment", "per_seed_point_criterion", "utility"), "full_test_delta_balanced_accuracy_greater_than_minus_0_02"),
-    (("scientific_assessment", "per_seed_point_criterion", "combination"), "either_required"),
-    (("scientific_assessment", "strong_support", "same_seed_must_satisfy_both_ci_conditions"), False),
-        (("scientific_assessment", "strong_support", "final_seed_count"), 5),
+    (("scientific_assessment", "automated_primary_criterion"), "allowed"),
+    (("scientific_assessment", "automated_strong_support_classification"), "allowed"),
+    (("scientific_assessment", "code_scope"), "assign_research_conclusions"),
+    (("scientific_assessment", "interpretation_must_not_be_inferred_from_execution_success"), False),
+        (("scientific_assessment", "final_seed_count"), 5),
     (("capability_assessment", "synthetic_correctness_gate", "ce_gain_comparison"), "greater_than"),
     (("capability_assessment", "synthetic_correctness_gate", "fixture_source_and_generation", "stratify_by"), ["y", "group"]),
     (("capability_assessment", "probe_uncertainty", "strata"), ["y_approved"]),
@@ -225,7 +264,7 @@ C1_LOCKED_RULES = [
     (("runtime", "preflight_required"), ["cuda_available"]),
     (("groups", "invalid_required_group_metric_invalidates_eod6_replicate"), False),
     (("internal_extension_and_naming_gate", "if_recipe_not_preserved"), "rename_optional"),
-    (("status_contract", "primary_criterion"), ["pass", "fail"]),
+    (("status_contract", "research_interpretation_owner"), "code"),
     (("reporting_contract", "prohibit_best_seed_selection"), False),
     (("prohibitions", "prohibit_causal_claim"), False),
     (("prerequisites", "rq1_paired_bootstrap_task"), "optional"),
@@ -247,7 +286,7 @@ def test_missing_locked_rule_is_rejected(raw_config, rq3_protocol, path, _value)
 
 @pytest.mark.parametrize(
     "path",
-    [("scientific_assessment", "strong_support", "extra_condition"), ("epoch_selection", "extra_rule"), ("new_section",)],
+    [("scientific_assessment", "extra_condition"), ("epoch_selection", "extra_rule"), ("new_section",)],
 )
 def test_unexpected_field_in_locked_contract_is_rejected(raw_config, rq3_protocol, path):
     with pytest.raises(ri.RQ4bInputError, match=r"\(unexpected\)"):
@@ -258,7 +297,7 @@ def test_type_aware_comparison_rejects_bool_number_and_string_number_swaps(raw_c
     for path, value in [
         (("denominators", "minimum_actual_approved"), "30"),
         (("denominators", "minimum_actual_approved"), True),
-        (("scientific_assessment", "strong_support", "invalid_ci_counts_as_support"), 0),
+        (("scientific_assessment", "final_seed_count"), True),
         (("groups", "g6"), list(reversed(ri.G6_GROUPS))),
     ]:
         with pytest.raises(ri.RQ4bInputError, match="locked contract"):
@@ -284,7 +323,8 @@ def test_approved_snapshot_matches_module_constants_and_current_yaml(raw_config)
     assert tuple(snapshot["realmlp_recipe"]["lambda_grid"]) == ri.LAMBDA_GRID
     assert tuple(snapshot["realmlp_recipe"]["final_seeds"]) == ri.FINAL_SEEDS
     assert snapshot["capability_assessment"]["real_probe"]["source_score_extraction"]["prediction_path"] == ri.PROBE_PREDICTION_PATH
-    assert snapshot["scientific_assessment"]["strong_support"]["fairness_condition"] == "upper_95_ci_delta_eod3_strictly_less_than_zero"
+    assert snapshot["scientific_assessment"]["ownership"] == "user"
+    assert snapshot["scientific_assessment"]["automated_research_conclusion"] == "prohibited"
     assert snapshot["denominators"]["minimum_actual_approved"] == 30
 
 

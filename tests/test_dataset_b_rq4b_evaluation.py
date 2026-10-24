@@ -124,10 +124,10 @@ def _grid(ba=None, eod3=None, eod6=None, control_ba=0.01):
     return cells
 
 
-def test_sparse_roster_is_recorded_but_selection_remains_blocked():
+def test_sparse_roster_selects_only_replicated_validation_candidate():
     result = ev.select_lambda(_grid())
-    assert result["status"] == "blocked_pending_explicit_three_seed_methodological_approval"
-    assert result["selected_lambda"] is None and result["arbitrary_two_of_three_rule_used"] is False
+    assert result["status"] == "selected"
+    assert result["selected_lambda"] == 0.01 and result["arbitrary_two_of_three_rule_used"] is False
     assert [(row["adversary_lambda"], row["model_seed"]) for row in result["units"]] == list(ev.DEVELOPMENT_UNITS)
     replicated = {(row["adversary_lambda"], row["model_seed"]): row for row in result["units"]}
     assert replicated[(0.01, 43)]["matched_delta_ba"] == -0.01
@@ -137,8 +137,8 @@ def test_sparse_roster_is_recorded_but_selection_remains_blocked():
 def test_eod6_remains_audit_only_and_cannot_unlock_selection():
     result = ev.select_lambda(_grid(eod3={0.01: 0.01}, eod6={0.01: 0.0}))
     assert result["eod6_role"] == "audit_only"
-    assert result["selected_lambda"] is None
-    assert result["status"] == ev.SELECTION_POLICY_STATUS
+    assert result["selected_lambda"] == 0.01
+    assert result["status"] == "selected"
 
 
 def test_incomplete_or_cartesian_expanded_roster_is_rejected():
@@ -149,10 +149,11 @@ def test_incomplete_or_cartesian_expanded_roster_is_rejected():
         ev.select_lambda(expanded)
 
 
-def test_final_arm_planning_is_blocked_until_three_seed_policy_is_approved():
+def test_final_arm_planning_reuses_only_development_artifacts():
     dev = {(lam, seed): ev.ArtifactRef(lam, seed, f"a{lam}_{seed}", "f" * 64, "e" * 64, 0.5) for lam, seed in ev.DEVELOPMENT_UNITS}
-    with pytest.raises(ev.RQ4bEvaluationError, match="blocked pending"):
-        ev.plan_final_arms(0.01, dev)
+    plan = ev.plan_final_arms(0.01, dev)
+    assert all(plan[seed]["control"]["source"] == "reuse_development" for seed in ev.FINAL_SEEDS)
+    assert ev.required_new_fits(plan) == []
 
 
 def test_development_reuse_identity_validation_remains_exact():

@@ -2,12 +2,14 @@
 
 ## 1. Purpose and ownership
 
-**Current scoped chat authorization (2026-10-22):** implement and validate the
-seed-44 v4 continuation mechanism only. Do not create the production run or
-launch preflight, capability, inference, CV or refit. A later execution task
-must explicitly open `(lambda=0, seed=44)` before any real command is handed
-off. No automatic retry, source-run mutation, cross-run aggregation, selection,
-final-fit, Test or package validation is authorized.
+**Current RQ4b state (2026-10-24):** all nine amended development units are
+published and Gate B is `PASS`. The seed-44 v4 continuation completed in the
+required order and is immutable; do not rerun or reopen either seed-44 unit.
+The next route is a separately authorized evaluation-only aggregation run that
+pins the immutable seed-42, seed-43 and seed-44 runs. Cross-run aggregation,
+selection, final-fit, Test and package validation remain closed until their
+Gate C contract and implementation gates pass. No automatic retry or source-run
+mutation is authorized.
 
 **Scoped chat override (2026-10-19):** the user authorized Codex to implement
 terminal reports every 120 seconds, retain detailed durable file logging, test
@@ -49,8 +51,9 @@ documentation approval is not production authorization.
 The user locked production adversary `2 -> 32 ReLU -> 3`, no dropout/class
 weighting/search, adversary seed equal to model seed with isolated RNG, and
 refit schedule horizon 256 while executing only the selected epoch count.
-Implementation acceptance and its evidence limits are recorded in STATUS;
-real-data runtime is not verified and production remains unlaunched. The user has locked capability probe population,
+Implementation and real development execution evidence are recorded in STATUS;
+the nine-unit Gate B runtime scope is verified, but Gate C aggregation and
+scientific mitigation support are not. The user has locked capability probe population,
 60/20/20 split, AdamW budget, Y-only comparison and synthetic gate; the separate
 probe uses patience 15, not predictor CV. Test uncertainty is locked-index
 paired percentile bootstrap (1,000/1,000 valid), with strict strong-support CI
@@ -106,16 +109,15 @@ pinned manifest and receipt digests of both source runs, and rejects a manifest
 whose continuation lineage differs. This does not replace the fresh
 per-run preflight and capability gates. Do not use the historical Cartesian-grid
 selection or seeds 45--46 routes.
-Track A requires an authorized read-only evaluation route over the five frozen
-seed-42 units; no such CLI command is approved by this runbook yet.
+Gate C requires an evaluation-only aggregation route over all three immutable
+source runs; no such production CLI command is approved by this runbook yet.
 
-The machine-readable v4 assignment contains only `(0,44)` and `(0.01,44)`, but
-the current implementation task does not authorize launching either unit.
-When a later task opens execution, `(0,44)` must complete development and
-development-validation first. The runner verifies its receipt/output hashes,
-five-CV-plus-one-refit accounting and 43,995 Validation rows before accepting
-`(0.01,44)`. Source runs are read only for pinned lineage verification; their
-fitted state is never reused. Cross-run aggregation is deferred to Gate C.
+The machine-readable v4 assignment contains only `(0,44)` and `(0.01,44)`.
+Both units completed in the required order with verified receipt/output hashes,
+five-CV-plus-one-refit accounting and 43,995 Validation rows per unit. Source
+runs remain read only and their fitted state must not be migrated or refitted.
+The current v4 runner is not the cross-run aggregation route; use a new
+evaluation-only run identity after its contract and implementation are approved.
 
 Paths below are repository-relative. Let `R` be
 `artifacts/dataset_b/rq4/rq4b/<run_id>`. Each published stage lives at
