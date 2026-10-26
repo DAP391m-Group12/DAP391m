@@ -1,0 +1,466 @@
+RQ2_Research_Metrics_Final.txt
+Báo cáo kết quả & kiểm chứng RQ2 — Dataset B: GSV vs interventional Shapley–Lorenz cho sáu model final
+Chế độ: AUTO_IMPLEMENT (chỉ ghi file này); kiểm chứng read-only từ saved artifacts; không load model, không inference, không tạo coalition,
+không tái tạo bootstrap indices. Precision: số thực 6 chữ số thập phân (ROUND_HALF_UP khi xuất); counts/ranks là số nguyên hoặc average rank.
+Ngoại lệ precision: tham số cấu hình (threshold grid, quantiles 0.025/0.975, tie target 0.5), số section, tolerance/|diff| dạng khoa học, và giá trị trích nguyên văn từ contract.
+
+====================================================================================================
+SECTION 1 — Phạm vi và research question
+====================================================================================================
+RQ2: Mức độ tương đồng giữa hai phương pháp giải thích — Global Shapley Value (GSV) và interventional Shapley–Lorenz (SL) — trên
+unthresholded p_approved của sáu model final Dataset B, và độ ổn định thứ hạng player giữa các model.
+Agreement/stability chỉ mô tả sự tương đồng giữa các giải thích; KHÔNG chứng minh correctness, causality, fairness hay ground truth.
++---------------------------------+-----------------------------------------------------------------------+
+| Mục                             |                                                               Giá trị |
++=================================+=======================================================================+
+| Accepted production run         |               artifacts/dataset_b/rq2/rq2_cpu_production_20261009_01/ |
+| Models                          |                                           6 (status.json = PASS cả 6) |
+| Players / coalitions            |                                      12 ordered players / 2^12 = 4096 |
+| Explanation sample / donor pool |                                  256 Validation rows / 128 Train rows |
+| Importance rows                 |                                              144 (6 × 2 methods × 12) |
+| Agreement rows                  |                                                    24 (6 × 4 metrics) |
+| Cross-model stability rows      |                                                                    60 |
+| Programmatic checks             |                                             729 run; 729 PASS; 0 FAIL |
+| Final verification status       | VERIFIED_PASS (phạm vi: downstream của saved cube; xem Section 13–14) |
++---------------------------------+-----------------------------------------------------------------------+
+
+====================================================================================================
+SECTION 2 — Accepted production run và lineage
+====================================================================================================
++----------+-----------+---------------------------------+-------------+----------+--------+--------------------+
+| Model    |       Key |                   Frozen run ID | status.json |    Stage | Chunks |           Protocol |
++==========+===========+=================================+=============+==========+========+====================+
+| LR       |        lr |        lr_final_15f_20261002_01 |        PASS | complete |     10 | rq2_explanation_v1 |
+| RF       |        rf |        rf_final_15f_20261002_01 |        PASS | complete |     10 | rq2_explanation_v1 |
+| XGBoost  |   xgboost |       xgb_final_15f_20261003_01 |        PASS | complete |     10 | rq2_explanation_v1 |
+| PlainMLP | plain_mlp | plain_mlp_final_15f_20261004_03 |        PASS | complete |     10 | rq2_explanation_v1 |
+| RealMLP  |   realmlp |   realmlp_final_15f_20261004_01 |        PASS | complete |     10 | rq2_explanation_v1 |
+| TabMmini |  tabmmini |  tabmmini_final_15f_20261004_01 |        PASS | complete |     10 | rq2_explanation_v1 |
++----------+-----------+---------------------------------+-------------+----------+--------+--------------------+
+Nguồn: docs/handbook/contracts/rq2_explanation.md (§2–9), config/dataset_b/rq2_protocol.yaml, STATUS.md (RQ2 row), notebook
+notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb (không chạy). Mọi số dưới đây đọc/tính lại từ run directory trên.
+
+====================================================================================================
+SECTION 3 — Sample, donor pool, coalitions, players và bootstrap
+====================================================================================================
+- Explanation sample: 256 Validation rows (Approved 191, Denied 65), seed 4201, stratified theo target (contract §3).
+- Donor pool: 128 Train rows (seed 4202); mỗi observation có đúng 1 donor cố định (seed 4203, with replacement). Trong 256 assignments có
+  109 donor IDs / 109 pool indices khác nhau được dùng; mỗi pool index ↔ đúng 1 donor ID.
+- Players (thứ tự = bit order): 0:loan_type, 1:loan_purpose, 2:lien_status, 3:transaction_characteristics, 4:income, 5:debt_to_income_ratio, 6:loan_amount, 7:loan_to_value_ratio, 8:loan_term, 9:occupancy_type, 10:preapproval, 11:special_repayment_structure.
+- Coalitions: 4096 masks theo integer order; absent players lấy toàn bộ raw fields từ donor. Explained output: p_approved (không threshold).
+- Shared bootstrap: bootstrap_indices.npy shape (1000, 256), dtype int64, index range 0–255, seed 4204 (contract),
+  dùng chung cho 2 methods × 6 models; 10 checkpoint chunks × 100 replicates; CI percentile 95% linear; minimum valid 950.
+
+====================================================================================================
+SECTION 4 — Kiểm tra không có Test IDs và membership
+====================================================================================================
++------------------------------+--------+
+| Check                        | Result |
++==============================+========+
+| split_sizes                  |   PASS |
+| sample_rows_256_unique       |   PASS |
+| sample_all_validation        |   PASS |
+| sample_no_test_ids           |   PASS |
+| sample_no_train_ids          |   PASS |
+| sample_seed_metadata_4201    |   PASS |
+| sample_positions_0_255       |   PASS |
+| sample_labels_binary_both    |   PASS |
+| donor_rows_256               |   PASS |
+| donors_all_train             |   PASS |
+| donors_no_test_no_validation |   PASS |
+| donor_pool_size_seed_metadata|   PASS |
+| donor_pool_index_range       |   PASS |
+| donor_pool_index_maps_one_id |   PASS |
++------------------------------+--------+
+Membership đối chiếu artifacts/dataset_b/split_v1.json: sample ⊂ Validation, không giao Train/Test; donors ⊂ Train, không giao Validation/Test.
+sample_seed_metadata_4201 và donor_pool_size_seed_metadata chỉ kiểm tra metadata seed/pool-size được ghi trong sample.csv/donors.csv; KHÔNG xác minh quy
+trình sampling (xem UNVERIFIED ở Section 13).
+
+====================================================================================================
+SECTION 5 — Importance (144 rows = 6 models × 2 methods × 12 players)
+====================================================================================================
+GSV: global = mean |local contribution| trên 256 rows; signed = mean local (hướng theo p_approved). SL: global = |signed Shapley của LZ|;
+signed = hướng của Lorenz–Zonoid score (không phải hướng p_approved). Normalized = global / tổng; rank giảm dần, average ties (atol 1e-10).
++----------+--------+----+-----------------------------+-------------------+------------+------+----------------+
+| Model    | Method | #  | Player                      | Global importance | Normalized | Rank | Signed summary |
++==========+========+====+=============================+===================+============+======+================+
+| LR       | GSV    | 0  | loan_type                   |          0.006704 |   0.014600 |   10 |      -0.000626 |
+| LR       | GSV    | 1  | loan_purpose                |          0.109210 |   0.237834 |    2 |       0.020958 |
+| LR       | GSV    | 2  | lien_status                 |          0.009119 |   0.019860 |    9 |      -0.001500 |
+| LR       | GSV    | 3  | transaction_characteristics |          0.024801 |   0.054010 |    7 |       0.003006 |
+| LR       | GSV    | 4  | income                      |          0.014460 |   0.031491 |    8 |       0.000842 |
+| LR       | GSV    | 5  | debt_to_income_ratio        |          0.142611 |   0.310574 |    1 |      -0.005899 |
+| LR       | GSV    | 6  | loan_amount                 |          0.041356 |   0.090064 |    4 |       0.002695 |
+| LR       | GSV    | 7  | loan_to_value_ratio         |          0.041641 |   0.090684 |    3 |       0.004886 |
+| LR       | GSV    | 8  | loan_term                   |          0.031343 |   0.068257 |    5 |       0.003924 |
+| LR       | GSV    | 9  | occupancy_type              |          0.005040 |   0.010976 |   11 |      -0.000249 |
+| LR       | GSV    | 10 | preapproval                 |          0.030678 |   0.066809 |    6 |       0.004140 |
+| LR       | GSV    | 11 | special_repayment_structure |          0.002223 |   0.004841 |   12 |      -0.000207 |
+| LR       | SL     | 0  | loan_type                   |          0.000357 |   0.015432 |    7 |       0.000357 |
+| LR       | SL     | 1  | loan_purpose                |          0.011627 |   0.502189 |    1 |      -0.011627 |
+| LR       | SL     | 2  | lien_status                 |          0.001116 |   0.048203 |    6 |       0.001116 |
+| LR       | SL     | 3  | transaction_characteristics |          0.000108 |   0.004655 |   10 |      -0.000108 |
+| LR       | SL     | 4  | income                      |          0.000173 |   0.007477 |    8 |      -0.000173 |
+| LR       | SL     | 5  | debt_to_income_ratio        |          0.001172 |   0.050626 |    4 |       0.001172 |
+| LR       | SL     | 6  | loan_amount                 |          0.001156 |   0.049931 |    5 |      -0.001156 |
+| LR       | SL     | 7  | loan_to_value_ratio         |          0.005843 |   0.252393 |    2 |      -0.005843 |
+| LR       | SL     | 8  | loan_term                   |          0.001402 |   0.060563 |    3 |      -0.001402 |
+| LR       | SL     | 9  | occupancy_type              |          0.000001 |   0.000064 |   12 |      -0.000001 |
+| LR       | SL     | 10 | preapproval                 |          0.000158 |   0.006812 |    9 |      -0.000158 |
+| LR       | SL     | 11 | special_repayment_structure |          0.000038 |   0.001654 |   11 |       0.000038 |
+| RF       | GSV    | 0  | loan_type                   |          0.018395 |   0.031810 |   10 |       0.002130 |
+| RF       | GSV    | 1  | loan_purpose                |          0.065305 |   0.112929 |    3 |       0.013485 |
+| RF       | GSV    | 2  | lien_status                 |          0.029917 |   0.051734 |    8 |      -0.003443 |
+| RF       | GSV    | 3  | transaction_characteristics |          0.047962 |   0.082939 |    6 |       0.005385 |
+| RF       | GSV    | 4  | income                      |          0.048105 |   0.083185 |    5 |       0.001050 |
+| RF       | GSV    | 5  | debt_to_income_ratio        |          0.152672 |   0.264009 |    1 |      -0.013180 |
+| RF       | GSV    | 6  | loan_amount                 |          0.047862 |   0.082765 |    7 |      -0.003499 |
+| RF       | GSV    | 7  | loan_to_value_ratio         |          0.076065 |   0.131535 |    2 |       0.007339 |
+| RF       | GSV    | 8  | loan_term                   |          0.048911 |   0.084580 |    4 |      -0.008295 |
+| RF       | GSV    | 9  | occupancy_type              |          0.014044 |   0.024285 |   11 |       0.001921 |
+| RF       | GSV    | 10 | preapproval                 |          0.010142 |   0.017538 |   12 |      -0.000506 |
+| RF       | GSV    | 11 | special_repayment_structure |          0.018904 |   0.032690 |    9 |       0.001329 |
+| RF       | SL     | 0  | loan_type                   |          0.003110 |   0.058612 |    8 |      -0.003110 |
+| RF       | SL     | 1  | loan_purpose                |          0.011839 |   0.223139 |    1 |      -0.011839 |
+| RF       | SL     | 2  | lien_status                 |          0.000362 |   0.006815 |   12 |       0.000362 |
+| RF       | SL     | 3  | transaction_characteristics |          0.005169 |   0.097418 |    5 |      -0.005169 |
+| RF       | SL     | 4  | income                      |          0.002489 |   0.046911 |    9 |      -0.002489 |
+| RF       | SL     | 5  | debt_to_income_ratio        |          0.006221 |   0.117249 |    4 |       0.006221 |
+| RF       | SL     | 6  | loan_amount                 |          0.003312 |   0.062434 |    7 |      -0.003312 |
+| RF       | SL     | 7  | loan_to_value_ratio         |          0.008353 |   0.157431 |    2 |      -0.008353 |
+| RF       | SL     | 8  | loan_term                   |          0.006564 |   0.123716 |    3 |       0.006564 |
+| RF       | SL     | 9  | occupancy_type              |          0.003409 |   0.064252 |    6 |      -0.003409 |
+| RF       | SL     | 10 | preapproval                 |          0.000395 |   0.007438 |   11 |       0.000395 |
+| RF       | SL     | 11 | special_repayment_structure |          0.001835 |   0.034584 |   10 |      -0.001835 |
+| XGBoost  | GSV    | 0  | loan_type                   |          0.024294 |   0.041790 |    9 |      -0.000932 |
+| XGBoost  | GSV    | 1  | loan_purpose                |          0.074638 |   0.128388 |    3 |       0.013829 |
+| XGBoost  | GSV    | 2  | lien_status                 |          0.014281 |   0.024565 |   11 |      -0.001050 |
+| XGBoost  | GSV    | 3  | transaction_characteristics |          0.040383 |   0.069465 |    6 |       0.003108 |
+| XGBoost  | GSV    | 4  | income                      |          0.035962 |   0.061860 |    7 |      -0.000603 |
+| XGBoost  | GSV    | 5  | debt_to_income_ratio        |          0.141350 |   0.243143 |    1 |      -0.015025 |
+| XGBoost  | GSV    | 6  | loan_amount                 |          0.059032 |   0.101544 |    4 |      -0.002114 |
+| XGBoost  | GSV    | 7  | loan_to_value_ratio         |          0.080237 |   0.138019 |    2 |       0.012514 |
+| XGBoost  | GSV    | 8  | loan_term                   |          0.053950 |   0.092802 |    5 |      -0.003836 |
+| XGBoost  | GSV    | 9  | occupancy_type              |          0.012802 |   0.022022 |   12 |      -0.000396 |
+| XGBoost  | GSV    | 10 | preapproval                 |          0.029754 |   0.051182 |    8 |       0.001636 |
+| XGBoost  | GSV    | 11 | special_repayment_structure |          0.014662 |   0.025221 |   10 |       0.001132 |
+| XGBoost  | SL     | 0  | loan_type                   |          0.000701 |   0.012879 |   10 |       0.000701 |
+| XGBoost  | SL     | 1  | loan_purpose                |          0.009260 |   0.170009 |    3 |      -0.009260 |
+| XGBoost  | SL     | 2  | lien_status                 |          0.000155 |   0.002848 |   12 |       0.000155 |
+| XGBoost  | SL     | 3  | transaction_characteristics |          0.001095 |   0.020102 |    6 |      -0.001095 |
+| XGBoost  | SL     | 4  | income                      |          0.000996 |   0.018290 |    7 |       0.000996 |
+| XGBoost  | SL     | 5  | debt_to_income_ratio        |          0.017464 |   0.320619 |    1 |       0.017464 |
+| XGBoost  | SL     | 6  | loan_amount                 |          0.000245 |   0.004492 |   11 |      -0.000245 |
+| XGBoost  | SL     | 7  | loan_to_value_ratio         |          0.014590 |   0.267863 |    2 |      -0.014590 |
+| XGBoost  | SL     | 8  | loan_term                   |          0.005246 |   0.096302 |    4 |       0.005246 |
+| XGBoost  | SL     | 9  | occupancy_type              |          0.002877 |   0.052824 |    5 |      -0.002877 |
+| XGBoost  | SL     | 10 | preapproval                 |          0.000855 |   0.015701 |    9 |       0.000855 |
+| XGBoost  | SL     | 11 | special_repayment_structure |          0.000984 |   0.018070 |    8 |       0.000984 |
+| PlainMLP | GSV    | 0  | loan_type                   |          0.025224 |   0.040143 |   10 |      -0.004508 |
+| PlainMLP | GSV    | 1  | loan_purpose                |          0.076497 |   0.121744 |    2 |       0.016524 |
+| PlainMLP | GSV    | 2  | lien_status                 |          0.030547 |   0.048614 |    9 |       0.000613 |
+| PlainMLP | GSV    | 3  | transaction_characteristics |          0.061178 |   0.097364 |    4 |       0.008650 |
+| PlainMLP | GSV    | 4  | income                      |          0.041648 |   0.066282 |    7 |       0.001155 |
+| PlainMLP | GSV    | 5  | debt_to_income_ratio        |          0.143874 |   0.228973 |    1 |      -0.011745 |
+| PlainMLP | GSV    | 6  | loan_amount                 |          0.052055 |   0.082846 |    5 |      -0.008506 |
+| PlainMLP | GSV    | 7  | loan_to_value_ratio         |          0.074797 |   0.119038 |    3 |       0.000506 |
+| PlainMLP | GSV    | 8  | loan_term                   |          0.051668 |   0.082229 |    6 |       0.003558 |
+| PlainMLP | GSV    | 9  | occupancy_type              |          0.015023 |   0.023910 |   12 |      -0.001562 |
+| PlainMLP | GSV    | 10 | preapproval                 |          0.031978 |   0.050892 |    8 |       0.003010 |
+| PlainMLP | GSV    | 11 | special_repayment_structure |          0.023855 |   0.037965 |   11 |       0.000546 |
+| PlainMLP | SL     | 0  | loan_type                   |          0.003636 |   0.076871 |    6 |       0.003636 |
+| PlainMLP | SL     | 1  | loan_purpose                |          0.014645 |   0.309614 |    1 |      -0.014645 |
+| PlainMLP | SL     | 2  | lien_status                 |          0.000003 |   0.000070 |   12 |      -0.000003 |
+| PlainMLP | SL     | 3  | transaction_characteristics |          0.006639 |   0.140361 |    3 |      -0.006639 |
+| PlainMLP | SL     | 4  | income                      |          0.000181 |   0.003819 |    9 |       0.000181 |
+| PlainMLP | SL     | 5  | debt_to_income_ratio        |          0.011287 |   0.238615 |    2 |       0.011287 |
+| PlainMLP | SL     | 6  | loan_amount                 |          0.002082 |   0.044015 |    7 |       0.002082 |
+| PlainMLP | SL     | 7  | loan_to_value_ratio         |          0.000157 |   0.003312 |   10 |      -0.000157 |
+| PlainMLP | SL     | 8  | loan_term                   |          0.004041 |   0.085436 |    4 |      -0.004041 |
+| PlainMLP | SL     | 9  | occupancy_type              |          0.000053 |   0.001118 |   11 |       0.000053 |
+| PlainMLP | SL     | 10 | preapproval                 |          0.000784 |   0.016580 |    8 |       0.000784 |
+| PlainMLP | SL     | 11 | special_repayment_structure |          0.003793 |   0.080189 |    5 |       0.003793 |
+| RealMLP  | GSV    | 0  | loan_type                   |          0.027370 |   0.044876 |    8 |      -0.003531 |
+| RealMLP  | GSV    | 1  | loan_purpose                |          0.067765 |   0.111109 |    3 |       0.014248 |
+| RealMLP  | GSV    | 2  | lien_status                 |          0.024526 |   0.040213 |    9 |      -0.002833 |
+| RealMLP  | GSV    | 3  | transaction_characteristics |          0.054142 |   0.088772 |    5 |       0.004547 |
+| RealMLP  | GSV    | 4  | income                      |          0.043205 |   0.070839 |    7 |       0.000366 |
+| RealMLP  | GSV    | 5  | debt_to_income_ratio        |          0.150536 |   0.246820 |    1 |      -0.016649 |
+| RealMLP  | GSV    | 6  | loan_amount                 |          0.047096 |   0.077219 |    6 |      -0.007049 |
+| RealMLP  | GSV    | 7  | loan_to_value_ratio         |          0.079557 |   0.130442 |    2 |       0.005271 |
+| RealMLP  | GSV    | 8  | loan_term                   |          0.062173 |   0.101940 |    4 |      -0.003860 |
+| RealMLP  | GSV    | 9  | occupancy_type              |          0.015050 |   0.024675 |   12 |      -0.002030 |
+| RealMLP  | GSV    | 10 | preapproval                 |          0.017728 |   0.029067 |   11 |       0.000623 |
+| RealMLP  | GSV    | 11 | special_repayment_structure |          0.020753 |   0.034026 |   10 |       0.000134 |
+| RealMLP  | SL     | 0  | loan_type                   |          0.003348 |   0.060173 |    7 |       0.003348 |
+| RealMLP  | SL     | 1  | loan_purpose                |          0.010883 |   0.195581 |    2 |      -0.010883 |
+| RealMLP  | SL     | 2  | lien_status                 |          0.002663 |   0.047854 |    8 |       0.002663 |
+| RealMLP  | SL     | 3  | transaction_characteristics |          0.003580 |   0.064340 |    6 |      -0.003580 |
+| RealMLP  | SL     | 4  | income                      |          0.000110 |   0.001983 |   12 |       0.000110 |
+| RealMLP  | SL     | 5  | debt_to_income_ratio        |          0.015886 |   0.285500 |    1 |       0.015886 |
+| RealMLP  | SL     | 6  | loan_amount                 |          0.004528 |   0.081367 |    5 |       0.004528 |
+| RealMLP  | SL     | 7  | loan_to_value_ratio         |          0.006711 |   0.120611 |    3 |      -0.006711 |
+| RealMLP  | SL     | 8  | loan_term                   |          0.005846 |   0.105051 |    4 |       0.005846 |
+| RealMLP  | SL     | 9  | occupancy_type              |          0.000891 |   0.016014 |    9 |       0.000891 |
+| RealMLP  | SL     | 10 | preapproval                 |          0.000314 |   0.005635 |   11 |       0.000314 |
+| RealMLP  | SL     | 11 | special_repayment_structure |          0.000884 |   0.015889 |   10 |      -0.000884 |
+| TabMmini | GSV    | 0  | loan_type                   |          0.026770 |   0.048210 |    8 |      -0.003224 |
+| TabMmini | GSV    | 1  | loan_purpose                |          0.081920 |   0.147529 |    2 |       0.018708 |
+| TabMmini | GSV    | 2  | lien_status                 |          0.013283 |   0.023922 |   12 |      -0.001670 |
+| TabMmini | GSV    | 3  | transaction_characteristics |          0.050235 |   0.090468 |    4 |       0.004873 |
+| TabMmini | GSV    | 4  | income                      |          0.029655 |   0.053406 |    7 |       0.000645 |
+| TabMmini | GSV    | 5  | debt_to_income_ratio        |          0.148384 |   0.267225 |    1 |      -0.012472 |
+| TabMmini | GSV    | 6  | loan_amount                 |          0.020528 |   0.036968 |    9 |      -0.000009 |
+| TabMmini | GSV    | 7  | loan_to_value_ratio         |          0.070277 |   0.126561 |    3 |       0.000547 |
+| TabMmini | GSV    | 8  | loan_term                   |          0.049967 |   0.089986 |    5 |      -0.000411 |
+| TabMmini | GSV    | 9  | occupancy_type              |          0.014564 |   0.026228 |   11 |      -0.002198 |
+| TabMmini | GSV    | 10 | preapproval                 |          0.030277 |   0.054525 |    6 |       0.002029 |
+| TabMmini | GSV    | 11 | special_repayment_structure |          0.019418 |   0.034971 |   10 |       0.004370 |
+| TabMmini | SL     | 0  | loan_type                   |          0.004020 |   0.101210 |    3 |       0.004020 |
+| TabMmini | SL     | 1  | loan_purpose                |          0.016267 |   0.409597 |    1 |      -0.016267 |
+| TabMmini | SL     | 2  | lien_status                 |          0.001287 |   0.032402 |    7 |       0.001287 |
+| TabMmini | SL     | 3  | transaction_characteristics |          0.001556 |   0.039174 |    5 |      -0.001556 |
+| TabMmini | SL     | 4  | income                      |          0.000160 |   0.004024 |   11 |       0.000160 |
+| TabMmini | SL     | 5  | debt_to_income_ratio        |          0.011488 |   0.289261 |    2 |       0.011488 |
+| TabMmini | SL     | 6  | loan_amount                 |          0.000410 |   0.010330 |    9 |      -0.000410 |
+| TabMmini | SL     | 7  | loan_to_value_ratio         |          0.000077 |   0.001939 |   12 |      -0.000077 |
+| TabMmini | SL     | 8  | loan_term                   |          0.002019 |   0.050835 |    4 |       0.002019 |
+| TabMmini | SL     | 9  | occupancy_type              |          0.000753 |   0.018956 |    8 |       0.000753 |
+| TabMmini | SL     | 10 | preapproval                 |          0.001338 |   0.033681 |    6 |       0.001338 |
+| TabMmini | SL     | 11 | special_repayment_structure |          0.000341 |   0.008592 |   10 |       0.000341 |
++----------+--------+----+-----------------------------+-------------------+------------+------+----------------+
+
+5.1 Normalized importance sums (phải = 1)
+-----------------------------------------
++----------+----------+----------+
+| Model    |  GSV sum |   SL sum |
++==========+==========+==========+
+| LR       | 1.000000 | 1.000000 |
+| RF       | 1.000000 | 1.000000 |
+| XGBoost  | 1.000000 | 1.000000 |
+| PlainMLP | 1.000000 | 1.000000 |
+| RealMLP  | 1.000000 | 1.000000 |
+| TabMmini | 1.000000 | 1.000000 |
++----------+----------+----------+
+
+5.2 Top-3 players theo method (ties tại cutoff được giữ)
+--------------------------------------------------------
++----------+--------+--------------------------------------------------------------------------------------------------+
+| Model    | Method | Top-3 (normalized)                                                                               |
++==========+========+==================================================================================================+
+| LR       | GSV    | debt_to_income_ratio (0.310574); loan_purpose (0.237834); loan_to_value_ratio (0.090684)         |
+| LR       | SL     | loan_purpose (0.502189); loan_to_value_ratio (0.252393); loan_term (0.060563)                    |
+| RF       | GSV    | debt_to_income_ratio (0.264009); loan_to_value_ratio (0.131535); loan_purpose (0.112929)         |
+| RF       | SL     | loan_purpose (0.223139); loan_to_value_ratio (0.157431); loan_term (0.123716)                    |
+| XGBoost  | GSV    | debt_to_income_ratio (0.243143); loan_to_value_ratio (0.138019); loan_purpose (0.128388)         |
+| XGBoost  | SL     | debt_to_income_ratio (0.320619); loan_to_value_ratio (0.267863); loan_purpose (0.170009)         |
+| PlainMLP | GSV    | debt_to_income_ratio (0.228973); loan_purpose (0.121744); loan_to_value_ratio (0.119038)         |
+| PlainMLP | SL     | loan_purpose (0.309614); debt_to_income_ratio (0.238615); transaction_characteristics (0.140361) |
+| RealMLP  | GSV    | debt_to_income_ratio (0.246820); loan_to_value_ratio (0.130442); loan_purpose (0.111109)         |
+| RealMLP  | SL     | debt_to_income_ratio (0.285500); loan_purpose (0.195581); loan_to_value_ratio (0.120611)         |
+| TabMmini | GSV    | debt_to_income_ratio (0.267225); loan_purpose (0.147529); loan_to_value_ratio (0.126561)         |
+| TabMmini | SL     | loan_purpose (0.409597); debt_to_income_ratio (0.289261); loan_type (0.101210)                   |
++----------+--------+--------------------------------------------------------------------------------------------------+
+
+====================================================================================================
+SECTION 6 — GSV–SL agreement (24 rows) với 95% CI
+====================================================================================================
++----------+-------------------------------+----------+-----------------------+---------+-----------+----------------------+---------+-----------------+
+| Model    | Metric                        |    Point |                95% CI | n_valid | n_invalid |               Method |  Status | Invalid reasons |
++==========+===============================+==========+=======================+=========+===========+======================+=========+=================+
+| LR       | spearman                      | 0.811189 |  [0.405594, 0.937063] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| LR       | kendall_tau_b                 | 0.606061 |  [0.303030, 0.818182] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| LR       | top_k_jaccard                 | 0.500000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| LR       | mean_absolute_rank_difference | 1.833333 |  [0.833333, 3.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RF       | spearman                      | 0.727273 |  [0.139685, 0.881119] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RF       | kendall_tau_b                 | 0.515152 |  [0.090909, 0.727273] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RF       | top_k_jaccard                 | 0.500000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RF       | mean_absolute_rank_difference | 2.000000 |  [1.333333, 3.666667] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| XGBoost  | spearman                      | 0.629371 |  [0.160664, 0.881119] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| XGBoost  | kendall_tau_b                 | 0.545455 |  [0.090909, 0.727273] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| XGBoost  | top_k_jaccard                 | 1.000000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| XGBoost  | mean_absolute_rank_difference | 1.666667 |  [1.333333, 3.666667] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| PlainMLP | spearman                      | 0.559441 | [-0.006993, 0.846329] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| PlainMLP | kendall_tau_b                 | 0.393939 |  [0.000000, 0.696970] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| PlainMLP | top_k_jaccard                 | 0.500000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| PlainMLP | mean_absolute_rank_difference | 2.500000 |  [1.333333, 4.166667] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RealMLP  | spearman                      | 0.860140 |  [0.069755, 0.888112] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RealMLP  | kendall_tau_b                 | 0.727273 |  [0.059848, 0.728030] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RealMLP  | top_k_jaccard                 | 1.000000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| RealMLP  | mean_absolute_rank_difference | 1.166667 |  [1.166667, 3.833333] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| TabMmini | spearman                      | 0.440559 |  [0.111888, 0.881294] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| TabMmini | kendall_tau_b                 | 0.272727 |  [0.090909, 0.728030] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| TabMmini | top_k_jaccard                 | 0.500000 |  [0.200000, 1.000000] |    1000 |         0 | percentile_95_linear | defined |              {} |
+| TabMmini | mean_absolute_rank_difference | 2.500000 |  [1.166667, 3.666667] |    1000 |         0 | percentile_95_linear | defined |              {} |
++----------+-------------------------------+----------+-----------------------+---------+-----------+----------------------+---------+-----------------+
+Diễn giải hướng: Spearman/Kendall/Top-3 Jaccard cao hơn = tương đồng hơn; mean absolute rank difference thấp hơn = tương đồng hơn.
+CI phản ánh resampling 256 explanation rows (donor pairing cố định); không phản ánh lựa chọn sample/donor/seed khác.
+
+====================================================================================================
+SECTION 7 — Cross-model stability (60 rows = 2 methods × 15 model pairs × 2 metrics)
+====================================================================================================
++--------+----------+----------+---------------+----------+----------------------+
+| Method | Left     | Right    | Metric        |    Value | |recomputed − saved| |
++========+==========+==========+===============+==========+======================+
+| GSV    | LR       | RF       | spearman      | 0.762238 |            0.000e+00 |
+| GSV    | LR       | RF       | kendall_tau_b | 0.606061 |            1.110e-16 |
+| GSV    | LR       | XGBoost  | spearman      | 0.937063 |            0.000e+00 |
+| GSV    | LR       | XGBoost  | kendall_tau_b | 0.818182 |            1.110e-16 |
+| GSV    | LR       | PlainMLP | spearman      | 0.937063 |            0.000e+00 |
+| GSV    | LR       | PlainMLP | kendall_tau_b | 0.848485 |            1.110e-16 |
+| GSV    | LR       | RealMLP  | spearman      | 0.839161 |            0.000e+00 |
+| GSV    | LR       | RealMLP  | kendall_tau_b | 0.696970 |            1.110e-16 |
+| GSV    | LR       | TabMmini | spearman      | 0.818182 |            0.000e+00 |
+| GSV    | LR       | TabMmini | kendall_tau_b | 0.666667 |            0.000e+00 |
+| GSV    | RF       | XGBoost  | spearman      | 0.853147 |            0.000e+00 |
+| GSV    | RF       | XGBoost  | kendall_tau_b | 0.666667 |            0.000e+00 |
+| GSV    | RF       | PlainMLP | spearman      | 0.860140 |            0.000e+00 |
+| GSV    | RF       | PlainMLP | kendall_tau_b | 0.696970 |            1.110e-16 |
+| GSV    | RF       | RealMLP  | spearman      | 0.951049 |            0.000e+00 |
+| GSV    | RF       | RealMLP  | kendall_tau_b | 0.848485 |            1.110e-16 |
+| GSV    | RF       | TabMmini | spearman      | 0.748252 |            0.000e+00 |
+| GSV    | RF       | TabMmini | kendall_tau_b | 0.575758 |            1.110e-16 |
+| GSV    | XGBoost  | PlainMLP | spearman      | 0.951049 |            0.000e+00 |
+| GSV    | XGBoost  | PlainMLP | kendall_tau_b | 0.848485 |            1.110e-16 |
+| GSV    | XGBoost  | RealMLP  | spearman      | 0.930070 |            0.000e+00 |
+| GSV    | XGBoost  | RealMLP  | kendall_tau_b | 0.818182 |            1.110e-16 |
+| GSV    | XGBoost  | TabMmini | spearman      | 0.867133 |            0.000e+00 |
+| GSV    | XGBoost  | TabMmini | kendall_tau_b | 0.727273 |            1.110e-16 |
+| GSV    | PlainMLP | RealMLP  | spearman      | 0.923077 |            1.110e-16 |
+| GSV    | PlainMLP | RealMLP  | kendall_tau_b | 0.787879 |            1.110e-16 |
+| GSV    | PlainMLP | TabMmini | spearman      | 0.874126 |            0.000e+00 |
+| GSV    | PlainMLP | TabMmini | kendall_tau_b | 0.757576 |            1.110e-16 |
+| GSV    | RealMLP  | TabMmini | spearman      | 0.832168 |            0.000e+00 |
+| GSV    | RealMLP  | TabMmini | kendall_tau_b | 0.666667 |            0.000e+00 |
+| SL     | LR       | RF       | spearman      | 0.622378 |            0.000e+00 |
+| SL     | LR       | RF       | kendall_tau_b | 0.515152 |            0.000e+00 |
+| SL     | LR       | XGBoost  | spearman      | 0.405594 |            0.000e+00 |
+| SL     | LR       | XGBoost  | kendall_tau_b | 0.151515 |            0.000e+00 |
+| SL     | LR       | PlainMLP | spearman      | 0.307692 |            0.000e+00 |
+| SL     | LR       | PlainMLP | kendall_tau_b | 0.212121 |            0.000e+00 |
+| SL     | LR       | RealMLP  | spearman      | 0.783217 |            0.000e+00 |
+| SL     | LR       | RealMLP  | kendall_tau_b | 0.575758 |            1.110e-16 |
+| SL     | LR       | TabMmini | spearman      | 0.307692 |            0.000e+00 |
+| SL     | LR       | TabMmini | kendall_tau_b | 0.212121 |            0.000e+00 |
+| SL     | RF       | XGBoost  | spearman      | 0.832168 |            0.000e+00 |
+| SL     | RF       | XGBoost  | kendall_tau_b | 0.636364 |            1.110e-16 |
+| SL     | RF       | PlainMLP | spearman      | 0.524476 |            0.000e+00 |
+| SL     | RF       | PlainMLP | kendall_tau_b | 0.393939 |            5.551e-17 |
+| SL     | RF       | RealMLP  | spearman      | 0.818182 |            0.000e+00 |
+| SL     | RF       | RealMLP  | kendall_tau_b | 0.636364 |            1.110e-16 |
+| SL     | RF       | TabMmini | spearman      | 0.328671 |            5.551e-17 |
+| SL     | RF       | TabMmini | kendall_tau_b | 0.272727 |            0.000e+00 |
+| SL     | XGBoost  | PlainMLP | spearman      | 0.440559 |            5.551e-17 |
+| SL     | XGBoost  | PlainMLP | kendall_tau_b | 0.333333 |            0.000e+00 |
+| SL     | XGBoost  | RealMLP  | spearman      | 0.608392 |            0.000e+00 |
+| SL     | XGBoost  | RealMLP  | kendall_tau_b | 0.454545 |            0.000e+00 |
+| SL     | XGBoost  | TabMmini | spearman      | 0.223776 |            8.327e-17 |
+| SL     | XGBoost  | TabMmini | kendall_tau_b | 0.151515 |            0.000e+00 |
+| SL     | PlainMLP | RealMLP  | spearman      | 0.552448 |            0.000e+00 |
+| SL     | PlainMLP | RealMLP  | kendall_tau_b | 0.393939 |            5.551e-17 |
+| SL     | PlainMLP | TabMmini | spearman      | 0.692308 |            0.000e+00 |
+| SL     | PlainMLP | TabMmini | kendall_tau_b | 0.515152 |            0.000e+00 |
+| SL     | RealMLP  | TabMmini | spearman      | 0.496503 |            5.551e-17 |
+| SL     | RealMLP  | TabMmini | kendall_tau_b | 0.393939 |            5.551e-17 |
++--------+----------+----------+---------------+----------+----------------------+
+Cross-model stability là point estimates (không có CI trong production outputs; contract không yêu cầu).
+
+====================================================================================================
+SECTION 8 — Runtime (runtime.csv = status.json)
+====================================================================================================
++----------+------------+-----------+-------------+-------------+
+| Model    |     Cube s |  Method s | Bootstrap s |     Total s |
++==========+============+===========+=============+=============+
+| LR       |  12.082724 |  3.692452 |  767.170195 |  782.945371 |
+| RF       |  46.205401 |  3.444176 |  815.507496 |  865.157074 |
+| XGBoost  |  19.657483 |  6.003658 |  722.758338 |  748.419480 |
+| PlainMLP |  20.831350 |  3.989825 |  688.945156 |  713.766331 |
+| RealMLP  |  46.654356 |  4.051445 |  858.230296 |  908.936097 |
+| TabMmini | 115.931746 |  4.281459 |  677.980428 |  798.193633 |
+| Total    | 261.363061 | 25.463015 | 4530.591909 | 4817.417985 |
++----------+------------+-----------+-------------+-------------+
+Tổng 4817.417985 s khớp giá trị 4817.4179849 trong contract §9 (|diff| ≤ 1e-6). Runtime là SOURCE_VERIFIED_ONLY (không đo lại).
+
+====================================================================================================
+SECTION 9 — Shape, dtype, finite/range checks; tái tính GSV/SL
+====================================================================================================
++----------+-------------+---------+--------+----------+----------+-----------------+---------+--------+
+| Model    |  cube shape |   dtype | finite |      min |      max | gsv_local shape |   dtype | finite |
++==========+=============+=========+========+==========+==========+=================+=========+========+
+| LR       | (4096, 256) | float64 |   True | 0.003923 | 0.999882 |       (256, 12) | float64 |   True |
+| RF       | (4096, 256) | float64 |   True | 0.000000 | 1.000000 |       (256, 12) | float64 |   True |
+| XGBoost  | (4096, 256) | float64 |   True | 0.000072 | 0.999985 |       (256, 12) | float64 |   True |
+| PlainMLP | (4096, 256) | float64 |   True | 0.000000 | 1.000000 |       (256, 12) | float64 |   True |
+| RealMLP  | (4096, 256) | float64 |   True | 0.000000 | 1.000000 |       (256, 12) | float64 |   True |
+| TabMmini | (4096, 256) | float64 |   True | 0.000000 | 1.000000 |       (256, 12) | float64 |   True |
++----------+-------------+---------+--------+----------+----------+-----------------+---------+--------+
++----------+---------------+--------------------+-------------------+--------------------+-------------------+
+| Model    | GSV local |Δ| | GSV efficiency |Δ| | SL efficiency |Δ| | GSV importance |Δ| | SL importance |Δ| |
++==========+===============+====================+===================+====================+===================+
+| LR       |     0.000e+00 |          4.774e-15 |         3.469e-18 |          9.714e-17 |         4.441e-16 |
+| RF       |     0.000e+00 |          1.288e-14 |         0.000e+00 |          9.714e-17 |         2.776e-16 |
+| XGBoost  |     0.000e+00 |          8.993e-15 |         1.301e-18 |          9.519e-17 |         2.776e-16 |
+| PlainMLP |     0.000e+00 |          7.994e-15 |         3.469e-18 |          9.628e-17 |         8.951e-16 |
+| RealMLP  |     0.000e+00 |          9.104e-15 |         3.469e-18 |          9.460e-17 |         7.216e-16 |
+| TabMmini |     0.000e+00 |          1.366e-14 |         1.301e-18 |          9.920e-17 |         4.996e-16 |
++----------+---------------+--------------------+-------------------+--------------------+-------------------+
+GSV local tính lại độc lập từ cube bằng exact Shapley weights (|S|!(12−|S|−1)!/12!); SL tính lại: LZ = 2·cov(v, avg rank)/(n·mean) theo
+từng coalition rồi exact Shapley. Tolerance ≤1e-12 (|Δ| dạng khoa học là ngoại lệ precision).
+
+====================================================================================================
+SECTION 10 — Bootstrap: shared indices, replicate IDs, checkpoints
+====================================================================================================
+- 10 chunks/model: replicate_start/stop (half-open [start, stop)) = [0,100), …, [900,1000), tức replicates 0–99, …, 900–999 như contract §7;
+  seed 4204; model_run_id, observation_count 256, player_count 12 khớp.
+- Valid counts trong từng chunk JSON = số giá trị hữu hạn trong chunk NPZ; nối 10 chunks theo thứ tự gốc → 1000 replicates.
+- CI tính lại từ checkpoint distributions khớp bootstrap.csv (≤1e-14); point estimates tính lại từ normalized importance khớp (≤1e-12).
+- Spot-check replicates 0, 1, 500, 999 của từng model tính lại từ cube + gsv_local + shared indices (không inference) khớp checkpoint (≤1e-12).
+- 24/24 agreement rows: 1000 valid, 0 invalid, ci_available = True.
+
+====================================================================================================
+SECTION 11 — Kết luận theo model/method (mô tả, không phải correctness)
+====================================================================================================
+* LR: Spearman 0.811189 [0.405594, 0.937063]; Kendall 0.606061 [0.303030, 0.818182]; Top-3 Jaccard 0.500000; MARD 1.833333. Rank-1 player: GSV debt_to_income_ratio, SL loan_purpose.
+* RF: Spearman 0.727273 [0.139685, 0.881119]; Kendall 0.515152 [0.090909, 0.727273]; Top-3 Jaccard 0.500000; MARD 2.000000. Rank-1 player: GSV debt_to_income_ratio, SL loan_purpose.
+* XGBoost: Spearman 0.629371 [0.160664, 0.881119]; Kendall 0.545455 [0.090909, 0.727273]; Top-3 Jaccard 1.000000; MARD 1.666667. Rank-1 player: GSV debt_to_income_ratio, SL debt_to_income_ratio.
+* PlainMLP: Spearman 0.559441 [-0.006993, 0.846329]; Kendall 0.393939 [0.000000, 0.696970]; Top-3 Jaccard 0.500000; MARD 2.500000. Rank-1 player: GSV debt_to_income_ratio, SL loan_purpose.
+* RealMLP: Spearman 0.860140 [0.069755, 0.888112]; Kendall 0.727273 [0.059848, 0.728030]; Top-3 Jaccard 1.000000; MARD 1.166667. Rank-1 player: GSV debt_to_income_ratio, SL debt_to_income_ratio.
+* TabMmini: Spearman 0.440559 [0.111888, 0.881294]; Kendall 0.272727 [0.090909, 0.728030]; Top-3 Jaccard 0.500000; MARD 2.500000. Rank-1 player: GSV debt_to_income_ratio, SL loan_purpose.
+Các con số trên mô tả mức tương đồng thứ hạng giữa hai phương pháp dưới replacement game đã khóa; không nói phương pháp nào 'đúng'.
+
+====================================================================================================
+SECTION 12 — Limitations và prohibited interpretations
+====================================================================================================
+  - Một explanation sample (256 Validation rows) và một donor assignment cố định; kết quả phụ thuộc replacement game (interventional).
+  - Bootstrap chỉ resample observation axis; không phản ánh bất định của sample/donor selection hay training.
+  - SL signed contribution mô tả hướng Lorenz–Zonoid score, không phải hướng p_approved.
+  - Agreement/stability không chứng minh explanation correctness, ground truth, causality hay fairness.
+  - Không diễn giải: default risk, creditworthiness, causal effect, legal compliance, discrimination.
+  - Không dùng Test IDs; không trộn Dataset A; không dùng run 12-feature lịch sử.
+
+====================================================================================================
+SECTION 13 — Verification ledger
+====================================================================================================
++---------------------------------+--------+------+--------+
+| Gate                            | Checks | PASS | Status |
++=================================+========+======+========+
+| Gate A — Membership & lineage   |     20 |   20 |   PASS |
+| Gate B — Arrays & recomputation |    204 |  204 |   PASS |
+| Gate C — Bootstrap & CI         |    370 |  370 |   PASS |
+| Gate D — Cross-model & runtime  |    135 |  135 |   PASS |
+| Other                           |      0 |    0 |   PASS |
++---------------------------------+--------+------+--------+
+RECOMPUTED_VERIFIED: gsv_local, GSV/SL importance (global, normalized, signed, rank), 24 agreement points, 24 CI, spot-check replicates,
+60 cross-model values, normalization sums, runtime sums. SOURCE_VERIFIED_ONLY: runtime seconds, status.json, chunk metadata.
+UNVERIFIED (không thể kiểm định độc lập mà không vi phạm boundary):
+  - Giá trị cube.npy (prediction của frozen model trên 4096 coalitions) — cần model inference; cube được coi là saved source artifact.
+  - Quy trình chọn sample (seed 4201), donor pool 128 rows (seed 4202) và donor assignment (seed 4203): không tái chạy sampling; donors.csv
+    chỉ chứa 109 pool indices được dùng, nên thành phần đầy đủ của pool 128 rows không có trong artifacts.
+  - Smoke gate so với frozen Validation predictions và việc sinh bootstrap_indices từ seed 4204 (không regenerate).
+Independent review: kết quả của verifier agent chỉ tồn tại trong chat (không có stored receipt) và không được dẫn làm evidence trong báo cáo này.
+
+====================================================================================================
+SECTION 14 — Trạng thái cuối
+====================================================================================================
+FINAL VERIFICATION STATUS: VERIFIED_PASS (phạm vi: mọi đại lượng downstream của saved cube/gsv_local/bootstrap indices)
+Các mục UNVERIFIED ở Section 13 giữ nguyên UNVERIFIED; không nâng thành PASS.

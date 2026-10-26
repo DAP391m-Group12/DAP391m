@@ -1,0 +1,663 @@
+RQ1_Research_Metrics_Final.txt
+Báo cáo kết quả & kiểm chứng RQ1 — Dataset B (HMDA New York 2024), sáu model final 15-feature
+Chế độ: AUTO_IMPLEMENT (chỉ ghi file này); kiểm chứng read-only từ saved artifacts; không training, không inference, không tái tạo bootstrap.
+Precision: số thực 6 chữ số thập phân, ROUND_HALF_UP khi xuất; counts/folds/replicates là số nguyên; tolerance ở dạng khoa học.
+Ngoại lệ precision: tham số cấu hình (threshold grid, quantiles 0.025/0.975, tie target 0.5), số section, tolerance/|diff| dạng khoa học, và giá trị trích nguyên văn từ contract.
+
+====================================================================================================
+SECTION 1 — Phạm vi và research question
+====================================================================================================
+RQ1: So sánh hiệu năng dự đoán phê duyệt hồ sơ (y_approved = 1) của sáu model final trên cùng Test partition cố định của Dataset B,
+theo 10 metrics đã khóa, với 95% percentile CI (1000 locked bootstrap replicates) và paired-delta CI trên cùng replicate IDs.
+Phạm vi: chỉ Dataset B; chỉ sáu run final 15-feature; không dùng Dataset A; không dùng các run 12-feature lịch sử.
+Không phải default risk, creditworthiness, quan hệ nhân quả, kết luận pháp lý hay bằng chứng discrimination. Fairness KHÔNG dùng để chọn model.
++-----------------------------------+-------------------------------------------------------------------------+
+| Mục                               |                                                                 Giá trị |
++===================================+=========================================================================+
+| Repository                        |                                                D:\Proj\DAP\DAP391m_GR12 |
+| Models                            |                        6 (LR, RF, XGBoost, PlainMLP, RealMLP, TabMmini) |
+| Metrics / model-metric rows       |                                                                 10 / 60 |
+| Paired comparisons                |                                        15 pairs × 10 metrics = 150 rows |
+| Paired CI excludes 0 / includes 0 |                                                                131 / 19 |
+| Programmatic checks               |                                               431 run; 431 PASS; 0 FAIL |
+| Final verification status         | VERIFIED_PASS (phạm vi: tính lại từ saved artifacts; xem Section 13–14) |
++-----------------------------------+-------------------------------------------------------------------------+
+
+====================================================================================================
+SECTION 2 — Source runs và lineage
+====================================================================================================
++----------+---------------------------------+--------+----------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
+| Model    |                          Run ID | FROZEN |                                                                                         Test predictions |                                                          SHA-256 |
++==========+=================================+========+==========================================================================================================+==================================================================+
+| LR       |        lr_final_15f_20261002_01 |    yes |                          artifacts\dataset_b\lr\final\lr_final_15f_20261002_01\test\test_predictions.csv | 08a35552505bd134f3918cfcd1c601ee40d1b28672e45ef247b0c8ba448e5f22 |
+| RF       |        rf_final_15f_20261002_01 |    yes |                          artifacts\dataset_b\rf\final\rf_final_15f_20261002_01\test\test_predictions.csv | 33ab099bce24644bf1a5e03beeea76c6d845b7cadf2e169975b38309bf4db1e7 |
+| XGBoost  |       xgb_final_15f_20261003_01 |    yes |                    artifacts\dataset_b\xgboost\final\xgb_final_15f_20261003_01\test\test_predictions.csv | ec92da93bdc25f21d84ad7e7302cdbef7479c4ec6285a208e31cb30ece519a09 |
+| PlainMLP | plain_mlp_final_15f_20261004_03 |    yes | artifacts\dataset_b\plain_mlp\final\plain_mlp_final_15f_20261004_03\test_evaluation\test_predictions.csv | 7c955b69bd7e39d07bba2218f6a408ec3150227d7b33503d8dd23dc47c403df4 |
+| RealMLP  |   realmlp_final_15f_20261004_01 |    yes |     artifacts\dataset_b\realmlp\final\realmlp_final_15f_20261004_01\test_evaluation\test_predictions.csv | 00b411ad75d06527a77cc857da5de7b543bbfd0c2360b75cac54a12dbe91586d |
+| TabMmini |  tabmmini_final_15f_20261004_01 |    yes |   artifacts\dataset_b\tabmmini\final\tabmmini_final_15f_20261004_01\test_evaluation\test_predictions.csv | 106f93469f204e163bec1265fe4a5884baab3839172d949ea33a16686886cc10 |
++----------+---------------------------------+--------+----------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+
++----------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------+
+| Model    |                                                                                  Bootstrap metric rows (1000) |                                                          SHA-256 |                                                                       Probability source dùng khi tính lại |
++==========+===============================================================================================================+==================================================================+============================================================================================================+
+| LR       |                          artifacts\dataset_b\lr\final\lr_final_15f_20261002_01\test\rq1_bootstrap_metrics.csv | c3aa1892c30890fe02c72edf6c7eb5d9dba5e74c345777f23f9d226035baa6ac |                                                                            test_predictions.csv p_approved |
+| RF       |                          artifacts\dataset_b\rf\final\rf_final_15f_20261002_01\test\rq1_bootstrap_metrics.csv | 920aa73c6c2212e2a43c132e13970f8318b089423dbc39ba6fa9b2f8e272420b | test_predictions.csv p_approved; rank metrics (ROC-AUC, AP) on stored p_denied as in rf_test_evaluation.py |
+| XGBoost  |                    artifacts\dataset_b\xgboost\final\xgb_final_15f_20261003_01\test\rq1_bootstrap_metrics.csv | 01b8c22f093e8bc36522f3cbe498ede9300b97248f8747ea73445a9792e1a8ec |                                                                            test_predictions.csv p_approved |
+| PlainMLP | artifacts\dataset_b\plain_mlp\final\plain_mlp_final_15f_20261004_03\test_evaluation\rq1_bootstrap_metrics.csv | 52bb31aa54a8b3dc98265a128a85213b0e7547a76a1a04d05623f81aa650f96d |                                                                            test_predictions.csv p_approved |
+| RealMLP  |     artifacts\dataset_b\realmlp\final\realmlp_final_15f_20261004_01\test_evaluation\rq1_bootstrap_metrics.csv | f333b68cb0707084966a5161f387ce9c6dbf3a235016fb7b4968c4892add6fa6 |                                                                            test_predictions.csv p_approved |
+| TabMmini |   artifacts\dataset_b\tabmmini\final\tabmmini_final_15f_20261004_01\test_evaluation\rq1_bootstrap_metrics.csv | 21e8b5f96e9204d71bfc590e011f228daddddb9578edec60395440cd954e713e |                                        test_predictions.npz canonical float32 p_approved (cast to float64) |
++----------+---------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------+
+Locked bootstrap index: artifacts/dataset_b/rq1_test_bootstrap_indices.npz, sha256 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1 (khớp locked digest),
+shape (1000, 43996), int32, seed 42, stratified by true class (class 0 trước, class 1 sau), không regenerate.
+Reporting packages: reporting/{model_summary.json, rq1_metrics_long.csv, cv_fold_metrics.csv, confusion_matrix.csv, calibration_curve.csv,
+artifact_index.json} của từng run. Notebook kết quả notebooks/dataset_b/07_model_total_review.ipynb chỉ được đọc (không chạy).
+
+====================================================================================================
+SECTION 3 — Cohort, split, sample size và threshold policy
+====================================================================================================
+split_v1 (artifacts/dataset_b/split_v1.json): Train 205310, Validation 43995, Test 43996 records.
+Test: 43996 rows; Approved 32815; Denied 11181. Thứ tự record_id của mọi model = split_v1 test_record_ids;
+ordered Test-ID digest = bootstrap manifest 47dc67224270038649e6319db44b7a6d79abcdfb0bb4cc1d1e25d9cfd37c081d.
+Threshold policy (split_and_evaluation.md §5): mỗi model tự chọn trên Validation, 999 candidates 0.001..0.999 bước 0.001, tối đa Balanced
+Accuracy; tie → gần 0.5 nhất → threshold thấp hơn. Decision: p_approved >= threshold. Threshold bất biến trên Test và trong bootstrap.
++----------+-----------------+------------+--------+----------+--------------+-------------+
+| Model    | Saved threshold | Re-derived | Status | Val rows | Val BA (max) | #maximizers |
++==========+=================+============+========+==========+==============+=============+
+| LR       |        0.493000 |   0.493000 |  match |    43995 |     0.736301 |           1 |
+| RF       |        0.712000 |   0.712000 |  match |    43995 |     0.767091 |           1 |
+| XGBoost  |        0.525000 |   0.525000 |  match |    43995 |     0.786867 |           1 |
+| PlainMLP |        0.543000 |   0.543000 |  match |    43995 |     0.784656 |           1 |
+| RealMLP  |        0.726000 |   0.726000 |  match |    43995 |     0.786561 |           1 |
+| TabMmini |        0.508000 |   0.508000 |  match |    43995 |     0.781452 |           1 |
++----------+-----------------+------------+--------+----------+--------------+-------------+
+
+====================================================================================================
+SECTION 4 — Danh mục 10 metrics và hướng diễn giải
+====================================================================================================
++--------------------------+---------------------------------------------------------------------------------+-------------------------------------+
+| Metric                   | Định nghĩa                                                                      | Orientation trong paired comparison |
++==========================+=================================================================================+=====================================+
+| roc_auc_approved         | ROC-AUC, positive = Approved, score p_approved                                  | higher                              |
+| average_precision_denied | Average Precision (PR-AUC), positive = Denied, score p_denied                   | higher                              |
+| precision_denied         | TN/(TN+FN) tại threshold                                                        | higher                              |
+| recall_denied            | TN/(TN+FP) tại threshold                                                        | higher                              |
+| f1_denied                | 2TN/(2TN+FN+FP)                                                                 | higher                              |
+| recall_approved          | TP/(TP+FN)                                                                      | higher                              |
+| balanced_accuracy        | (Recall Approved + Recall Denied)/2                                             | higher                              |
+| brier_score_approved     | mean((p_approved − y)^2)                                                        | lower                               |
+| calibration_intercept    | shift a: mean(expit(logit(p)+a)) = mean(y) (calibration-in-the-large; target 0) | |x−0| lower                         |
+| calibration_slope        | slope b của logistic recalibration y ~ a + b·logit(p) (target 1)                | |x−1| lower                         |
++--------------------------+---------------------------------------------------------------------------------+-------------------------------------+
+Score-based: ROC-AUC, AP Denied, Brier, calibration intercept/slope (không phụ thuộc threshold). Decision-based: precision/recall/F1 Denied,
+Recall Approved, BA (phụ thuộc threshold). logit dùng clip p vào [1e-15, 1−1e-15].
+
+====================================================================================================
+SECTION 5 — Point metrics và 95% CI (ordinary, per-model)
+====================================================================================================
+CI: percentile 95% (linear quantiles 0.025/0.975) trên finite saved bootstrap metric rows; status 'defined' khi tính được trên các
+replicate hợp lệ. Đây là CI riêng từng model, KHÔNG phải bằng chứng so sánh giữa model (xem Section 7).
++--------------------------+----------+-----------+----------+----------+-----------+----------+
+| Metric                   |       LR |        RF |  XGBoost | PlainMLP |   RealMLP | TabMmini |
++==========================+==========+===========+==========+==========+===========+==========+
+| roc_auc_approved         | 0.817944 |  0.840940 | 0.864146 | 0.858790 |  0.863203 | 0.857839 |
+| average_precision_denied | 0.696305 |  0.746677 | 0.780825 | 0.775313 |  0.781599 | 0.774183 |
+| precision_denied         | 0.578312 |  0.598731 | 0.616394 | 0.593929 |  0.667836 | 0.643459 |
+| recall_denied            | 0.634380 |  0.691799 | 0.718272 | 0.724443 |  0.680977 | 0.690189 |
+| f1_denied                | 0.605050 |  0.641909 | 0.663445 | 0.652726 |  0.674342 | 0.666005 |
+| recall_approved          | 0.842389 |  0.842023 | 0.847692 | 0.831236 |  0.884595 | 0.869694 |
+| balanced_accuracy        | 0.738384 |  0.766911 | 0.782982 | 0.777839 |  0.782786 | 0.779941 |
+| brier_score_approved     | 0.160129 |  0.117009 | 0.131388 | 0.132112 |  0.106509 | 0.131670 |
+| calibration_intercept    | 1.060342 | -0.027144 | 1.022455 | 1.025936 | -0.004252 | 0.998238 |
+| calibration_slope        | 1.020844 |  0.316135 | 1.060978 | 0.942358 |  0.902709 | 0.997574 |
++--------------------------+----------+-----------+----------+----------+-----------+----------+
++----------+--------------------------+-----------+------------------------+---------+-----------+----------------------+----------------------+
+| Model    | Metric                   |     Point |                 95% CI | n_valid | n_invalid |               Method |               Status |
++==========+==========================+===========+========================+=========+===========+======================+======================+
+| LR       | roc_auc_approved         |  0.817944 |   [0.813012, 0.822304] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | average_precision_denied |  0.696305 |   [0.689280, 0.703901] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | precision_denied         |  0.578312 |   [0.571138, 0.585331] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | recall_denied            |  0.634380 |   [0.624899, 0.642966] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | f1_denied                |  0.605050 |   [0.598142, 0.611809] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | recall_approved          |  0.842389 |   [0.838336, 0.846382] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | balanced_accuracy        |  0.738384 |   [0.733361, 0.743290] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | brier_score_approved     |  0.160129 |   [0.158507, 0.161796] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | calibration_intercept    |  1.060342 |   [1.044740, 1.074985] |    1000 |         0 | percentile_95_linear |              defined |
+| LR       | calibration_slope        |  1.020844 |   [0.996750, 1.046312] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | roc_auc_approved         |  0.840940 |   [0.836295, 0.845353] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | average_precision_denied |  0.746677 |   [0.739908, 0.753442] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | precision_denied         |  0.598731 |   [0.592022, 0.605133] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | recall_denied            |  0.691799 |   [0.683568, 0.700391] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | f1_denied                |  0.641909 |   [0.635380, 0.648123] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | recall_approved          |  0.842023 |   [0.838335, 0.845834] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | balanced_accuracy        |  0.766911 |   [0.762210, 0.771524] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | brier_score_approved     |  0.117009 |   [0.115136, 0.118891] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | calibration_intercept    | -0.027144 | [-0.049292, -0.006492] |    1000 |         0 | percentile_95_linear |              defined |
+| RF       | calibration_slope        |  0.316135 |   [0.280583, 0.354588] |     998 |         2 | percentile_95_linear | defined_on_998_valid |
+| XGBoost  | roc_auc_approved         |  0.864146 |   [0.859808, 0.868027] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | average_precision_denied |  0.780825 |   [0.774897, 0.786547] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | precision_denied         |  0.616394 |   [0.609510, 0.622759] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | recall_denied            |  0.718272 |   [0.709865, 0.726145] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | f1_denied                |  0.663445 |   [0.657144, 0.669398] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | recall_approved          |  0.847692 |   [0.843637, 0.851380] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | balanced_accuracy        |  0.782982 |   [0.778379, 0.787234] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | brier_score_approved     |  0.131388 |   [0.129876, 0.133054] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | calibration_intercept    |  1.022455 |   [1.005219, 1.039434] |    1000 |         0 | percentile_95_linear |              defined |
+| XGBoost  | calibration_slope        |  1.060978 |   [1.038072, 1.083572] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | roc_auc_approved         |  0.858790 |   [0.854385, 0.862776] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | average_precision_denied |  0.775313 |   [0.769312, 0.781168] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | precision_denied         |  0.593929 |   [0.587035, 0.599856] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | recall_denied            |  0.724443 |   [0.716573, 0.732139] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | f1_denied                |  0.652726 |   [0.646609, 0.658245] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | recall_approved          |  0.831236 |   [0.826938, 0.835015] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | balanced_accuracy        |  0.777839 |   [0.773175, 0.782068] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | brier_score_approved     |  0.132112 |   [0.130510, 0.133816] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | calibration_intercept    |  1.025936 |   [1.005994, 1.044666] |    1000 |         0 | percentile_95_linear |              defined |
+| PlainMLP | calibration_slope        |  0.942358 |   [0.921471, 0.963799] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | roc_auc_approved         |  0.863203 |   [0.858719, 0.867294] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | average_precision_denied |  0.781599 |   [0.775332, 0.787476] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | precision_denied         |  0.667836 |   [0.660119, 0.675146] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | recall_denied            |  0.680977 |   [0.672212, 0.689652] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | f1_denied                |  0.674342 |   [0.667819, 0.681201] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | recall_approved          |  0.884595 |   [0.881090, 0.888010] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | balanced_accuracy        |  0.782786 |   [0.778204, 0.787439] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | brier_score_approved     |  0.106509 |   [0.104831, 0.108421] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | calibration_intercept    | -0.004252 |  [-0.024314, 0.015766] |    1000 |         0 | percentile_95_linear |              defined |
+| RealMLP  | calibration_slope        |  0.902709 |   [0.880213, 0.925233] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | roc_auc_approved         |  0.857839 |   [0.853276, 0.861838] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | average_precision_denied |  0.774183 |   [0.767946, 0.779925] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | precision_denied         |  0.643459 |   [0.636257, 0.650140] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | recall_denied            |  0.690189 |   [0.681960, 0.697979] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | f1_denied                |  0.666005 |   [0.659625, 0.672390] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | recall_approved          |  0.869694 |   [0.865914, 0.873138] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | balanced_accuracy        |  0.779941 |   [0.775416, 0.784435] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | brier_score_approved     |  0.131670 |   [0.130189, 0.133348] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | calibration_intercept    |  0.998238 |   [0.979940, 1.015779] |    1000 |         0 | percentile_95_linear |              defined |
+| TabMmini | calibration_slope        |  0.997574 |   [0.974725, 1.021109] |    1000 |         0 | percentile_95_linear |              defined |
++----------+--------------------------+-----------+------------------------+---------+-----------+----------------------+----------------------+
+RF calibration_slope: 998/1000 valid (replicates 652 và 733: 'Calibration score equations did not converge.'); KHÔNG phải 1000/1000.
+Invalid payload giữ nguyên (NaN); không thay thế replicate.
+
+====================================================================================================
+SECTION 6 — CV, confusion matrix, calibration evidence và timing
+====================================================================================================
+
+6.1 Train-only 5-fold CV (reporting/cv_fold_metrics.csv)
+--------------------------------------------------------
++----------+-----------+-----------+-----------+-----------+-----------+----------+-------------+-------------+---------------+
+| Model    | Fold1 AUC | Fold2 AUC | Fold3 AUC | Fold4 AUC | Fold5 AUC |     Mean | SD (ddof=1) | SD (ddof=0) | Σ fit seconds |
++==========+===========+===========+===========+===========+===========+==========+=============+=============+===============+
+| LR       |  0.815598 |  0.815125 |  0.818844 |  0.814565 |  0.818585 | 0.816543 |    0.002018 |    0.001805 |      3.847668 |
+| RF       |  0.839874 |  0.841363 |  0.843119 |  0.841254 |  0.845426 | 0.842207 |    0.002136 |    0.001911 |   1634.302553 |
+| XGBoost  |  0.865205 |  0.862796 |  0.864702 |  0.861622 |  0.867076 | 0.864280 |    0.002128 |    0.001904 |      2.791574 |
+| PlainMLP |  0.861322 |  0.858353 |  0.863558 |  0.859001 |  0.862124 | 0.860871 |    0.002170 |    0.001941 |    221.289506 |
+| RealMLP  |  0.864993 |  0.863098 |  0.865936 |  0.860093 |  0.865270 | 0.863878 |    0.002364 |    0.002114 |   2527.713920 |
+| TabMmini |  0.856013 |  0.857118 |  0.858906 |  0.854612 |  0.859214 | 0.857172 |    0.001942 |    0.001737 |   1424.202199 |
++----------+-----------+-----------+-----------+-----------+-----------+----------+-------------+-------------+---------------+
+model_summary 'std_roc_auc' khớp SD population (ddof=0), không phải sample SD (ddof=1); cả hai được trình bày.
++----------+------------------+----------------+----------------+----------------+
+| Model    | summary mean AUC |     summary SD |        OOF AUC |       OOF rows |
++==========+==================+================+================+================+
+| LR       |         0.816543 |       0.001805 |       0.816507 |         205310 |
+| RF       |         0.842207 |       0.001911 |       0.842202 |         205310 |
+| XGBoost  |         0.864280 |       0.001904 |       0.864277 |         205310 |
+| PlainMLP |         0.860871 |       0.001941 |       0.860501 |         205310 |
+| RealMLP  |   not in summary | not in summary | not in summary | not in summary |
+| TabMmini |         0.857172 |       0.001737 | not in summary |         205310 |
++----------+------------------+----------------+----------------+----------------+
+CV values: SOURCE_VERIFIED_ONLY (đọc từ reporting files; mean/SD tính lại từ fold rows). CV chỉ dùng Train; không dùng cho so sánh Test.
+
+6.2 Confusion matrix tại locked threshold (Test) — tính lại = reporting/confusion_matrix.csv
+--------------------------------------------------------------------------------------------
++----------+--------------+--------------+--------------+--------------+---------------+-------------+
+| Model    | TP (App→App) | FN (App→Den) | TN (Den→Den) | FP (Den→App) | Pred Approved | Pred Denied |
++==========+==============+==============+==============+==============+===============+=============+
+| LR       |        27643 |         5172 |         7093 |         4088 |         31731 |       12265 |
+| RF       |        27631 |         5184 |         7735 |         3446 |         31077 |       12919 |
+| XGBoost  |        27817 |         4998 |         8031 |         3150 |         30967 |       13029 |
+| PlainMLP |        27277 |         5538 |         8100 |         3081 |         30358 |       13638 |
+| RealMLP  |        29028 |         3787 |         7614 |         3567 |         32595 |       11401 |
+| TabMmini |        28539 |         4276 |         7717 |         3464 |         32003 |       11993 |
++----------+--------------+--------------+--------------+--------------+---------------+-------------+
+
+6.3 Calibration curve (quantile bins: 10 bins cho 5 model; RF 9 bins do tied quantile edges; reporting/calibration_curve.csv; SOURCE_VERIFIED_ONLY)
+---------------------------------------------------------------------------------------------------------------------------------------------------
++----------+-----+----------+----------+-------+-----------------+------------------------+
+| Model    | Bin |    Lower |    Upper | Count | Mean p_approved | Observed approval rate |
++==========+=====+==========+==========+=======+=================+========================+
+| LR       |   0 | 0.000000 | 0.150689 |  4399 |        0.040235 |               0.098659 |
+| LR       |   1 | 0.150689 | 0.387928 |  4400 |        0.291266 |               0.540227 |
+| LR       |   2 | 0.387928 | 0.508597 |  4400 |        0.458820 |               0.695000 |
+| LR       |   3 | 0.508597 | 0.569907 |  4399 |        0.539688 |               0.778359 |
+| LR       |   4 | 0.569907 | 0.632024 |  4400 |        0.599536 |               0.801591 |
+| LR       |   5 | 0.632024 | 0.704190 |  4400 |        0.667654 |               0.850455 |
+| LR       |   6 | 0.704190 | 0.752210 |  4399 |        0.730808 |               0.894067 |
+| LR       |   7 | 0.752210 | 0.784994 |  4399 |        0.768714 |               0.918845 |
+| LR       |   8 | 0.784994 | 0.818388 |  4400 |        0.801111 |               0.932727 |
+| LR       |   9 | 0.818388 | 0.999977 |  4400 |        0.893348 |               0.948636 |
+| RF       |   0 | 0.000000 | 0.150000 |  4355 |        0.040110 |               0.049828 |
+| RF       |   1 | 0.150000 | 0.540000 |  4364 |        0.360759 |               0.450275 |
+| RF       |   2 | 0.540000 | 0.720000 |  4219 |        0.637668 |               0.715098 |
+| RF       |   3 | 0.720000 | 0.820000 |  4492 |        0.769548 |               0.802538 |
+| RF       |   4 | 0.820000 | 0.880000 |  4127 |        0.847167 |               0.843470 |
+| RF       |   5 | 0.880000 | 0.926594 |  4841 |        0.901968 |               0.873993 |
+| RF       |   6 | 0.926594 | 0.960000 |  3997 |        0.940967 |               0.892670 |
+| RF       |   7 | 0.960000 | 0.980000 |  3541 |        0.965653 |               0.917255 |
+| RF       |   8 | 0.980000 | 1.000000 | 10060 |        0.993155 |               0.942644 |
+| XGBoost  |   0 | 0.000048 | 0.065089 |  4400 |        0.019890 |               0.033864 |
+| XGBoost  |   1 | 0.065089 | 0.376789 |  4399 |        0.225243 |               0.415549 |
+| XGBoost  |   2 | 0.376789 | 0.529163 |  4400 |        0.460138 |               0.715909 |
+| XGBoost  |   3 | 0.529163 | 0.628043 |  4399 |        0.581374 |               0.789270 |
+| XGBoost  |   4 | 0.628043 | 0.698315 |  4400 |        0.663816 |               0.852500 |
+| XGBoost  |   5 | 0.698315 | 0.759190 |  4399 |        0.730277 |               0.887929 |
+| XGBoost  |   6 | 0.759190 | 0.805180 |  4400 |        0.783549 |               0.916364 |
+| XGBoost  |   7 | 0.805180 | 0.840242 |  4399 |        0.823415 |               0.931348 |
+| XGBoost  |   8 | 0.840242 | 0.871734 |  4400 |        0.855323 |               0.943636 |
+| XGBoost  |   9 | 0.871734 | 0.999953 |  4400 |        0.930873 |               0.972273 |
+| PlainMLP |   0 | 0.000000 | 0.051077 |  4400 |        0.011600 |               0.035682 |
+| PlainMLP |   1 | 0.051077 | 0.369002 |  4399 |        0.214263 |               0.435554 |
+| PlainMLP |   2 | 0.369002 | 0.531527 |  4400 |        0.458268 |               0.712273 |
+| PlainMLP |   3 | 0.531527 | 0.645766 |  4398 |        0.591214 |               0.787858 |
+| PlainMLP |   4 | 0.645766 | 0.715069 |  4401 |        0.681945 |               0.849580 |
+| PlainMLP |   5 | 0.715069 | 0.768225 |  4399 |        0.742623 |               0.888611 |
+| PlainMLP |   6 | 0.768225 | 0.812492 |  4400 |        0.791273 |               0.911364 |
+| PlainMLP |   7 | 0.812492 | 0.843668 |  4399 |        0.829166 |               0.928620 |
+| PlainMLP |   8 | 0.843668 | 0.881288 |  4400 |        0.860250 |               0.940909 |
+| PlainMLP |   9 | 0.881288 | 1.000000 |  4400 |        0.943765 |               0.968182 |
+| RealMLP  |   0 | 0.000000 | 0.107167 |  4400 |        0.022278 |               0.035000 |
+| RealMLP  |   1 | 0.107167 | 0.616095 |  4399 |        0.386988 |               0.416231 |
+| RealMLP  |   2 | 0.616095 | 0.768061 |  4400 |        0.706517 |               0.711136 |
+| RealMLP  |   3 | 0.768061 | 0.836833 |  4399 |        0.805100 |               0.798363 |
+| RealMLP  |   4 | 0.836833 | 0.878800 |  4400 |        0.858862 |               0.851818 |
+| RealMLP  |   5 | 0.878800 | 0.909008 |  4399 |        0.894794 |               0.887474 |
+| RealMLP  |   6 | 0.909008 | 0.930395 |  4399 |        0.920377 |               0.914299 |
+| RealMLP  |   7 | 0.930395 | 0.944572 |  4400 |        0.937949 |               0.929773 |
+| RealMLP  |   8 | 0.944572 | 0.957348 |  4400 |        0.950593 |               0.945000 |
+| RealMLP  |   9 | 0.957348 | 1.000000 |  4400 |        0.979470 |               0.969545 |
+| TabMmini |   0 | 0.000000 | 0.054209 |  4400 |        0.013414 |               0.035909 |
+| TabMmini |   1 | 0.054209 | 0.400918 |  4399 |        0.241667 |               0.428279 |
+| TabMmini |   2 | 0.400918 | 0.542281 |  4400 |        0.477091 |               0.714773 |
+| TabMmini |   3 | 0.542281 | 0.627573 |  4399 |        0.590502 |               0.807684 |
+| TabMmini |   4 | 0.627573 | 0.694802 |  4400 |        0.659803 |               0.837045 |
+| TabMmini |   5 | 0.694802 | 0.768826 |  4400 |        0.731086 |               0.880000 |
+| TabMmini |   6 | 0.768826 | 0.814270 |  4399 |        0.794464 |               0.915435 |
+| TabMmini |   7 | 0.814270 | 0.837508 |  4399 |        0.826173 |               0.935213 |
+| TabMmini |   8 | 0.837508 | 0.861455 |  4400 |        0.848827 |               0.942727 |
+| TabMmini |   9 | 0.861455 | 1.000000 |  4400 |        0.934314 |               0.961591 |
++----------+-----+----------+----------+-------+-----------------+------------------------+
+
+====================================================================================================
+SECTION 7 — Paired comparisons (15 pairs × 10 metrics = 150 rows)
+====================================================================================================
+Delta (oriented): higher-is-better metrics → A − B (dương nghiêng về A); Brier → A − B (âm nghiêng về A); calibration intercept/slope →
+|A − target| − |B − target| (âm nghiêng về A). Point delta từ accepted point estimates; CI = percentile 95% linear của delta từng replicate
+trên CÙNG replicate ID (paired), chỉ dùng replicate có delta hữu hạn. Status 'paired_defined' nếu 1000/1000, ngược lại ghi số valid.
+Theo split_and_evaluation.md §7, rule statistical significance cho khác biệt giữa model CHƯA được phê duyệt: 'excludes 0' dưới đây chỉ là
+paired-difference evidence mô tả, KHÔNG phải tuyên bố 'significantly better'.
++----------+----------+--------------------------+----------------+-----------+-----------+---------+-----------+-----------------------------+------------+-------------------------+
+| Model A  | Model B  | Metric                   | Oriented delta |    CI low |   CI high | n_valid | n_invalid |                      Status |    CI vs 0 | Point favors (if excl.) |
++==========+==========+==========================+================+===========+===========+=========+===========+=============================+============+=========================+
+| LR       | RF       | roc_auc_approved         |      -0.022996 | -0.026980 | -0.018971 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | average_precision_denied |      -0.050372 | -0.055515 | -0.045274 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | precision_denied         |      -0.020418 | -0.028096 | -0.012885 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | recall_denied            |      -0.057419 | -0.065381 | -0.049276 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | f1_denied                |      -0.036859 | -0.042889 | -0.030212 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | recall_approved          |       0.000366 | -0.004450 |  0.005030 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| LR       | RF       | balanced_accuracy        |      -0.028527 | -0.032688 | -0.023778 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | brier_score_approved     |       0.043119 |  0.041572 |  0.044668 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | calibration_intercept    |       1.033198 |  0.998693 |  1.065620 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| LR       | RF       | calibration_slope        |      -0.663022 | -0.705780 | -0.610565 |     998 |         2 | paired_defined_on_998_valid | excludes 0 |                      LR |
+| LR       | XGBoost  | roc_auc_approved         |      -0.046202 | -0.049264 | -0.043186 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | average_precision_denied |      -0.084520 | -0.088977 | -0.080443 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | precision_denied         |      -0.038082 | -0.045187 | -0.031386 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | recall_denied            |      -0.083892 | -0.091765 | -0.076737 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | f1_denied                |      -0.058395 | -0.064466 | -0.052677 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | recall_approved          |      -0.005302 | -0.009694 | -0.001339 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | balanced_accuracy        |      -0.044597 | -0.048923 | -0.040472 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | brier_score_approved     |       0.028741 |  0.027596 |  0.029913 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | calibration_intercept    |       0.037887 |  0.027552 |  0.048417 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| LR       | XGBoost  | calibration_slope        |      -0.040135 | -0.056358 | -0.022134 |    1000 |         0 |              paired_defined | excludes 0 |                      LR |
+| LR       | PlainMLP | roc_auc_approved         |      -0.040846 | -0.044177 | -0.037483 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | average_precision_denied |      -0.079008 | -0.083834 | -0.074318 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | precision_denied         |      -0.015616 | -0.022909 | -0.009007 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | recall_denied            |      -0.090064 | -0.097847 | -0.082459 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | f1_denied                |      -0.047676 | -0.053645 | -0.041864 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | recall_approved          |       0.011153 |  0.006643 |  0.015359 |    1000 |         0 |              paired_defined | excludes 0 |                      LR |
+| LR       | PlainMLP | balanced_accuracy        |      -0.039455 | -0.043731 | -0.035201 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | brier_score_approved     |       0.028016 |  0.026710 |  0.029406 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | calibration_intercept    |       0.034406 |  0.022140 |  0.047613 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| LR       | PlainMLP | calibration_slope        |      -0.036799 | -0.071898 |  0.005442 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| LR       | RealMLP  | roc_auc_approved         |      -0.045260 | -0.048572 | -0.041856 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | average_precision_denied |      -0.085294 | -0.090206 | -0.080325 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | precision_denied         |      -0.089524 | -0.097911 | -0.082307 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | recall_denied            |      -0.046597 | -0.054112 | -0.038995 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | f1_denied                |      -0.069292 | -0.075482 | -0.063387 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | recall_approved          |      -0.042206 | -0.046777 | -0.038366 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | balanced_accuracy        |      -0.044402 | -0.048735 | -0.040378 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | brier_score_approved     |       0.053620 |  0.052133 |  0.055171 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | calibration_intercept    |       1.056090 |  1.021224 |  1.068815 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| LR       | RealMLP  | calibration_slope        |      -0.076448 | -0.111951 | -0.034531 |    1000 |         0 |              paired_defined | excludes 0 |                      LR |
+| LR       | TabMmini | roc_auc_approved         |      -0.039895 | -0.042852 | -0.036937 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | average_precision_denied |      -0.077877 | -0.082339 | -0.073463 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | precision_denied         |      -0.065146 | -0.072883 | -0.058812 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | recall_denied            |      -0.055809 | -0.063053 | -0.048649 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | f1_denied                |      -0.060955 | -0.066875 | -0.055488 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | recall_approved          |      -0.027305 | -0.031785 | -0.023553 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | balanced_accuracy        |      -0.041557 | -0.045849 | -0.037782 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | brier_score_approved     |       0.028459 |  0.027288 |  0.029651 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | calibration_intercept    |       0.062104 |  0.051565 |  0.072930 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| LR       | TabMmini | calibration_slope        |       0.018417 | -0.019907 |  0.034829 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| RF       | XGBoost  | roc_auc_approved         |      -0.023206 | -0.026063 | -0.020191 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | average_precision_denied |      -0.034148 | -0.037515 | -0.030561 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | precision_denied         |      -0.017664 | -0.024278 | -0.011414 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | recall_denied            |      -0.026473 | -0.032734 | -0.019766 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | f1_denied                |      -0.021536 | -0.027011 | -0.016419 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | recall_approved          |      -0.005668 | -0.009477 | -0.001857 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | balanced_accuracy        |      -0.016071 | -0.019872 | -0.012407 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| RF       | XGBoost  | brier_score_approved     |      -0.014379 | -0.015623 | -0.013132 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | XGBoost  | calibration_intercept    |      -0.995311 | -1.032009 | -0.957391 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | XGBoost  | calibration_slope        |       0.622887 |  0.570937 |  0.672050 |     998 |         2 | paired_defined_on_998_valid | excludes 0 |                 XGBoost |
+| RF       | PlainMLP | roc_auc_approved         |      -0.017850 | -0.020932 | -0.014824 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| RF       | PlainMLP | average_precision_denied |      -0.028636 | -0.032244 | -0.025032 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| RF       | PlainMLP | precision_denied         |       0.004802 | -0.001360 |  0.011132 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| RF       | PlainMLP | recall_denied            |      -0.032645 | -0.038908 | -0.025758 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| RF       | PlainMLP | f1_denied                |      -0.010817 | -0.015808 | -0.005586 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| RF       | PlainMLP | recall_approved          |       0.010788 |  0.006641 |  0.014810 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | PlainMLP | balanced_accuracy        |      -0.010928 | -0.014588 | -0.007191 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| RF       | PlainMLP | brier_score_approved     |      -0.015103 | -0.016314 | -0.013819 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | PlainMLP | calibration_intercept    |      -0.998792 | -1.036944 | -0.959705 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | PlainMLP | calibration_slope        |       0.626223 |  0.592033 |  0.661858 |     998 |         2 | paired_defined_on_998_valid | excludes 0 |                PlainMLP |
+| RF       | RealMLP  | roc_auc_approved         |      -0.022263 | -0.025088 | -0.019267 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | average_precision_denied |      -0.034922 | -0.038414 | -0.031155 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | precision_denied         |      -0.069106 | -0.075949 | -0.062269 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | recall_denied            |       0.010822 |  0.004740 |  0.016906 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | RealMLP  | f1_denied                |      -0.032434 | -0.037570 | -0.027153 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | recall_approved          |      -0.042572 | -0.046231 | -0.038732 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | balanced_accuracy        |      -0.015875 | -0.019523 | -0.012391 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | brier_score_approved     |       0.010500 |  0.009469 |  0.011527 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RF       | RealMLP  | calibration_intercept    |       0.022892 | -0.009217 |  0.033972 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| RF       | RealMLP  | calibration_slope        |       0.586574 |  0.551230 |  0.621674 |     998 |         2 | paired_defined_on_998_valid | excludes 0 |                 RealMLP |
+| RF       | TabMmini | roc_auc_approved         |      -0.016899 | -0.019711 | -0.013761 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | average_precision_denied |      -0.027506 | -0.030902 | -0.024109 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | precision_denied         |      -0.044728 | -0.051615 | -0.038224 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | recall_denied            |       0.001610 | -0.004114 |  0.007783 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| RF       | TabMmini | f1_denied                |      -0.024096 | -0.029320 | -0.019110 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | recall_approved          |      -0.027670 | -0.031450 | -0.023800 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | balanced_accuracy        |      -0.013030 | -0.016601 | -0.009589 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RF       | TabMmini | brier_score_approved     |      -0.014661 | -0.015847 | -0.013428 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | TabMmini | calibration_intercept    |      -0.971094 | -1.008329 | -0.933381 |    1000 |         0 |              paired_defined | excludes 0 |                      RF |
+| RF       | TabMmini | calibration_slope        |       0.681439 |  0.631665 |  0.710962 |     998 |         2 | paired_defined_on_998_valid | excludes 0 |                TabMmini |
+| XGBoost  | PlainMLP | roc_auc_approved         |       0.005356 |  0.003331 |  0.007238 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | average_precision_denied |       0.005513 |  0.003156 |  0.007736 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | precision_denied         |       0.022465 |  0.017514 |  0.027191 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | recall_denied            |      -0.006171 | -0.011537 | -0.000537 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| XGBoost  | PlainMLP | f1_denied                |       0.010719 |  0.006624 |  0.015013 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | recall_approved          |       0.016456 |  0.013133 |  0.019567 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | balanced_accuracy        |       0.005142 |  0.002143 |  0.008354 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | PlainMLP | brier_score_approved     |      -0.000725 | -0.001421 |  0.000043 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | PlainMLP | calibration_intercept    |      -0.003481 | -0.010265 |  0.003558 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | PlainMLP | calibration_slope        |       0.003336 | -0.039173 |  0.045691 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | RealMLP  | roc_auc_approved         |       0.000943 | -0.000907 |  0.002827 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | RealMLP  | average_precision_denied |      -0.000774 | -0.003166 |  0.002000 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | RealMLP  | precision_denied         |      -0.051442 | -0.057453 | -0.045935 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| XGBoost  | RealMLP  | recall_denied            |       0.037295 |  0.031927 |  0.042662 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | RealMLP  | f1_denied                |      -0.010898 | -0.015673 | -0.006426 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| XGBoost  | RealMLP  | recall_approved          |      -0.036904 | -0.040196 | -0.033887 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| XGBoost  | RealMLP  | balanced_accuracy        |       0.000196 | -0.003114 |  0.003357 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | RealMLP  | brier_score_approved     |       0.024879 |  0.023739 |  0.026046 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| XGBoost  | RealMLP  | calibration_intercept    |       1.018203 |  0.981102 |  1.030161 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| XGBoost  | RealMLP  | calibration_slope        |      -0.036313 | -0.079236 |  0.005489 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | TabMmini | roc_auc_approved         |       0.006307 |  0.004333 |  0.008069 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | TabMmini | average_precision_denied |       0.006643 |  0.004387 |  0.008847 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | TabMmini | precision_denied         |      -0.027064 | -0.032031 | -0.022385 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| XGBoost  | TabMmini | recall_denied            |       0.028083 |  0.022983 |  0.033092 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | TabMmini | f1_denied                |      -0.002560 | -0.006793 |  0.001321 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | TabMmini | recall_approved          |      -0.022002 | -0.024989 | -0.019167 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| XGBoost  | TabMmini | balanced_accuracy        |       0.003041 |  0.000107 |  0.005878 |    1000 |         0 |              paired_defined | excludes 0 |                 XGBoost |
+| XGBoost  | TabMmini | brier_score_approved     |      -0.000282 | -0.001007 |  0.000438 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| XGBoost  | TabMmini | calibration_intercept    |       0.024217 |  0.017874 |  0.030377 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| XGBoost  | TabMmini | calibration_slope        |       0.058552 |  0.012853 |  0.070571 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| PlainMLP | RealMLP  | roc_auc_approved         |      -0.004413 | -0.005968 | -0.002583 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | average_precision_denied |      -0.006287 | -0.008278 | -0.004353 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | precision_denied         |      -0.073907 | -0.079087 | -0.068632 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | recall_denied            |       0.043467 |  0.038456 |  0.048209 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| PlainMLP | RealMLP  | f1_denied                |      -0.021617 | -0.025702 | -0.017406 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | recall_approved          |      -0.053360 | -0.056407 | -0.050342 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | balanced_accuracy        |      -0.004947 | -0.007664 | -0.002165 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | brier_score_approved     |       0.025604 |  0.024557 |  0.026555 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | calibration_intercept    |       1.021684 |  0.982327 |  1.033802 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| PlainMLP | RealMLP  | calibration_slope        |      -0.039649 | -0.049963 | -0.029827 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| PlainMLP | TabMmini | roc_auc_approved         |       0.000951 | -0.000807 |  0.002595 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| PlainMLP | TabMmini | average_precision_denied |       0.001130 | -0.000711 |  0.002948 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| PlainMLP | TabMmini | precision_denied         |      -0.049530 | -0.054401 | -0.045034 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| PlainMLP | TabMmini | recall_denied            |       0.034255 |  0.029425 |  0.039084 |    1000 |         0 |              paired_defined | excludes 0 |                PlainMLP |
+| PlainMLP | TabMmini | f1_denied                |      -0.013279 | -0.017439 | -0.009263 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| PlainMLP | TabMmini | recall_approved          |      -0.038458 | -0.041475 | -0.035653 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| PlainMLP | TabMmini | balanced_accuracy        |      -0.002102 | -0.004991 |  0.000619 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| PlainMLP | TabMmini | brier_score_approved     |       0.000443 | -0.000160 |  0.001054 |    1000 |         0 |              paired_defined | includes 0 |                    none |
+| PlainMLP | TabMmini | calibration_intercept    |       0.027698 |  0.022069 |  0.033109 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| PlainMLP | TabMmini | calibration_slope        |       0.055216 |  0.016282 |  0.062463 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RealMLP  | TabMmini | roc_auc_approved         |       0.005365 |  0.003662 |  0.007086 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | average_precision_denied |       0.007417 |  0.005373 |  0.009384 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | precision_denied         |       0.024377 |  0.019510 |  0.029944 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | recall_denied            |      -0.009212 | -0.013952 | -0.003846 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
+| RealMLP  | TabMmini | f1_denied                |       0.008337 |  0.004148 |  0.012579 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | recall_approved          |       0.014902 |  0.012341 |  0.017797 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | balanced_accuracy        |       0.002845 |  0.000124 |  0.005715 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | brier_score_approved     |      -0.025161 | -0.026146 | -0.024183 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | calibration_intercept    |      -0.993986 | -1.005898 | -0.956139 |    1000 |         0 |              paired_defined | excludes 0 |                 RealMLP |
+| RealMLP  | TabMmini | calibration_slope        |       0.094865 |  0.055452 |  0.103439 |    1000 |         0 |              paired_defined | excludes 0 |                TabMmini |
++----------+----------+--------------------------+----------------+-----------+-----------+---------+-----------+-----------------------------+------------+-------------------------+
+RF calibration_slope: 5 comparisons có 998 finite paired differences (2 frozen RF slope replicates invalid).
+
+7.1 Tổng hợp theo metric
+------------------------
++--------------------------+---------------+---------------+-------------+
+| Metric                   | CI excludes 0 | CI includes 0 | min n_valid |
++==========================+===============+===============+=============+
+| roc_auc_approved         |            13 |             2 |        1000 |
+| average_precision_denied |            13 |             2 |        1000 |
+| precision_denied         |            14 |             1 |        1000 |
+| recall_denied            |            14 |             1 |        1000 |
+| f1_denied                |            14 |             1 |        1000 |
+| recall_approved          |            14 |             1 |        1000 |
+| balanced_accuracy        |            13 |             2 |        1000 |
+| brier_score_approved     |            12 |             3 |        1000 |
+| calibration_intercept    |            13 |             2 |        1000 |
+| calibration_slope        |            11 |             4 |         998 |
++--------------------------+---------------+---------------+-------------+
+19 comparisons có CI chứa 0:
+  - LR vs RF — recall_approved: delta 0.000366 [-0.004450, 0.005030]
+  - LR vs PlainMLP — calibration_slope: delta -0.036799 [-0.071898, 0.005442]
+  - LR vs TabMmini — calibration_slope: delta 0.018417 [-0.019907, 0.034829]
+  - RF vs PlainMLP — precision_denied: delta 0.004802 [-0.001360, 0.011132]
+  - RF vs RealMLP — calibration_intercept: delta 0.022892 [-0.009217, 0.033972]
+  - RF vs TabMmini — recall_denied: delta 0.001610 [-0.004114, 0.007783]
+  - XGBoost vs PlainMLP — brier_score_approved: delta -0.000725 [-0.001421, 0.000043]
+  - XGBoost vs PlainMLP — calibration_intercept: delta -0.003481 [-0.010265, 0.003558]
+  - XGBoost vs PlainMLP — calibration_slope: delta 0.003336 [-0.039173, 0.045691]
+  - XGBoost vs RealMLP — roc_auc_approved: delta 0.000943 [-0.000907, 0.002827]
+  - XGBoost vs RealMLP — average_precision_denied: delta -0.000774 [-0.003166, 0.002000]
+  - XGBoost vs RealMLP — balanced_accuracy: delta 0.000196 [-0.003114, 0.003357]
+  - XGBoost vs RealMLP — calibration_slope: delta -0.036313 [-0.079236, 0.005489]
+  - XGBoost vs TabMmini — f1_denied: delta -0.002560 [-0.006793, 0.001321]
+  - XGBoost vs TabMmini — brier_score_approved: delta -0.000282 [-0.001007, 0.000438]
+  - PlainMLP vs TabMmini — roc_auc_approved: delta 0.000951 [-0.000807, 0.002595]
+  - PlainMLP vs TabMmini — average_precision_denied: delta 0.001130 [-0.000711, 0.002948]
+  - PlainMLP vs TabMmini — balanced_accuracy: delta -0.002102 [-0.004991, 0.000619]
+  - PlainMLP vs TabMmini — brier_score_approved: delta 0.000443 [-0.000160, 0.001054]
+
+====================================================================================================
+SECTION 8 — Kiểm tra alignment (predictions, labels, replicate IDs)
+====================================================================================================
++---------------------+--------+------+
+| Nhóm kiểm tra       | Checks | PASS |
++=====================+========+======+
+| ids/labels/rows     |     21 |   21 |
+| probabilities       |      6 |    6 |
+| bootstrap           |     11 |   11 |
+| threshold/decisions |     11 |   11 |
+| FROZEN              |      6 |    6 |
+| tabmmini float32    |      2 |    2 |
++---------------------+--------+------+
+Kết quả: 6 models × 43996 rows; record_id duy nhất, cùng thứ tự, cùng y_approved; thứ tự = split_v1 test_record_ids; xác suất hữu hạn trong
+[0,1]; replicate_id 0..999 cho cả 6 bootstrap files; bootstrap index stratified đúng theo class.
+
+====================================================================================================
+SECTION 9 — Point estimate vs ordinary CI vs paired-delta CI
+====================================================================================================
+- Point estimate: metric trên full Test (43996 rows) tại locked threshold.
+- Ordinary CI (Section 5): bất định Test-sampling của từng model riêng lẻ; hai CI chồng lấn/không chồng lấn KHÔNG được dùng để so sánh.
+- Paired-delta CI (Section 7): delta tính trong cùng replicate (cùng sampled Test rows) cho hai model; là cơ sở mô tả khác biệt giữa model.
+- Không pool, không chọn replicate, không làm tròn trước khi tính quantile.
+
+====================================================================================================
+SECTION 10 — Kết luận theo metric (mô tả, không xếp hạng tuyệt đối)
+====================================================================================================
+* roc_auc_approved (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: XGBoost 0.864146; RealMLP 0.863203; PlainMLP 0.858790; TabMmini 0.857839; RF 0.840940; LR 0.817944.
+  Paired CI chứa 0 ở 2/15 cặp: XGBoost–RealMLP; PlainMLP–TabMmini.
+* average_precision_denied (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: RealMLP 0.781599; XGBoost 0.780825; PlainMLP 0.775313; TabMmini 0.774183; RF 0.746677; LR 0.696305.
+  Paired CI chứa 0 ở 2/15 cặp: XGBoost–RealMLP; PlainMLP–TabMmini.
+* precision_denied (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: RealMLP 0.667836; TabMmini 0.643459; XGBoost 0.616394; RF 0.598731; PlainMLP 0.593929; LR 0.578312.
+  Paired CI chứa 0 ở 1/15 cặp: RF–PlainMLP.
+* recall_denied (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: PlainMLP 0.724443; XGBoost 0.718272; RF 0.691799; TabMmini 0.690189; RealMLP 0.680977; LR 0.634380.
+  Paired CI chứa 0 ở 1/15 cặp: RF–TabMmini.
+* f1_denied (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: RealMLP 0.674342; TabMmini 0.666005; XGBoost 0.663445; PlainMLP 0.652726; RF 0.641909; LR 0.605050.
+  Paired CI chứa 0 ở 1/15 cặp: XGBoost–TabMmini.
+* recall_approved (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: RealMLP 0.884595; TabMmini 0.869694; XGBoost 0.847692; LR 0.842389; RF 0.842023; PlainMLP 0.831236.
+  Paired CI chứa 0 ở 1/15 cặp: LR–RF.
+* balanced_accuracy (orientation higher): thứ tự point estimate từ tốt → kém theo orientation: XGBoost 0.782982; RealMLP 0.782786; TabMmini 0.779941; PlainMLP 0.777839; RF 0.766911; LR 0.738384.
+  Paired CI chứa 0 ở 2/15 cặp: XGBoost–RealMLP; PlainMLP–TabMmini.
+* brier_score_approved (orientation lower): thứ tự point estimate từ tốt → kém theo orientation: RealMLP 0.106509; RF 0.117009; XGBoost 0.131388; TabMmini 0.131670; PlainMLP 0.132112; LR 0.160129.
+  Paired CI chứa 0 ở 3/15 cặp: XGBoost–PlainMLP; XGBoost–TabMmini; PlainMLP–TabMmini.
+* calibration_intercept (orientation |x−0| lower): thứ tự point estimate từ tốt → kém theo orientation: RealMLP -0.004252; RF -0.027144; TabMmini 0.998238; XGBoost 1.022455; PlainMLP 1.025936; LR 1.060342.
+  Paired CI chứa 0 ở 2/15 cặp: RF–RealMLP; XGBoost–PlainMLP.
+* calibration_slope (orientation |x−1| lower): thứ tự point estimate từ tốt → kém theo orientation: TabMmini 0.997574; LR 1.020844; PlainMLP 0.942358; XGBoost 1.060978; RealMLP 0.902709; RF 0.316135.
+  Paired CI chứa 0 ở 4/15 cặp: LR–PlainMLP; LR–TabMmini; XGBoost–PlainMLP; XGBoost–RealMLP.
+Không model nào được gọi là 'tốt nhất tuyệt đối': thứ tự thay đổi theo metric (vd. discrimination vs calibration vs thresholded utility).
+
+====================================================================================================
+SECTION 11 — Numerical verification (recomputed vs saved)
+====================================================================================================
++----------+--------------------------+-----------+------------+-----------+------------+
+| Model    | Metric                   |     Saved | Recomputed |    |diff| |       Rule |
++==========+==========================+===========+============+===========+============+
+| LR       | roc_auc_approved         |  0.817944 |   0.817944 | 0.000e+00 | atol 1e-12 |
+| LR       | average_precision_denied |  0.696305 |   0.696305 | 0.000e+00 | atol 1e-12 |
+| LR       | precision_denied         |  0.578312 |   0.578312 | 0.000e+00 | atol 1e-12 |
+| LR       | recall_denied            |  0.634380 |   0.634380 | 0.000e+00 | atol 1e-12 |
+| LR       | f1_denied                |  0.605050 |   0.605050 | 0.000e+00 | atol 1e-12 |
+| LR       | recall_approved          |  0.842389 |   0.842389 | 0.000e+00 | atol 1e-12 |
+| LR       | balanced_accuracy        |  0.738384 |   0.738384 | 0.000e+00 | atol 1e-12 |
+| LR       | brier_score_approved     |  0.160129 |   0.160129 | 2.776e-17 | atol 1e-12 |
+| LR       | calibration_intercept    |  1.060342 |   1.060342 | 8.882e-16 | atol 1e-12 |
+| LR       | calibration_slope        |  1.020844 |   1.020844 | 2.139e-08 | 6dp policy |
+| RF       | roc_auc_approved         |  0.840940 |   0.840940 | 0.000e+00 | atol 1e-12 |
+| RF       | average_precision_denied |  0.746677 |   0.746677 | 0.000e+00 | atol 1e-12 |
+| RF       | precision_denied         |  0.598731 |   0.598731 | 0.000e+00 | atol 1e-12 |
+| RF       | recall_denied            |  0.691799 |   0.691799 | 0.000e+00 | atol 1e-12 |
+| RF       | f1_denied                |  0.641909 |   0.641909 | 0.000e+00 | atol 1e-12 |
+| RF       | recall_approved          |  0.842023 |   0.842023 | 0.000e+00 | atol 1e-12 |
+| RF       | balanced_accuracy        |  0.766911 |   0.766911 | 0.000e+00 | atol 1e-12 |
+| RF       | brier_score_approved     |  0.117009 |   0.117009 | 6.939e-17 | atol 1e-12 |
+| RF       | calibration_intercept    | -0.027144 |  -0.027144 | 2.047e-16 | atol 1e-12 |
+| RF       | calibration_slope        |  0.316135 |   0.316135 | 7.687e-11 | 6dp policy |
+| XGBoost  | roc_auc_approved         |  0.864146 |   0.864146 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | average_precision_denied |  0.780825 |   0.780825 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | precision_denied         |  0.616394 |   0.616394 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | recall_denied            |  0.718272 |   0.718272 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | f1_denied                |  0.663445 |   0.663445 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | recall_approved          |  0.847692 |   0.847692 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | balanced_accuracy        |  0.782982 |   0.782982 | 0.000e+00 | atol 1e-12 |
+| XGBoost  | brier_score_approved     |  0.131388 |   0.131388 | 2.776e-17 | atol 1e-12 |
+| XGBoost  | calibration_intercept    |  1.022455 |   1.022455 | 4.219e-15 | atol 1e-12 |
+| XGBoost  | calibration_slope        |  1.060978 |   1.060978 | 1.373e-09 | 6dp policy |
+| PlainMLP | roc_auc_approved         |  0.858790 |   0.858790 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | average_precision_denied |  0.775313 |   0.775313 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | precision_denied         |  0.593929 |   0.593929 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | recall_denied            |  0.724443 |   0.724443 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | f1_denied                |  0.652726 |   0.652726 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | recall_approved          |  0.831236 |   0.831236 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | balanced_accuracy        |  0.777839 |   0.777839 | 0.000e+00 | atol 1e-12 |
+| PlainMLP | brier_score_approved     |  0.132112 |   0.132112 | 8.327e-17 | atol 1e-12 |
+| PlainMLP | calibration_intercept    |  1.025936 |   1.025936 | 2.220e-16 | atol 1e-12 |
+| PlainMLP | calibration_slope        |  0.942358 |   0.942358 | 1.625e-10 | 6dp policy |
+| RealMLP  | roc_auc_approved         |  0.863203 |   0.863203 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | average_precision_denied |  0.781599 |   0.781599 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | precision_denied         |  0.667836 |   0.667836 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | recall_denied            |  0.680977 |   0.680977 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | f1_denied                |  0.674342 |   0.674342 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | recall_approved          |  0.884595 |   0.884595 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | balanced_accuracy        |  0.782786 |   0.782786 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | brier_score_approved     |  0.106509 |   0.106509 | 0.000e+00 | atol 1e-12 |
+| RealMLP  | calibration_intercept    | -0.004252 |  -0.004252 | 1.072e-15 | atol 1e-12 |
+| RealMLP  | calibration_slope        |  0.902709 |   0.902709 | 1.191e-10 | 6dp policy |
+| TabMmini | roc_auc_approved         |  0.857839 |   0.857839 | 0.000e+00 | atol 1e-12 |
+| TabMmini | average_precision_denied |  0.774183 |   0.774183 | 0.000e+00 | atol 1e-12 |
+| TabMmini | precision_denied         |  0.643459 |   0.643459 | 0.000e+00 | atol 1e-12 |
+| TabMmini | recall_denied            |  0.690189 |   0.690189 | 0.000e+00 | atol 1e-12 |
+| TabMmini | f1_denied                |  0.666005 |   0.666005 | 0.000e+00 | atol 1e-12 |
+| TabMmini | recall_approved          |  0.869694 |   0.869694 | 0.000e+00 | atol 1e-12 |
+| TabMmini | balanced_accuracy        |  0.779941 |   0.779941 | 0.000e+00 | atol 1e-12 |
+| TabMmini | brier_score_approved     |  0.131670 |   0.131670 | 0.000e+00 | atol 1e-12 |
+| TabMmini | calibration_intercept    |  0.998238 |   0.998238 | 1.110e-16 | atol 1e-12 |
+| TabMmini | calibration_slope        |  0.997574 |   0.997574 | 2.255e-10 | 6dp policy |
++----------+--------------------------+-----------+------------+-----------+------------+
+Max |diff| (trừ slope) = 4.219e-15; calibration_slope max |diff| = 2.139e-08 (so sánh sau khi làm tròn 6dp theo policy; khớp 6/6).
+Calibration intercept/slope được tính lại bằng implementation độc lập (bisection; Newton–Raphson logistic) — không gọi code production.
+Giải trình: RF ROC-AUC/AP được production tính trên cột p_denied đã lưu (rf_test_evaluation.py); dùng p_approved cho sai khác ≤3.6e-9 do
+thứ tự ties ở mức ulp (p_approved + p_denied = 1 ± 2.2e-16). TabMmini dùng canonical float32 p_approved (npz); CSV in ít chữ số hơn.
+Locked policy (split_and_evaluation.md §7): point metrics atol 1e-12; replicate values và CI endpoints atol 1e-14; chỉ calibration_slope so
+sánh sau khi làm tròn 6dp. CI: 60/60 CI tính lại từ saved bootstrap rows khớp rq1_metrics_long.csv (|diff| ≤ 1e-14), n_valid khớp.
+Spot-check replicates 0, 1, 500, 999 của mỗi model, tính lại từ predictions + locked indices (max |diff| thực tế):
++----------+----------------+-------------------------------+---------------------------------------+----------------+
+| Model    | 8 metrics khác | Intercept (bisection độc lập) | Intercept (brentq, định nghĩa locked) | Slope (so 6dp) |
++==========+================+===============================+=======================================+================+
+| LR       |        8.3e-17 |                       4.0e-15 |                               2.2e-16 |        5.8e-08 |
+| RF       |        8.3e-17 |                       4.4e-16 |                               8.3e-17 |        2.1e-08 |
+| XGBoost  |        8.3e-17 |                       9.7e-14 |                               4.4e-16 |        3.5e-08 |
+| PlainMLP |        1.1e-16 |                       4.4e-16 |                               6.7e-16 |        4.5e-10 |
+| RealMLP  |        2.8e-17 |                       2.1e-15 |                               2.3e-16 |        3.1e-09 |
+| TabMmini |        1.1e-16 |                       1.1e-16 |                               2.2e-16 |        4.1e-09 |
++----------+----------------+-------------------------------+---------------------------------------+----------------+
+8 metrics khác ≤ 1e-14 (đạt locked replicate tolerance). Intercept với bisection độc lập: tối đa 9.7e-14 (XGBoost) > 1e-14 — KHÔNG đạt
+locked replicate tolerance; khác biệt do sai số root-finder. Dùng brentq (cùng root-finder của định nghĩa metric đã khóa) → ≤ 6.7e-16,
+đạt 1e-14; check theo locked policy dùng giá trị brentq. Slope khớp sau khi làm tròn 6dp ở mọi spot-check.
+Paired: 150 rows tính lại độc lập; tổng 131 excludes 0 / 19 includes 0 khớp STATUS và notebook 07. Notebook 07 không lưu bảng 150 dòng ở
+dạng đọc được (output bị cắt), nên đối chiếu từng dòng với notebook là UNAVAILABLE; chỉ đối chiếu được tổng số.
+
+====================================================================================================
+SECTION 12 — Limitations và prohibited interpretations
+====================================================================================================
+  - Một Test partition duy nhất; CI chỉ phản ánh Test-sampling uncertainty (không gồm training variability).
+  - Significance rule cho khác biệt giữa model chưa được phê duyệt (split_and_evaluation.md §7) → 'excludes 0' chỉ là mô tả.
+  - Không multiplicity correction cho 150 comparisons.
+  - RF calibration_slope có 2 replicate invalid (998/1000); RF slope point 0.316135 lệch xa target 1 (mô tả theo metric này).
+  - Calibration intercept/slope phụ thuộc clip 1e-15 với xác suất 0/1 (RF, PlainMLP, TabMmini có p = 0).
+  - Threshold chọn trên Validation đầy đủ theo BA; metrics decision-based phụ thuộc threshold đó.
+  - CV metrics là Train-only, khác partition; không so sánh trực tiếp với Test.
+  - Không được diễn giải: default risk, creditworthiness, causal effect, legal compliance, discrimination; không chọn model theo fairness;
+  - không tuyên bố model 'tốt nhất tuyệt đối'; không trộn Dataset A hay run 12-feature lịch sử.
+
+====================================================================================================
+SECTION 13 — Verification ledger
+====================================================================================================
++-------------------------------------+--------+------+--------+
+| Gate                                | Checks | PASS | Status |
++=====================================+========+======+========+
+| Gate A — Source integrity & lineage |     51 |   51 |   PASS |
+| Gate B — Threshold & point metrics  |     77 |   77 |   PASS |
+| Gate C — CI & replicates            |    300 |  300 |   PASS |
+| Gate D — Paired comparisons         |      3 |    3 |   PASS |
+| Other                               |      0 |    0 |   PASS |
++-------------------------------------+--------+------+--------+
+Tổng: 431 checks, 431 PASS. Phân loại: RECOMPUTED_VERIFIED = thresholds, 60 point metrics, 60 CI, confusion matrices;
+RECOMPUTED (aggregate-reconciled only) = 150 paired deltas/CI (chỉ tổng 131/19 và 5×998 được đối chiếu với STATUS/notebook 07; không có
+stored row-level reference); SOURCE_VERIFIED_ONLY = CV fold metrics, calibration curve, timing; UNAVAILABLE = đối chiếu từng dòng paired
+với notebook 07.
+Independent review: kết quả của verifier agent chỉ tồn tại trong chat (không có stored receipt) và không được dẫn làm evidence trong báo
+cáo này. Self-review của người thực hiện không được tính là independent verification.
+
+====================================================================================================
+SECTION 14 — Trạng thái cuối
+====================================================================================================
+FINAL VERIFICATION STATUS: VERIFIED_PASS (phạm vi: kiểm chứng số học read-only từ saved artifacts)
+Giữ nguyên: không có significance claim; kết luận theo metric; UNAVAILABLE item ở Section 11/13 vẫn là UNAVAILABLE.
