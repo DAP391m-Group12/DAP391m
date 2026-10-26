@@ -1,47 +1,152 @@
 RQ3_RQ4a_RQ4b_Research_Metrics_Final.txt
-(Bản hợp nhất: báo cáo gốc RQ3_RQ4a_RQ4b_Research_Metrics_Verified.txt + supplementary results đã review)
-Báo cáo trích xuất & kiểm chứng độc lập số liệu — HMDA New York 2024, Dataset B
-Chế độ: REVIEW_ONLY — READ_ONLY_EXTRACTION — INDEPENDENT_VERIFICATION
+Báo cáo kết quả nghiên cứu — HMDA New York 2024, Dataset B
+Tái kiến trúc ngày 2026-10-26 từ báo cáo trích xuất/kiểm chứng đã review; không thay đổi production artifacts.
 
 ====================================================================================================
-SECTION 1 — Executive Extraction Summary
-====================================================================================================
-+----------------------------------+--------------------------------------------------------------------------------------------------------------------------+
-| Mục                              |                                                                                                                  Giá trị |
-+==================================+==========================================================================================================================+
-| Repository                       |                                                                     D:\Proj\DAP\DAP391m_GR12 (branch main, HEAD fd419da) |
-| Ngày trích xuất                  |                                                                                                               2026-10-24 |
-| Evaluation dataset               |                                                                             Dataset B, split_v1, partition Test (frozen) |
-| Population size (full Test)      |                                                                            43996 records (Approved 32815 / Denied 11181) |
-| Test-ID digest (ordered, sha256) |                                                         47dc67224270038649e6319db44b7a6d79abcdfb0bb4cc1d1e25d9cfd37c081d |
-| Positive outcome                 |                                                                                   y_approved = 1; predicted_approved = 1 |
-| Bootstrap                        | rq1_test_bootstrap_indices.npz, 1000 replicates, sha256 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1 |
-| Experiment units                 |                                                    15 = RQ3 2 + RQ4a 4 + RQ4b 9 (6 replicated + 3 single-seed screening) |
-| Completed units found            |                                                                                      15/15 completed; 0 failed unit used |
-| Independent checks run           |                                          503 programmatic checks; 501 PASS; 2 expected-explained mismatch; 0 unexplained |
-| Point-metric reconciliation      |                  236 recomputed-vs-stored comparisons; max |diff| = 1.110e-16 (tolerance exception: scientific notation) |
-| Source verification status       |                                                                                                            PASS (Gate A) |
-| Overall extraction/review status |                                           PARTIAL_VERIFICATION (xem Section 9-10: một số CI không có/không tái tạo được) |
-+----------------------------------+--------------------------------------------------------------------------------------------------------------------------+
-
-Lưu ý quan trọng về inventory: prompt dự kiến RQ4b có 6 units; production thực tế có 9 units
-(λ ∈ {0, 0.01} × seeds {42, 43, 44} = 6 replicated units, cộng 3 screening units λ ∈ {0.03, 0.1, 0.3} chỉ có seed 42).
-Precision: mọi số thực 6 chữ số thập phân (ROUND_HALF_UP ở bước xuất). Ngoại lệ khai báo: counts/epochs/seeds là số nguyên; tolerance/max|diff| ở dạng khoa học; tham số cấu hình (λ, BA budgets, threshold trong văn xuôi) và giá trị full-precision minh họa.
-Cả 9 units đều được báo cáo riêng. Không có intervention nào tối ưu trực tiếp theo applicant_sex; sex chỉ là audit.
-
-Supplementary evidence hợp nhất (scratch/rq3_rq4_research_metrics_supplementary/, đọc từ outputs đã khóa, không chạy lại):
-  - Table 4E: RQ4a SUPPLEMENTARY_FIXED_DECISION CI cho EOD_sex/DPD3/DPD6/DPD_sex (16 dòng).
-  - Table 5G: RQ4b SUPPLEMENTARY_RECOMPUTED CI cho ROC-AUC/Brier (18 dòng).
-  - Table 5H: adversary accuracy inventory (6 units λ>0, tất cả unavailable).
-  - validation_checks.json: 231/231 checks PASS; verifier agent của supplementary task: PASS (ghi trong chat, không có stored record).
-Research package status: PARTIAL_VERIFICATION (không đổi).
-SUPPLEMENTARY_TASK_STATUS: COMPLETE
-
-====================================================================================================
-SECTION 2 — Experiment Inventory & Provenance
+SECTION 1 — EXECUTIVE RESULTS
 ====================================================================================================
 
-Table 2A — Định danh experiment
+Phạm vi nghiên cứu được tách thành ba tầng, không gộp thành một tổng “experiment units”:
+
+  - RQ3 baseline model coverage: 6/6 models — LR, RF, XGBoost, PlainMLP, RealMLP, TabMmini.
+  - RQ4 models selected from RQ3: XGBoost, RealMLP.
+  - RQ4a intervention units: 4 — mỗi model có G3 primary và G6 sensitivity.
+  - RQ4b development units: 9 — RealMLP; λ∈{0,0.01} trên seeds 42/43/44 và ba screening arms λ∈{0.03,0.1,0.3} ở seed 42.
+  - RQ4b model family: RealMLP.
+
+RQ3 là benchmark/audit mô tả sáu model trên cùng 43,996 Test rows, không phải hai baseline intervention units. Cả sáu model đều PASS trong accepted run `rq3_fairness_20261010_01`; run ghi nhận 0 fit calls, 0 prediction calls và không sinh lại bootstrap indices. Approved là positive outcome.
+
+Kết quả chính:
+
+  - RQ4a-G3: XGBoost ΔEOD3 = -0.073766 [-0.107505, -0.024552]; RealMLP ΔEOD3 = -0.059431 [-0.083919, -0.007912]. Hai paired CI đều loại trừ 0 và BA cost đều nằm trong budget 0.01.
+  - RQ4a-G6: paired CI của ΔEOD6 đều chứa 0 và upper CI của BA cost đều vượt 0.01; cả hai model có criterion outcome `fail` theo gate định trước. Đây không phải execution failure.
+  - RQ4b λ=0.01 so với matched λ=0: ΔEOD3 lần lượt là -0.009874, -0.009649, +0.008693 cho seeds 42/43/44; cả ba CI đều chứa 0. Cả ba ΔBA CI đều âm và không chứa 0. Gate C chọn λ=0 trên Validation.
+  - Trạng thái báo cáo: PARTIAL_VERIFICATION. Lý do chính là RQ4a CI bổ sung chỉ conditional fixed-decision, DPD6 fixed-roster chỉ có 884/1000 valid replicates, adversary accuracy unavailable, và một số CI utility ngoài phạm vi.
+
+Các kết quả là descriptive/exploratory model-behaviour evidence. Chúng không thiết lập quan hệ nhân quả, tuân thủ pháp lý, discrimination, creditworthiness hoặc default risk; không model nào được gọi là “best” tuyệt đối.
+
+====================================================================================================
+SECTION 2 — RQ3 SIX-MODEL COMPARISON
+====================================================================================================
+
+Accepted production run: `artifacts/dataset_b/rq3/rq3_fairness_20261010_01/`.
+Evaluation population: 43,996 Test records; Approved 32,815 / Denied 11,181.
+
+Table 2A — Predictive performance, point [95% percentile CI]
+----------------------------------------------------------------
+| Model | Balanced Accuracy | ROC-AUC Approved | Brier Approved |
+|---|---:|---:|---:|
+| LR | 0.738384 [0.733361, 0.743290] | 0.817944 [0.813012, 0.822304] | 0.160129 [0.158507, 0.161796] |
+| RF | 0.766911 [0.762210, 0.771524] | 0.840940 [0.836295, 0.845353] | 0.117009 [0.115136, 0.118891] |
+| XGBoost | 0.782982 [0.778379, 0.787234] | 0.864146 [0.859808, 0.868027] | 0.131388 [0.129876, 0.133054] |
+| PlainMLP | 0.777839 [0.773175, 0.782068] | 0.858790 [0.854385, 0.862776] | 0.132112 [0.130510, 0.133816] |
+| RealMLP | 0.782786 [0.778204, 0.787439] | 0.863203 [0.858719, 0.867294] | 0.106509 [0.104831, 0.108421] |
+| TabMmini | 0.779941 [0.775416, 0.784435] | 0.857839 [0.853276, 0.861838] | 0.131670 [0.130189, 0.133348] |
+
+Nguồn: sáu frozen RQ1 Test metric packages được `rq3_protocol.yaml` chỉ định. Mỗi CI có 1000/1000 valid replicates. So sánh này là metric-specific; không hỗ trợ xếp hạng “best model” tuyệt đối.
+
+Table 2B — Race fairness và applicant-sex audit
+--------------------------------------------------
+| Model | EOD3 point | DPD3 point | EOD6 point [RQ3 95% CI] | DPD6 point [RQ3 95% CI] | EOD_sex point [95% CI] | DPD_sex point [95% CI] |
+|---|---:|---:|---:|---:|---:|---:|
+| LR | 0.125234 | 0.188634 | 0.198201 [0.131543, 0.344928] | 0.254276 [0.186470, 0.350131] | 0.030429 [0.013424, 0.049945] | 0.017655 [0.008889, 0.026350] |
+| RF | 0.095201 | 0.154169 | 0.143664 [0.093673, 0.277127] | 0.284535 [0.171848, 0.375406] | 0.024176 [0.005998, 0.041543] | 0.010378 [0.002118, 0.019903] |
+| XGBoost | 0.115002 | 0.182921 | 0.167186 [0.113258, 0.282915] | 0.289361 [0.181603, 0.381377] | 0.020101 [0.006346, 0.036449] | 0.014894 [0.006389, 0.024166] |
+| PlainMLP | 0.126322 | 0.191199 | 0.136269 [0.123659, 0.257279] | 0.263330 [0.196486, 0.354779] | 0.027069 [0.010731, 0.044757] | 0.006301 [0.000247, 0.015115] |
+| RealMLP | 0.092532 | 0.165878 | 0.207174 [0.131429, 0.333893] | 0.269958 [0.185330, 0.359949] | 0.033985 [0.016132, 0.053390] | 0.017243 [0.008429, 0.025691] |
+| TabMmini | 0.103800 | 0.171743 | 0.172542 [0.112325, 0.304635] | 0.274743 [0.181785, 0.367065] | 0.027545 [0.010890, 0.044515] | 0.012879 [0.004269, 0.021613] |
+
+EOD3/DPD3 dùng fixed G3 roster (White, Black or African American, Asian); 12/12 point estimates là `defined` trên full Test. Bảng sáu model chỉ hiển thị point estimates G3 vì accepted RQ3 output không lưu fixed-G3 bootstrap CI cho toàn bộ sáu model. Production RQ3 lưu CI cho global G6 và Female-vs-Male audit; 24/24 CI được hiển thị ở bốn cột cuối là `defined` với 1000/1000 valid replicates. RQ3 DPD6 bootstrap dùng dynamic roster theo contract; không được thay bằng fixed-roster CI của RQ4.
+
+RQ3 production coverage: 588 group rows, 420 gap rows, 1,008 bootstrap-summary rows và 6 runtime rows. Toàn bộ sáu model có status PASS.
+
+====================================================================================================
+SECTION 3 — SELECTION AND SCOPE TRANSITION
+====================================================================================================
+
+RQ3 trả lời câu hỏi so sánh/audit trên sáu frozen baselines. RQ4 không tiếp tục trên cả sáu model: contract RQ4 khóa XGBoost và RealMLP làm hai baseline anchors cho RQ4a; RQ4b chỉ phát triển trong model family RealMLP.
+
+Việc thu hẹp này là ranh giới phạm vi đã khóa, không phải bằng chứng rằng XGBoost và RealMLP là hai model tốt nhất tuyệt đối. Tài liệu RQ4 xác nhận hai frozen anchors và metric values của chúng nhưng không ghi một quy tắc xếp hạng sáu model để suy ra lựa chọn. Vì vậy báo cáo không tự bổ sung selection rationale chưa có evidence.
+
+Before/after trong RQ4a chỉ so intervention với baseline cùng model. LR, RF, PlainMLP và TabMmini vẫn thuộc RQ3 benchmark nhưng không được biến thành RQ4 intervention units. RQ4b matched comparisons dùng λ=0 cùng seed; so sánh với RQ3 RealMLP chỉ là mô tả vì còn lẫn tác động retraining/pipeline.
+
+====================================================================================================
+SECTION 4 — RQ4a BEFORE/AFTER
+====================================================================================================
+
+RQ4a-3 là primary Equalized-Odds post-processing trên G3; RQ4a-6 là required G6 sensitivity. Point estimates dùng randomized-decision seed 42; production bootstrap refit postprocessor trong từng replicate.
+
+| Model / scope | Target delta, point [paired 95% CI] | BA cost, point [95% CI] | Gate outcome |
+|---|---:|---:|---|
+| XGBoost / G3 | ΔEOD3 -0.073766 [-0.107505, -0.024552] | 0.001345 [0.000131, 0.006295] | pass; stable |
+| RealMLP / G3 | ΔEOD3 -0.059431 [-0.083919, -0.007912] | 0.002946 [0.000973, 0.006812] | pass; stable |
+| XGBoost / G6 | ΔEOD6 -0.086706 [-0.157376, 0.091537] | 0.003066 [0.001080, 0.013881] | fail; unstable |
+| RealMLP / G6 | ΔEOD6 -0.065585 [-0.221313, 0.144613] | 0.005117 [0.002094, 0.031495] | fail; unstable |
+
+G3 paired CI loại trừ 0 và upper CI của BA cost không vượt 0.01. G6 paired CI chứa 0 và upper CI của BA cost vượt 0.01; cách diễn đạt đúng là chưa chứng minh được giảm EOD6 theo gate định trước, không phải chứng minh “không có tác dụng”.
+
+Các CI bổ sung cho EOD_sex/DPD3/DPD6/DPD_sex phải giữ nhãn `SUPPLEMENTARY_FIXED_DECISION`, `conditioning = saved_seed42_decisions`, `production_equivalent = false`. Chúng không refit postprocessor và không redraw randomized decisions, nên không được gọi là production-equivalent CI.
+
+====================================================================================================
+SECTION 5 — RQ4b ADVERSARIAL RESULTS
+====================================================================================================
+
+Thiết kế development gồm chín units: λ=0 và λ=0.01 trên seeds 42/43/44; λ=0.03/0.1/0.3 chỉ là screening arms ở seed 42. Gate C chọn λ=0 trên Validation. Test không được dùng để chọn lambda, seed, threshold hoặc architecture.
+
+Table 5A — Matched λ=0.01 minus λ=0, cùng seed
+--------------------------------------------------
+| Seed | ΔEOD3 point [paired 95% CI] | ΔBA point [paired 95% CI] |
+|---:|---:|---:|
+| 42 | -0.009874 [-0.021516, 0.001939] | -0.003071 [-0.005185, -0.001015] |
+| 43 | -0.009649 [-0.018918, 0.000765] | -0.004072 [-0.006122, -0.001787] |
+| 44 | +0.008693 [-0.001636, 0.019581] | -0.003950 [-0.006218, -0.001579] |
+
+Cả ba ΔEOD3 CI chứa 0. Cả ba ΔBA CI âm và không chứa 0, cho thấy BA của λ=0.01 thấp hơn matched λ=0 trên Test trong cả ba seeds. Across-seed descriptive mean: ΔEOD3 = -0.003610; ΔBA = -0.003698; đây không phải CI và không được pool với bootstrap.
+
+Screening arms λ=0.03/0.1/0.3 có ΔBA so với seed-42 control lần lượt -0.025583, -0.025623, -0.026446; ba CI đều âm và không chứa 0. ΔEOD3 CI của cả ba arms đều chứa 0. Các arms này chỉ có một seed và không có between-seed statistics.
+
+Mọi unit λ>0 được gắn nhãn training instability beyond selected epoch. ADV-L0.3-S42 có prediction loss 5.350248 và được xem là screening result bất thường. Adversary accuracy unavailable; `stability_status = not_assessed`.
+
+====================================================================================================
+SECTION 6 — STATISTICAL VALIDITY AND LIMITATIONS
+====================================================================================================
+
+  - RQ3 DPD6 dùng dynamic roster trong bootstrap; RQ4 dùng fixed roster. Đây là khác estimand/protocol, không phải lỗi tính toán.
+  - Fixed-roster DPD6 chỉ có 884/1000 valid replicates, dưới minimum-valid gate 950. Các endpoint phải ghi `ENDPOINTS_ONLY — INVALID_CI — insufficient_valid_bootstrap_replicates`; không kết luận includes/excludes 0.
+  - RQ4a supplementary fixed-decision CI không refit postprocessor và không phản ánh calibration-resampling/randomization uncertainty của production protocol.
+  - RQ4b Validation được dùng cho cả threshold calibration và lambda selection; development estimates có thể optimistic.
+  - RQ4b chỉ có ba seeds cho λ∈{0,0.01}; screening arms chỉ có một seed. Không có stability threshold đã khóa.
+  - Adversary accuracy unavailable. AP/F1/Recall/Precision Denied CI của RQ4b vẫn ngoài phạm vi.
+  - RQ4b-6 và intervention tối ưu theo applicant sex không tồn tại trong phạm vi đã đóng.
+  - Không dùng từ “significant” như một decision rule; báo cáo chỉ mô tả CI chứa hoặc loại trừ 0 theo các interval đã khóa.
+
+Research package giữ `PARTIAL_VERIFICATION`.
+
+====================================================================================================
+SECTION 7 — VERIFICATION AND PROVENANCE
+====================================================================================================
+
+| Evidence | Result |
+|---|---|
+| RQ3 accepted run | `rq3_fairness_20261010_01`; six-model PASS; 43,996 Test rows |
+| RQ3 output coverage | 588 group rows; 420 gap rows; 1,008 bootstrap rows; 6 runtime rows |
+| RQ3 execution boundary | 0 fit calls; 0 prediction calls; bootstrap indices not regenerated |
+| RQ4a accepted runs | `rq4a3_postproc_20261017_01`, `rq4a6_postproc_20261017_01`; closure review C8 PASS |
+| RQ4b accepted Test run | `rq4b3_test_20261024_01`; execution COMPLETE; package validation PASS |
+| Locked Test bootstrap | 1,000 replicates; SHA-256 `2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1` |
+| Retained extraction verification | Gate A/B/C PASS; Gate D/E PARTIAL; 501/503 checks PASS with 2 explained protocol mismatches |
+| Unresolved items | DPD6 fixed-roster valid-count gate; production-equivalent RQ4a DPD*/EOD_sex CI; adversary accuracy; selected utility CIs |
+| Final report status | `PARTIAL_VERIFICATION` |
+
+Precision: số thực trong narrative chính dùng 6 chữ số thập phân. Detailed evidence, provenance, group-level tables, supplementary labels, CI validity payloads và prior verification notes được giữ trong appendices dưới đây.
+
+====================================================================================================
+APPENDIX A — DETAILED RQ4 INVENTORY AND PROVENANCE
+====================================================================================================
+
+Appendix A liệt kê bốn RQ4a units, chín RQ4b development units và hai RQ3 comparator anchors được dùng trực tiếp cho before/after. Đây không phải inventory đầy đủ của RQ3; RQ3 six-model coverage nằm ở Section 2.
+
+Table A1 — RQ4 units và hai RQ3 comparator anchors
 -------------------------------
 +---------------+--------+---------+-------------------------------------------------+-------------------------------+-----------------------------+--------+---------------------------+--------------+-----------------+---------------------+
 | Unit          | Stage  | Model   | Intervention                                    | Run ID                        | Seed                        | Lambda | Optim. attribute          | Optim. scope | Eval. scope     |           Threshold |
@@ -63,7 +168,7 @@ Table 2A — Định danh experiment
 | ADV-L0.3-S42  | RQ4b-3 | RealMLP | Adversarial in-processing                       | rq4b3_adv_20261019_02         | 42                          | 0.3    | derived_race              | G3           | G3/G6/sex audit |            0.836000 |
 +---------------+--------+---------+-------------------------------------------------+-------------------------------+-----------------------------+--------+---------------------------+--------------+-----------------+---------------------+
 
-Table 2B — Status & source artifact
+Table A2 — Status & source artifact
 -----------------------------------
 +---------------+---------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | Unit          | Status                                                                                                  | Source artifact (predictions/decisions)                                                                                   |
@@ -103,7 +208,7 @@ Ghi chú provenance:
   - Gate C (Validation) chọn selected_lambda = 0.0; λ=0.01 không giảm mean EOD3 trên Validation. Test KHÔNG được dùng để chọn.
 
 ====================================================================================================
-SECTION 3 — Baseline RQ3 Metrics
+APPENDIX B — SELECTED RQ3 BASELINES USED AS RQ4 COMPARATORS
 ====================================================================================================
 Scope: BA/ROC-AUC/Brier/AP/F1/Recall/SR = full Test (n=43996); EOD3/DPD3 = G3 roster; EOD6/DPD6 = G6 roster; *_sex = Male vs Female.
 CI: percentile 95% (linear), 1000 locked replicates. Nguồn CI ghi ở cột cuối.
@@ -136,7 +241,7 @@ CI: BA, EOD6, DPD6, EOD_sex, DPD_sex = RECOMPUTED_VERIFIED (khớp stored full-p
 (đọc từ RQ1 json, không tính lại); EOD3/DPD3/SR CI = SUPPLEMENTARY_RECOMPUTED (không có stored counterpart).
 
 ====================================================================================================
-SECTION 4 — RQ4a Post-processing Results
+APPENDIX C — DETAILED RQ4a POST-PROCESSING RESULTS
 ====================================================================================================
 RQ4a-3: tối ưu Equalized Odds trên derived_race G3; RQ4a-6: trên G6. Sex chỉ audit. Point estimates dùng randomized decision seed 42.
 Delta = mitigated − RQ3 baseline (cùng model). Paired CI chỉ có cho target EOD, audit EOD và BA cost (production bootstrap, refit postprocessor mỗi replicate).
@@ -276,7 +381,7 @@ Randomization sensitivity (30 decision seeds 42..71, SOURCE_VERIFIED_ONLY; seed 
 uncertainty của post-processor, KHÔNG phải Test sampling uncertainty và KHÔNG gộp vào bootstrap CI.
 
 ====================================================================================================
-SECTION 5 — RQ4b Adversarial Results (9 units, RealMLP, adversary on derived_race G3)
+APPENDIX D — DETAILED RQ4b ADVERSARIAL RESULTS (9 units, RealMLP, adversary on derived_race G3)
 ====================================================================================================
 CI ở 5A/5B/5C là SUPPLEMENTARY_RECOMPUTED (locked Test indices, không refit; không phải contract output). CI ở 5D cho ΔBA/ΔEOD3/ΔEOD6/ΔEOD_sex
 được tính lại độc lập và khớp từng replicate ≤1e-12: ΔBA/ΔEOD3/ΔEOD6 với production Test package rq4b3_test_20261024_01; ΔEOD_sex với
@@ -550,7 +655,7 @@ Saved artifacts không lưu adversary accuracy; chỉ có predictor balanced acc
 không load estimator, không chạy inference. 'unavailable' KHÔNG có nghĩa là 0.
 
 ====================================================================================================
-SECTION 6 — Cross-method Comparison (point estimates; deltas vs RQ3 baseline của cùng model)
+APPENDIX E — CROSS-METHOD COMPARISON (point estimates; deltas vs RQ3 baseline của cùng model)
 ====================================================================================================
 
 6.1 XGBoost: Baseline vs Post-G3 vs Post-G6
@@ -604,7 +709,7 @@ predictor; (2) reference khác nhau (RQ4a: frozen RQ3 model; RQ4b Comparison B: 
 calibration-resampling refit, RQ4b CI chỉ là Test sampling; (4) RQ4b 3 seeds, RQ4a 1 model fit. Không so sánh trực tiếp như cùng protocol.
 
 ====================================================================================================
-SECTION 7 — Detailed Group-level Results (Test)
+APPENDIX F — DETAILED GROUP-LEVEL RESULTS (TEST)
 ====================================================================================================
 Eligibility (RQ3 rules): SR cần n≥100; TPR/FNR cần Actual Approved≥30; FPR/TNR cần Actual Denied≥30; ngược lại 'NA(undefined)'.
 Role: G3 ⊂ G6 = race roster; cov-only = coverage-only (không vào EOD/DPD); sex-roster = Male/Female.
@@ -1641,7 +1746,7 @@ EOD3=0.115373 driven by TPR range (TPRrg 0.115373, FPRrg 0.047305); EOD6=0.11991
 +---------------+--------+--------+-----------+-----------+----------------------+
 
 ====================================================================================================
-SECTION 8 — Confidence Intervals & Stability
+APPENDIX G — CONFIDENCE INTERVALS & STABILITY
 ====================================================================================================
 
 8.1 Uncertainty types (không gộp)
@@ -1745,7 +1850,7 @@ RQ4b DPD6 có 884/1000 valid replicates, thấp hơn minimum-valid gate 950. End
   - Đây là khác biệt protocol, không phải lỗi tính toán. Minimum-valid gate 950 (rq3_fairness.md §7; rq4a config).
 
 ====================================================================================================
-SECTION 9 — Independent Verification Results
+APPENDIX H — PRIOR INDEPENDENT VERIFICATION RESULTS
 ====================================================================================================
 
 Gate A — Source integrity: PASS
@@ -1790,11 +1895,11 @@ Gate D: 98/100 checks PASS
     2 mismatch có giải trình: RQ3 DPD6 CI theo fixed-roster ≠ stored; nguyên nhân là RQ3 range dùng các nhóm defined trong replicate
     (dynamic roster). Tái tạo theo rule RQ3 → khớp stored full-precision CI, 1000/1000 valid. Không phải lỗi số học; là khác biệt protocol RQ3 vs RQ4.
     Không trộn Validation/Test; không pool seeds với bootstrap; randomization tách riêng; không chọn best seed.
-    PARTIAL vì: nhiều CI unavailable (Section 8.4); CI bổ sung (supplementary) không phải contract output.
+    PARTIAL vì: nhiều CI unavailable (Appendix G, mục 8.4); CI bổ sung (supplementary) không phải contract output.
 
 Gate E — Completeness: PARTIAL
 ------------------------------
-15/15 units bao phủ; 6 primary fairness metrics + BA có point estimate cho mọi unit.
+RQ4 coverage đầy đủ: 4/4 RQ4a intervention units và 9/9 RQ4b development units; hai selected RQ3 comparator anchors có đủ 6 primary fairness point estimates + BA. Six-model RQ3 coverage được báo cáo riêng tại Section 2.
 Đã có: SUPPLEMENTARY_FIXED_DECISION CI cho RQ4a EOD_sex/DPD3/DPD_sex; SUPPLEMENTARY_RECOMPUTED CI cho RQ4b ROC-AUC/Brier.
 Thiếu: CI hợp lệ cho DPD6 của RQ4a và RQ4b (884/1000 < 950, insufficient_valid_bootstrap_replicates), production-equivalent RQ4a CI
 cho DPD*/EOD_sex, adversary accuracy, AP/F1/Recall/Precision Denied CI, between-seed stats cho screening arms.
@@ -1815,7 +1920,7 @@ RQ4a bootstrap replicates (chỉ quantile được tính lại),
 training losses/epochs/durations (đọc từ diagnostics); UNVERIFIED = không có.
 
 ====================================================================================================
-SECTION 10 — Missing Data, Limitations & Research Notes
+APPENDIX I — MISSING DATA, LIMITATIONS & RESEARCH NOTES
 ====================================================================================================
 
 10.1 Missing / unavailable
@@ -1853,7 +1958,7 @@ SECTION 10 — Missing Data, Limitations & Research Notes
     Limitation: Kết luận chỉ là 'không chứng minh được', không phải 'không có tác dụng'.
   * Observed: RQ4b λ=0.01 vs matched control: ΔEOD3 per seed = -0.009874, -0.009649, 0.008693; mean -0.003610; ΔBA mean -0.003698.
     Statistical evidence: ΔEOD3 CI của cả 3 seeds đều gồm 0 (seed 44 point dương); ΔBA CI của cả 3 seeds loại trừ 0 (âm) — Table 8.2.
-    Possible interpretation: Adversarial objective với λ=0.01 không tạo giảm EOD3 có ý nghĩa thống kê trên Test so với retrained control.
+    Possible interpretation: Adversarial objective với λ=0.01 chưa cho thấy giảm EOD3 có paired CI loại trừ 0 trên Test so với retrained control.
     Limitation: 3 seeds; training instability sau selected epoch; Gate C đã chọn λ=0 trên Validation.
   * Observed: Screening λ=0.03/0.1/0.3 (seed 42): BA giảm mạnh so với control (xem Table 5D) nhưng không giảm EOD3 tương ứng.
     Statistical evidence: ΔBA point -0.025583, -0.025623, -0.026446, CI loại trừ 0 (âm); ΔEOD3 CI gồm 0 cho cả 3 arms; single seed, CI chỉ phản ánh Test sampling.
@@ -1872,5 +1977,5 @@ Lý do giữ PARTIAL_VERIFICATION: RQ4a CI mới chỉ là conditional fixed-dec
 valid-replicate gate (884/1000 < 950); adversary accuracy unavailable; AP/F1/Recall/Precision Denied CI ngoài scope; supplementary
 evidence không thay đổi production-artifact status. RQ3 DPD6 CI theo dynamic roster khác rule fixed roster của RQ4.
 Không có source code, config, contract, production artifact hay supplementary evidence nào bị thay đổi; bản final này là file
-duy nhất được tạo trong repository, tại reports/RQ3_RQ4a_RQ4b_Research_Metrics_Final.txt.
+duy nhất được sửa trong task tái kiến trúc, tại reports/RQ3_RQ4a_RQ4b_Research_Metrics_Final.txt.
 ====================================================================================================
