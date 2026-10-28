@@ -1,0 +1,97 @@
+{
+  "figure_1": {
+    "status": "UNCHANGED_OUTSIDE_NOTEBOOK"
+  },
+  "figures": {
+    "fig02_postprocessing_group_error_rates": {
+      "files": [
+        "reports/paper_figures/fig02_postprocessing_group_error_rates.pdf",
+        "reports/paper_figures/fig02_postprocessing_group_error_rates.svg",
+        "reports/paper_figures/fig02_postprocessing_group_error_rates.png"
+      ],
+      "formats": [
+        "PDF",
+        "SVG",
+        "PNG"
+      ],
+      "png_dpi": 300,
+      "internal_title": false,
+      "panel_labels": "figure_specific",
+      "marker": "figure_specific",
+      "qa_status": "PENDING_EXTERNAL_VISUAL_INSPECTION"
+    },
+    "fig03_adversarial_group_error_rates": {
+      "files": [
+        "reports/paper_figures/fig03_adversarial_group_error_rates.pdf",
+        "reports/paper_figures/fig03_adversarial_group_error_rates.svg",
+        "reports/paper_figures/fig03_adversarial_group_error_rates.png"
+      ],
+      "formats": [
+        "PDF",
+        "SVG",
+        "PNG"
+      ],
+      "png_dpi": 300,
+      "internal_title": false,
+      "panel_labels": "figure_specific",
+      "marker": "figure_specific",
+      "qa_status": "PENDING_EXTERNAL_VISUAL_INSPECTION"
+    },
+    "fig04_postprocessing_target_eod_ba": {
+      "files": [
+        "reports/paper_figures/fig04_postprocessing_target_eod_ba.pdf",
+        "reports/paper_figures/fig04_postprocessing_target_eod_ba.svg",
+        "reports/paper_figures/fig04_postprocessing_target_eod_ba.png"
+      ],
+      "formats": [
+        "PDF",
+        "SVG",
+        "PNG"
+      ],
+      "png_dpi": 300,
+      "internal_title": false,
+      "panel_labels": "figure_specific",
+      "marker": "figure_specific",
+      "qa_status": "PENDING_EXTERNAL_VISUAL_INSPECTION"
+    },
+    "fig05_adversarial_six_units": {
+      "files": [
+        "reports/paper_figures/fig05_adversarial_six_units.pdf",
+        "reports/paper_figures/fig05_adversarial_six_units.svg",
+        "reports/paper_figures/fig05_adversarial_six_units.png"
+      ],
+      "formats": [
+        "PDF",
+        "SVG",
+        "PNG"
+      ],
+      "png_dpi": 300,
+      "internal_title": false,
+      "panel_labels": "figure_specific",
+      "marker": "figure_specific",
+      "qa_status": "PENDING_EXTERNAL_VISUAL_INSPECTION"
+    },
+    "fig06_rq4b_secondary_deltas": {
+      "files": [
+        "reports/paper_figures/fig06_rq4b_secondary_deltas.pdf",
+        "reports/paper_figures/fig06_rq4b_secondary_deltas.svg",
+        "reports/paper_figures/fig06_rq4b_secondary_deltas.png"
+      ],
+      "formats": [
+        "PDF",
+        "SVG",
+        "PNG"
+      ],
+      "png_dpi": 300,
+      "internal_title": false,
+      "panel_labels": "figure_specific",
+      "marker": "figure_specific",
+      "qa_status": "PENDING_EXTERNAL_VISUAL_INSPECTION"
+    }
+  },
+  "omissions": {
+    "fig02_postprocessing_group_error_rates": "No seed-variability interval; primary deterministic decision seed 42 only.",
+    "fig03_adversarial_group_error_rates": "Frozen RealMLP is one model without an error bar; retrained error bars are sample SD, not CI.",
+    "fig06_rq4b_secondary_deltas": "No authoritative paired DPD3/DPD6 bootstrap CI; DPD deltas are point only."
+  }
+}

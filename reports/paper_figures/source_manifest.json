@@ -1,0 +1,198 @@
+{
+  "schema_version": "paper_figures_source_manifest_v3",
+  "notebook": "notebooks/dataset_b/14_research_report.ipynb",
+  "figures": {
+    "fig02_postprocessing_group_error_rates": {
+      "status": "READY_RENDERED",
+      "partition": "test",
+      "scope": "G3",
+      "models": [
+        "xgboost",
+        "realmlp"
+      ],
+      "metrics": [
+        "tpr",
+        "fpr"
+      ],
+      "comparison": "frozen baseline versus G3 ThresholdOptimizer",
+      "decision_seed": 42,
+      "interval_provenance": "none; deterministic seed-42 before/after rates only",
+      "axes": "zoomed and not zero-based",
+      "inputs": [
+        {
+          "path": "artifacts/dataset_b/rq4/rq4a/rq4a3_postproc_20261017_01/reporting/group_metrics.csv",
+          "sha256": "c8cf93a2e3df20004c7cccd1f36ce868b342f09ac502133e81f71fa5a0a3c213",
+          "run_id": "rq4a3_postproc_20261017_01"
+        }
+      ]
+    },
+    "fig03_adversarial_group_error_rates": {
+      "status": "READY_RENDERED",
+      "partition": "test",
+      "scope": "G6 with dashed G3 boundary",
+      "model": "realmlp",
+      "metrics": [
+        "tpr_approved",
+        "fpr_approved"
+      ],
+      "comparison": [
+        "frozen RealMLP",
+        "retrained lambda=0",
+        "adversarial lambda=0.01"
+      ],
+      "seed_policy": [
+        42,
+        43,
+        44
+      ],
+      "interval_provenance": "sample SD across seeds 42/43/44 with ddof=1; not CI or sampling uncertainty",
+      "axes": "zoomed and not zero-based",
+      "small_fpr_denominators": {
+        "American Indian or Alaska Native": 77,
+        "2 or more minority races": 59,
+        "Joint": 147
+      },
+      "inputs": [
+        {
+          "path": "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/group_metrics.csv",
+          "sha256": "8d7464b0292a4b504b3ac3c0ff8ee44284765e8bad64b349b76338034dd30cbe",
+          "run_id": "rq3_fairness_20261010_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/group_metrics.csv",
+          "sha256": "2c61c75c623e479b88335584bae5a8aaf4995482641630308acd07f917ca8da7",
+          "run_id": "rq4b3_test_20261024_01"
+        }
+      ]
+    },
+    "fig04_postprocessing_target_eod_ba": {
+      "status": "READY_RENDERED",
+      "partition": "test",
+      "rows": [
+        "XGBoost–G3",
+        "RealMLP–G3",
+        "XGBoost–G6",
+        "RealMLP–G6"
+      ],
+      "ci_provenance": "accepted postprocessor-refit paired Test bootstrap 95% CI",
+      "inputs": [
+        {
+          "path": "artifacts/dataset_b/rq4/rq4a/rq4a3_postproc_20261017_01/reporting/model_summary.json",
+          "sha256": "055ca392cadacbedd58fce4c94d49b2de8d18294a305ab6bad65332042b2c58f",
+          "run_id": "rq4a3_postproc_20261017_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4a/rq4a6_postproc_20261017_01/reporting/model_summary.json",
+          "sha256": "20bc188284256dc76f49d60e3281275f883ff37f260ce99b5b18eba32ea4f395",
+          "run_id": "rq4a6_postproc_20261017_01"
+        }
+      ]
+    },
+    "fig05_adversarial_six_units": {
+      "status": "READY_RENDERED",
+      "partition": "test",
+      "units": [
+        "seed 42, λ=0",
+        "seed 42, λ=0.01",
+        "seed 43, λ=0",
+        "seed 43, λ=0.01",
+        "seed 44, λ=0",
+        "seed 44, λ=0.01"
+      ],
+      "metrics": [
+        "eod3",
+        "balanced_accuracy"
+      ],
+      "inputs": [
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/run_manifest.json",
+          "sha256": "d05fc2980986452428b5fc656aaba89c8bad698923cab7da67f5ff241e7595a4",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/arm_metrics.csv",
+          "sha256": "0a820f27b42e1dd85bc9d40c74eea7479d30dd6850fc8c48e70d0809f26fefad",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/group_metrics.csv",
+          "sha256": "2c61c75c623e479b88335584bae5a8aaf4995482641630308acd07f917ca8da7",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/matched_deltas.csv",
+          "sha256": "cec238e58fac8d96b64315bbdcdc6b7f09bc30ee4cd298abdd58a85d41aeaf29",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/bootstrap_summary.csv",
+          "sha256": "e137dae08640173b96de7c1b379fd839a2c466b82233c0ca14caab3174f7ebe6",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/receipt.json",
+          "sha256": "2f7c1ae8b31d8df82b9342182cb40fb9b3c18aa783a31ff53eeeaf54e64632c4",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/package_validation/receipt.json",
+          "sha256": "d20fa9b13cd4f9b9e5e52e4c387f49a63791f4c95af3fa9903caecdbf1e5800a",
+          "run_id": "rq4b3_test_20261024_01"
+        }
+      ]
+    },
+    "fig06_rq4b_secondary_deltas": {
+      "status": "READY_RENDERED_WITH_DISCLOSED_DPD_CI_OMISSION",
+      "partition": "test",
+      "comparator": "same-seed lambda=0",
+      "metrics": [
+        "delta_eod6",
+        "delta_dpd3",
+        "delta_dpd6"
+      ],
+      "transform": "DPD = max(group predicted-approved rate) - min(group predicted-approved rate); delta = lambda0.01 - same-seed lambda0",
+      "ci_provenance": {
+        "delta_eod6": "stored paired Test bootstrap 95% CI",
+        "delta_dpd3": "unavailable; point only",
+        "delta_dpd6": "unavailable; point only"
+      },
+      "inputs": [
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/run_manifest.json",
+          "sha256": "d05fc2980986452428b5fc656aaba89c8bad698923cab7da67f5ff241e7595a4",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/arm_metrics.csv",
+          "sha256": "0a820f27b42e1dd85bc9d40c74eea7479d30dd6850fc8c48e70d0809f26fefad",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/group_metrics.csv",
+          "sha256": "2c61c75c623e479b88335584bae5a8aaf4995482641630308acd07f917ca8da7",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/matched_deltas.csv",
+          "sha256": "cec238e58fac8d96b64315bbdcdc6b7f09bc30ee4cd298abdd58a85d41aeaf29",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/bootstrap_summary.csv",
+          "sha256": "e137dae08640173b96de7c1b379fd839a2c466b82233c0ca14caab3174f7ebe6",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/receipt.json",
+          "sha256": "2f7c1ae8b31d8df82b9342182cb40fb9b3c18aa783a31ff53eeeaf54e64632c4",
+          "run_id": "rq4b3_test_20261024_01"
+        },
+        {
+          "path": "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/package_validation/receipt.json",
+          "sha256": "d20fa9b13cd4f9b9e5e52e4c387f49a63791f4c95af3fa9903caecdbf1e5800a",
+          "run_id": "rq4b3_test_20261024_01"
+        }
+      ]
+    }
+  }
+}
