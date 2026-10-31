@@ -9,12 +9,15 @@ scikit-learn==1.9.1
 xgboost==3.2.0
 PyYAML==6.0.3
 joblib==1.6.0
+fairlearn==0.15.0
 
 # Neural models: plain MLP, RealMLP, and TabMmini
 torch==2.14.0
 pytabkit==1.7.3
 tabm==0.0.3
+pytorch-lightning==2.6.6
 
 # Notebook execution and test suite
 ipykernel==7.3.0
+matplotlib==3.10.6
 pytest==8.4.2
