@@ -11,7 +11,13 @@ import pandas as pd
 import pytest
 from scipy.sparse import csr_matrix, save_npz
 
-from src.dataset_b.training import rf_final_training as training
+from src.dataset_b.models.classical.rf import training
+from src.dataset_b.training import rf_final_training as compatibility
+
+
+def test_legacy_training_module_delegates_to_canonical():
+    assert compatibility.RFTrainingError is training.RFTrainingError
+    assert compatibility.run_rf_final_training is training.run_rf_final_training
 
 
 def _preprocessing_export(root: Path, run_id: str, rows: int = 10) -> Path:

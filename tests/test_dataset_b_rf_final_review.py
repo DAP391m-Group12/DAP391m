@@ -4,8 +4,14 @@ import json
 
 import pytest
 
-from src.dataset_b.review import rf_final_review as review
-from src.dataset_b.training.rf_final_training import RFTrainingError
+from src.dataset_b.models.classical.rf import review
+from src.dataset_b.models.classical.rf.training import RFTrainingError
+from src.dataset_b.review import rf_final_review as compatibility
+
+
+def test_legacy_review_module_delegates_to_canonical():
+    assert compatibility.RFFinalReviewError is review.RFFinalReviewError
+    assert compatibility.review_rf_final is review.review_rf_final
 
 
 def test_review_refuses_incomplete_bundle(tmp_path, monkeypatch):

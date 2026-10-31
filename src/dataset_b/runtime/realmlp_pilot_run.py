@@ -1,55 +1,15 @@
-"""CLI and compatibility facade for the final RealMLP Train-only pilot."""
+"""Compatibility access to the canonical RealMLP module."""
 
-from __future__ import annotations
+from importlib import import_module
+from typing import Any
 
-import argparse
-import json
-from pathlib import Path
-
-from src.utils.path import PROJECT_ROOT
-
-from .realmlp_final_contract import RealMLPFinalPaths
-from .realmlp_final_training import (
-    RealMLPFinalTrainingError as RealMLPPilotRunError,
-    lock_realmlp_fixed_epoch,
-    run_realmlp_pilot,
-    validate_realmlp_pilot,
-)
+_CANONICAL = import_module("src.dataset_b.models.neural.realmlp.pilot")
+__all__ = [name for name in dir(_CANONICAL) if not name.startswith("_")]
 
 
-DEFAULT_ARTIFACT_ROOT = PROJECT_ROOT / "artifacts" / "dataset_b" / "realmlp"
+def __getattr__(name: str) -> Any:
+    return getattr(_CANONICAL, name)
 
 
-def validate_realmlp_pilot_run(
-    run_id: str, *, artifact_root: str | Path = DEFAULT_ARTIFACT_ROOT
-) -> dict:
-    return validate_realmlp_pilot(
-        RealMLPFinalPaths.for_run(run_id, artifact_root=artifact_root)
-    )
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Run or decide the final RealMLP Train-only pilot.")
-    parser.add_argument("command", choices=("run", "decide", "validate"))
-    parser.add_argument("--run-id", required=True)
-    parser.add_argument("--artifact-root", type=Path, default=DEFAULT_ARTIFACT_ROOT)
-    parser.add_argument("--fixed-epoch", type=int)
-    parser.add_argument("--rationale")
-    args = parser.parse_args()
-    if args.command == "run":
-        result = run_realmlp_pilot(args.run_id, artifact_root=args.artifact_root)
-    elif args.command == "decide":
-        result = lock_realmlp_fixed_epoch(
-            args.run_id,
-            args.fixed_epoch,
-            artifact_root=args.artifact_root,
-            rationale=args.rationale or "",
-        )
-    else:
-        result = validate_realmlp_pilot_run(args.run_id, artifact_root=args.artifact_root)
-    print(json.dumps(result, indent=2, sort_keys=True))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(dir(_CANONICAL)))

@@ -2,7 +2,13 @@
 
 import pytest
 
-from src.dataset_b.review import lr_final_review as review
+from src.dataset_b.models.classical.lr import review
+from src.dataset_b.review import lr_final_review as compatibility
+
+
+def test_legacy_review_module_delegates_to_canonical():
+    assert compatibility.LRFinalReviewError is review.LRFinalReviewError
+    assert compatibility.review_lr_final is review.review_lr_final
 
 
 def test_review_requires_explicit_frozen_run_id(tmp_path):

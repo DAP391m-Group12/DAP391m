@@ -7,7 +7,7 @@ import logging
 import pytest
 import yaml
 
-from src.dataset_b.preprocessing import DatasetBSplitLoader, SplitInputError
+from src.dataset_b.data import DatasetBSplitLoader, SplitInputError
 
 
 FEATURES = [
@@ -104,7 +104,7 @@ def test_load_train_preserves_tokens_and_keeps_other_partitions_unread(tmp_path,
     (split_dir / "test.csv").unlink()
     loader = DatasetBSplitLoader(manifest, split_dir, feature_contract)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.split_inputs"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.split_inputs"):
         train = loader.load("train")
 
     assert train.name == "train"

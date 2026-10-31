@@ -236,20 +236,23 @@ production directory, and the six frozen model artifacts were not rewritten.
 | **Total** | **261.3630611** | **25.4630145** | **4530.5919093** | **4817.4179849** |
 
 The verified results notebook is
-[`notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb`](../../../notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb).
+[`notebooks/dataset_b/final/research_questions/08_rq2_gsv_sl_results.ipynb`](../../../notebooks/dataset_b/final/research_questions/08_rq2_gsv_sl_results.ipynb).
 Its saved execution reads the accepted production CSV/JSON artifacts only; it
 does not load a model, run inference, construct coalitions, or recompute GSV,
 SL, or bootstrap distributions.
 
 ## 10. Notebook boundary
 
-`notebooks/dataset_b/08_rq2_gsv_sl_results.ipynb` may read the saved outputs,
+`notebooks/dataset_b/final/research_questions/08_rq2_gsv_sl_results.ipynb` may read the saved outputs,
 build importance/ranking tables, plot GSV versus SL, plot agreement intervals,
 compare six-model stability, show runtime, and warn about invalid bootstrap
 replicates. It must not load a model, build coalitions, run inference, or
 recompute bootstrap results.
 
 ## 11. Interpretation boundary
+
+Canonical implementation ownership is under `src/dataset_b/research/rq2/`;
+the former `src/dataset_b/gsv_sl/` paths remain compatibility aliases.
 
 RQ2 describes frozen-model behavior for historical mortgage-application
 approval under the documented replacement game. It does not measure default

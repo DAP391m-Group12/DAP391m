@@ -12,13 +12,19 @@ import pandas as pd
 import pytest
 from scipy.sparse import csr_matrix, save_npz
 
-from src.dataset_b.training import xgb_final_training as training
+from src.dataset_b.models.classical.xgboost import training
+from src.dataset_b.training import xgb_final_training as compatibility
 
 
 LABELS = np.asarray(
     [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1],
     dtype=np.int8,
 )
+
+
+def test_legacy_training_module_delegates_to_canonical():
+    assert compatibility.XGBTrainingError is training.XGBTrainingError
+    assert compatibility.run_xgb_final_training is training.run_xgb_final_training
 
 
 def _preprocessing_export(root: Path, run_id: str, rows: int = 15) -> Path:

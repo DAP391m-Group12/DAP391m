@@ -1,4 +1,9 @@
-"""Fixed-split inputs and fold-local Dataset B preprocessing stages."""
+"""Fixed-split inputs and lazily loaded Dataset B preprocessing stages."""
+
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
 
 from .categorical_encoder import (
     CATEGORICAL_COLUMNS, CATEGORICAL_SCHEMA, ENCODED_FEATURE_COUNT,
@@ -6,8 +11,6 @@ from .categorical_encoder import (
 )
 from .median_imputer import DatasetBNumericMedianImputer, NUMERIC_COLUMNS
 from .lr_log_transformer import DatasetBLRSelectiveLog1pTransformer, LOG1P_VALUE_COLUMNS
-from .neural_log_transformer import DatasetBNeuralLog1pTransformer
-from .neural_profiles import make_plain_mlp_preprocessing_pipeline
 from .numeric_two_channel import DatasetBNumericTwoChannel, NUMERIC_VALUE_COLUMNS, TWO_CHANNEL_COLUMNS
 from .profiles import DatasetBNumericValueRobustScaler, DatasetBRawParserStep, make_preprocessing_pipeline
 from .raw_parser import (
@@ -16,21 +19,6 @@ from .raw_parser import (
     ParseDiagnostics,
     ParsedFeatures,
     RawFeatureError,
-)
-from .realmlp_native import (
-    DatasetBRealMLPNativeAdapter,
-    RealMLPCategorySupportError,
-    make_realmlp_native_preprocessing_pipeline,
-    validate_realmlp_category_support,
-)
-from .tabmmini_native import (
-    DatasetBTabMMiniNativeAdapter,
-    TabMMiniCategorySupportError,
-    TabMMiniNativeBatch,
-    fixed_tabmmini_category_maps,
-    make_tabmmini_native_preprocessing_pipeline,
-    tabmmini_category_cardinalities,
-    validate_tabmmini_category_support,
 )
 from .split_inputs import (
     DatasetBInputQualityAudit,
@@ -83,3 +71,32 @@ __all__ = [
     "InputQualityError",
     "SplitInputError",
 ]
+
+_LAZY_EXPORTS = {
+    "DatasetBNeuralLog1pTransformer": "src.dataset_b.models.neural.common.log_transformer",
+    "make_plain_mlp_preprocessing_pipeline": "src.dataset_b.models.neural.plain_mlp.preprocessing",
+    "DatasetBRealMLPNativeAdapter": "src.dataset_b.models.neural.realmlp.preprocessing",
+    "RealMLPCategorySupportError": "src.dataset_b.models.neural.realmlp.preprocessing",
+    "make_realmlp_native_preprocessing_pipeline": "src.dataset_b.models.neural.realmlp.preprocessing",
+    "validate_realmlp_category_support": "src.dataset_b.models.neural.realmlp.preprocessing",
+    "DatasetBTabMMiniNativeAdapter": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "TabMMiniCategorySupportError": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "TabMMiniNativeBatch": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "fixed_tabmmini_category_maps": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "make_tabmmini_native_preprocessing_pipeline": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "tabmmini_category_cardinalities": "src.dataset_b.models.neural.tabmmini.preprocessing",
+    "validate_tabmmini_category_support": "src.dataset_b.models.neural.tabmmini.preprocessing",
+}
+
+
+def __getattr__(name: str) -> Any:
+    module_name = _LAZY_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(import_module(module_name), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

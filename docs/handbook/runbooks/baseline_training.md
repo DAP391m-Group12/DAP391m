@@ -24,9 +24,9 @@ The model runs are implemented in these notebooks:
 
 | Model | Notebook | Protocol key | CV matrix prefix | Raw profile |
 | --- | --- | --- | --- | --- |
-| Logistic Regression | [01_linear_model_v1.ipynb](../../../notebooks/dataset_b/01_linear_model_v1.ipynb) | `lr` | `lr` | `lr` |
-| Random Forest | [02_random_forest_v1.ipynb](../../../notebooks/dataset_b/02_random_forest_v1.ipynb) | `rf` | `tree` | `rf` |
-| XGBoost | [03_xgboost_v1.ipynb](../../../notebooks/dataset_b/03_xgboost_v1.ipynb) | `xgb` | `tree` | `xgb` |
+| Logistic Regression | [01_linear_model_v1.ipynb](../../../notebooks/dataset_b/v1/01_linear_model_v1.ipynb) | `lr` | `lr` | `lr` |
+| Random Forest | [02_random_forest_v1.ipynb](../../../notebooks/dataset_b/v1/02_random_forest_v1.ipynb) | `rf` | `tree` | `rf` |
+| XGBoost | [03_xgboost_v1.ipynb](../../../notebooks/dataset_b/v1/03_xgboost_v1.ipynb) | `xgb` | `tree` | `xgb` |
 
 For the final XGBoost workstream, `xgb` remains the machine-readable protocol
 key and source-module prefix (`xgb_`), while `xgboost` is the canonical
@@ -38,11 +38,8 @@ There is no repository-level public baseline-training runner. The notebooks are
 the executable orchestration layer. Their supported Dataset B interfaces are:
 
 ```python
-from src.dataset_b.preprocessing import (
-    DatasetBSplitLoader,
-    make_preprocessing_pipeline,
-)
-from src.dataset_b.splits import DatasetBSplitter
+from src.dataset_b.data import DatasetBSplitLoader, DatasetBSplitter
+from src.dataset_b.preprocessing import make_preprocessing_pipeline
 ```
 
 - `DatasetBSplitLoader().load(partition)` loads one immutable partition and
@@ -208,7 +205,7 @@ state from one fold to another.
 Generate the run-scoped CV preprocessing inputs with the implemented exporter:
 
 ```powershell
-python -m src.dataset_b.preprocessing.export_cv --run-id <run_id>
+python -m src.dataset_b.workflows.export_classical_cv --run-id <run_id>
 ```
 
 The exporter must target the new `run_id` directory and refuse an existing
@@ -219,6 +216,9 @@ and the data-quality evidence before fitting the first CV estimator. If the
 current exporter cannot write the run-scoped final schema or cannot record the
 required quality evidence, stop before CV; do not fall back to the legacy
 export.
+
+The former `src.dataset_b.preprocessing.export_cv` command remains a
+compatibility alias to the canonical workflow.
 
 ## 5. Fresh full-Train fit and Validation predictions
 
@@ -351,10 +351,11 @@ This runbook was reconstructed from:
 - `config/dataset_b/split_v1.yaml`;
 - `src/dataset_b/preprocessing/__init__.py`;
 - `src/dataset_b/preprocessing/profiles.py`;
-- `src/dataset_b/preprocessing/split_inputs.py`;
-- `src/dataset_b/preprocessing/export_cv.py`;
-- `src/dataset_b/splits/__init__.py`;
-- `src/dataset_b/splits/split_manifest.py`;
+- `src/dataset_b/data/split_inputs.py`;
+- `src/dataset_b/workflows/export_classical_cv.py`;
+- compatibility path `src/dataset_b/preprocessing/export_cv.py`;
+- `src/dataset_b/data/__init__.py`;
+- `src/dataset_b/data/split_manifest.py`;
 - the three baseline notebooks listed in Section 2.
 
 The notebooks remain the execution evidence. This runbook describes how to

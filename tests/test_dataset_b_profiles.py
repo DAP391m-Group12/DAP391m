@@ -12,10 +12,26 @@ from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline
 
+from src.dataset_b.data.numeric_value_scaler import DatasetBNumericValueRobustScaler
+from src.dataset_b.models.classical import (
+    DatasetBNumericValueRobustScaler as CanonicalNumericValueRobustScaler,
+    DatasetBRawParserStep as CanonicalRawParserStep,
+    make_preprocessing_pipeline as canonical_make_preprocessing_pipeline,
+)
 from src.dataset_b.preprocessing import DatasetBRawParser, make_preprocessing_pipeline
+from src.dataset_b.preprocessing.profiles import (
+    DatasetBNumericValueRobustScaler as CompatibilityNumericValueRobustScaler,
+    DatasetBRawParserStep as CompatibilityRawParserStep,
+)
 from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
-from src.dataset_b.preprocessing import export_cv as export_module
+from src.dataset_b.preprocessing import export_cv as compatibility_export
 from src.dataset_b.preprocessing.split_inputs import DatasetBPartition
+from src.dataset_b.workflows import export_classical_cv as export_module
+
+
+def test_legacy_classical_export_workflow_delegates_to_canonical():
+    assert compatibility_export.export_cv_preprocessed is export_module.export_cv_preprocessed
+    assert compatibility_export.PREPROCESSING_VERSION == export_module.PREPROCESSING_VERSION
 
 
 def _row(**changes):
@@ -38,6 +54,17 @@ def _frame(*rows):
 
 def _semantic_frame(*rows):
     return DatasetBRawParser().parse(_frame(*rows)).cleaned
+
+
+def test_profile_compatibility_exports_are_canonical():
+    assert make_preprocessing_pipeline is canonical_make_preprocessing_pipeline
+    assert CompatibilityRawParserStep is CanonicalRawParserStep
+    assert CompatibilityNumericValueRobustScaler is DatasetBNumericValueRobustScaler
+    assert CanonicalNumericValueRobustScaler is DatasetBNumericValueRobustScaler
+    assert make_preprocessing_pipeline.__module__ == "src.dataset_b.models.classical.profiles"
+    assert DatasetBNumericValueRobustScaler.__module__ == (
+        "src.dataset_b.data.numeric_value_scaler"
+    )
 
 
 def test_profiles_are_cloneable_and_scale_only_numeric_fold_train_values():

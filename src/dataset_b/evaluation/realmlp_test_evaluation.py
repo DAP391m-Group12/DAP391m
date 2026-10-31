@@ -1,47 +1,15 @@
-"""Public final RealMLP Test-evaluation interface."""
+"""Compatibility access to the canonical RealMLP module."""
 
-from __future__ import annotations
+from importlib import import_module
+from typing import Any
 
-import argparse
-import json
-from pathlib import Path
-
-from src.dataset_b.runtime.realmlp_final_contract import RealMLPFinalPaths
-
-from .realmlp_final_evaluation import (
-    DEFAULT_ARTIFACT_ROOT,
-    DEFAULT_BOOTSTRAP_INDICES,
-    RealMLPFinalEvaluationError as RealMLPTestEvaluationError,
-    run_realmlp_test_evaluation,
-    validate_realmlp_test_evaluation as _validate,
-)
+_CANONICAL = import_module("src.dataset_b.models.neural.realmlp.test_evaluation")
+__all__ = [name for name in dir(_CANONICAL) if not name.startswith("_")]
 
 
-def validate_realmlp_test_evaluation(
-    run_id: str, *, artifact_root: str | Path = DEFAULT_ARTIFACT_ROOT
-) -> dict:
-    return _validate(RealMLPFinalPaths.for_run(run_id, artifact_root=artifact_root))
+def __getattr__(name: str) -> Any:
+    return getattr(_CANONICAL, name)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Run or validate final RealMLP Test evaluation.")
-    parser.add_argument("command", choices=("run", "validate"))
-    parser.add_argument("--run-id", required=True)
-    parser.add_argument("--artifact-root", type=Path, default=DEFAULT_ARTIFACT_ROOT)
-    parser.add_argument("--bootstrap-indices", type=Path, default=DEFAULT_BOOTSTRAP_INDICES)
-    args = parser.parse_args()
-    result = (
-        run_realmlp_test_evaluation(
-            args.run_id,
-            artifact_root=args.artifact_root,
-            bootstrap_indices_path=args.bootstrap_indices,
-        )
-        if args.command == "run"
-        else validate_realmlp_test_evaluation(args.run_id, artifact_root=args.artifact_root)
-    )
-    print(json.dumps(result, indent=2, sort_keys=True))
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(dir(_CANONICAL)))

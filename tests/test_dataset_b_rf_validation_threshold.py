@@ -8,8 +8,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation import rf_validation_threshold as validation
-from src.dataset_b.evaluation.rf_validation_threshold import _predict_validation_once, _select_threshold
+from src.dataset_b.evaluation import rf_validation_threshold as compatibility
+from src.dataset_b.models.classical.rf import validation
+from src.dataset_b.models.classical.rf.validation import _predict_validation_once, _select_threshold
+
+
+def test_legacy_validation_module_delegates_to_canonical():
+    assert compatibility.RFValidationError is validation.RFValidationError
+    assert compatibility.run_rf_validation_threshold is validation.run_rf_validation_threshold
 
 
 class CountingPipeline:

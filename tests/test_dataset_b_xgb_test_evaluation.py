@@ -12,7 +12,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation import xgb_test_evaluation as evaluation
+from src.dataset_b.evaluation import xgb_test_evaluation as compatibility
+from src.dataset_b.models.classical.xgboost import test_evaluation as evaluation
+
+
+def test_legacy_test_evaluation_module_delegates_to_canonical():
+    assert compatibility.XGBTestEvaluationError is evaluation.XGBTestEvaluationError
+    assert compatibility.run_xgb_test_evaluation is evaluation.run_xgb_test_evaluation
 
 
 def test_source_has_no_private_rf_or_lr_dependency_or_bootstrap_generation():

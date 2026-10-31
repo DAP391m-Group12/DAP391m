@@ -358,11 +358,11 @@ This contract was reconciled against:
 - `config/dataset_b/plain_mlp_v1.yaml`;
 - `config/dataset_b/realmlp_v1.yaml`;
 - `config/dataset_b/tabmmini_v1.yaml`;
-- `src/dataset_b/preprocessing/neural_log_transformer.py`;
-- `src/dataset_b/preprocessing/neural_profiles.py`;
-- `src/dataset_b/preprocessing/export_neural_cv.py`;
-- `src/dataset_b/preprocessing/realmlp_native.py`;
-- `src/dataset_b/preprocessing/tabmmini_native.py`.
+- `src/dataset_b/models/neural/common/log_transformer.py`;
+- `src/dataset_b/models/neural/plain_mlp/preprocessing.py`;
+- `src/dataset_b/workflows/export_neural_cv.py`;
+- `src/dataset_b/models/neural/realmlp/preprocessing.py`;
+- `src/dataset_b/models/neural/tabmmini/preprocessing.py`.
 
 This document records the approved final neural preprocessing contract.
 PlainMLP, RealMLP, and TabMmini implementation and execution status is

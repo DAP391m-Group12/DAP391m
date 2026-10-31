@@ -1,141 +1,63 @@
 # DAP391m Group 12
 
-Nghiên cứu dự đoán kết quả phê duyệt khoản vay thế chấp từ HMDA New York 2024. Dự án có hai nhánh nghiên cứu độc lập: Dataset A là bridge analysis cho RQ1/RQ2; Dataset B là tập thực nghiệm chính cho RQ1/RQ2/RQ3.
+Nghiên cứu dự đoán xác suất phê duyệt hồ sơ vay thế chấp từ HMDA New York
+2024. Dataset B là dataset thực nghiệm duy nhất đang hoạt động trong repository.
 
-Mục tiêu là dự đoán xác suất hồ sơ được phê duyệt, không phải xác suất vỡ nợ, mức độ tín nhiệm thực tế, hay bằng chứng nhân quả/pháp lý về phân biệt đối xử.
+Mục tiêu không phải dự đoán vỡ nợ hoặc mức độ tín nhiệm, và kết quả không phải
+bằng chứng nhân quả hay pháp lý về phân biệt đối xử.
 
-## Quy tắc dữ liệu chung
+## Nguyên tắc dữ liệu và đánh giá
 
-- Cohort nghiên cứu chỉ giữ `action_taken ∈ {1, 2, 3}`.
-- `y_approved = 1` khi `action_taken ∈ {1, 2}`; `y_approved = 0` khi `action_taken = 3`.
-- `action_taken` được giữ để tạo target và truy vết, không thuộc feature matrix `X`.
-- Raw source là immutable. Mỗi dataset có feature contract, split, preprocessing, model và artifact độc lập.
-- Không dùng test set để chọn feature, fit preprocessing hay tune model.
+- Cohort chỉ giữ `action_taken ∈ {1, 2, 3}`.
+- `y_approved = 1` khi `action_taken ∈ {1, 2}` và bằng `0` khi
+  `action_taken = 3`.
+- `action_taken` chỉ được dùng để tạo target và truy vết, không thuộc feature
+  matrix `X`.
+- Raw source là immutable.
+- Không dùng Test để chọn feature, fit preprocessing, tune model hoặc chọn
+  threshold.
+- RQ2, RQ3 và RQ4 đọc các artifact đã khóa theo contract tương ứng; không âm
+  thầm retrain, tạo lại split, threshold hoặc bootstrap.
 
-## Pipeline toàn dự án
+## Luồng nghiên cứu hiện hành
 
 ```mermaid
 flowchart TB
     R[HMDA NY 2024 raw source<br/>immutable] --> L[Source integrity and lineage]
-    L --> A[Dataset A bridge branch]
-    L --> B[Dataset B main research branch]
-    A --> AV[Set A view and locked feature groups]
-    AV --> AM[LR and RF only]
-    AM --> AR1[RQ1 baseline]
-    AM --> AR2[RQ2 GSV and SL bridge]
-    B --> BV[Cohort, target and audit-frame boundary]
-    BV --> BF[Feature governance and feature lock]
-    BF --> BM[Six-model RQ1]
-    BM --> BR1[LR, RF, XGBoost, plain MLP,<br/>RealMLP and TabMmini]
-    BR1 --> BR2[RQ2 explanation scope]
-    BR1 --> BR3[RQ3 descriptive fairness audit]
-    AR1 --> O[Versioned artifacts and reports]
-    AR2 --> O
-    BR1 --> O
-    BR2 --> O
-    BR3 --> O
+    L --> B[Dataset B cohort and audit frame]
+    B --> F[Feature governance and feature lock]
+    F --> M[Six-model RQ1]
+    M --> RQ2[RQ2 explanations]
+    M --> RQ3[RQ3 fairness audit]
+    RQ3 --> RQ4[RQ4 mitigation studies]
+    M --> O[Versioned artifacts and reports]
+    RQ2 --> O
+    RQ3 --> O
+    RQ4 --> O
 ```
 
-Source-lineage conventions và target rule có thể dùng chung; `X`, audit metadata, split manifests, fitted preprocessing, models, predictions và results không được dùng chung giữa Dataset A và Dataset B.
+Sáu model thuộc RQ1 gồm Logistic Regression, Random Forest, XGBoost, PlainMLP,
+RealMLP và TabMmini. Cấu hình, preprocessing và checkpoint của từng model phải
+được đọc theo contract và lineage của Dataset B.
 
-## Pipeline modes và model scope
-
-| Mode | Dataset A | Dataset B | Model được chạy |
-|---|---|---|---|
-| `source_integrity` | Kiểm tra nguồn và lineage | Kiểm tra nguồn và lineage | Không chạy model |
-| `dataset_view` | Tạo Set A view theo contract đã khóa | Tạo cohort, target và audit frame | Không chạy model |
-| `feature_governance` | Không mở lại Set A contract | Audit, redundancy, representation và feature lock | Không chạy sáu model; LR/RF chỉ dùng cho sensitivity hẹp nếu được phê duyệt |
-| `rq1_train_evaluate` | Baseline bridge | Thực nghiệm chính | A: LR, RF. B: LR, RF, XGBoost, plain MLP, RealMLP, TabMmini |
-| `rq2_explain` | GSV/SL bridge | Chỉ sau final RQ1 artifacts và feature lock | A: LR, RF. B: LR, RF, XGBoost, plain MLP, RealMLP, TabMmini |
-| `rq3_fairness_audit` | Ngoài scope Set A hiện tại | Audit prediction theo `record_id` | Cả sáu model Dataset B |
-| `reporting` | Baseline và explanation artifacts | RQ1, RQ2, RQ3 artifacts | Không retrain model |
-
-## Preprocessing contract
-
-Dataset A và Dataset B không dùng chung fitted preprocessor. Trong từng dataset, mọi model phải nhận cùng feature information đã khóa; khác biệt chỉ nằm ở preprocessing profile phù hợp model family.
-
-```text
-locked raw feature information
-            │
-            ▼
-train-only, family-specific preprocessing profile
-            │
-            ▼
-fitted model pipeline and versioned artifact
-```
-
-Thông số imputation, encoding, scaling, outlier handling, balancing, seed và tuning budget của Dataset B chưa được khóa đầy đủ. Vì vậy README không tự quy định algorithm preprocessing cụ thể cho sáu model. Bất kỳ profile nào cũng phải fit trên train/fold tương ứng và không được thêm hoặc loại information so với feature set đã phê duyệt.
-
-## Cấu trúc thư mục hiện tại
+## Điểm vào repository
 
 ```text
 DAP391m_GR12/
-│
-├── README.md                    # Tài liệu kiến trúc, pipeline modes và phạm vi Dataset A/B
-├── pyproject.toml               # Metadata package và dependency policy của dự án
-├── requirements.txt             # Danh sách dependency hiện có
-├── .gitignore                   # Quy tắc ignore hiện hữu; Dataset B artifacts cần được review trước khi tạo outputs
-│
-├── config/                      # Cấu hình hiện hữu và Dataset B contract templates
-│   ├── config.yaml              # Target rule và cấu hình dataset hiện hữu
-│   ├── features.yaml            # Legacy/shared feature config; cần đồng bộ sau feature lock Dataset B
-│   ├── model_config.yaml        # Vị trí lưu model configuration history khi được sử dụng
-│   └── dataset_b/               # Dành cho data, feature, split, model, RQ2 và RQ3 contracts versioned
-│
+├── config/                  # Project config và Dataset B contracts
 ├── data/
-│   ├── raw/                     # HMDA source read-only, không ghi đè
-│   ├── processed/datasetA/      # Khu vực output hiện hữu, tách riêng cho Dataset A
-│   └── dataset_b/               # Namespace Dataset B: derived data, audit frame và split manifests
-│
-├── artifacts/dataset_b/         # Khu vực artifact Dataset B theo dataset/feature/split/model/run version
-│
-├── notebooks/                   # EDA và evidence notebooks; không là nguồn duy nhất của contract
-│   ├── 01_eda.ipynb             # EDA tổng quát hiện hữu
-│   └── eda_datasetB/            # Feature-governance notebooks của Dataset B
-│
-├── docs/                        # Nguồn yêu cầu kỹ thuật, planning và feature-governance evidence
-├── reports/                     # Báo cáo và figures được tạo từ artifacts đã khóa
-├── sql/                          # Không gian SQL của dự án
-│
-├── src/
-│   ├── utils/                   # Utility dùng chung: project paths, config loading và logging
-│   ├── pipeline/                # Legacy/general pipeline scaffold; không phải pipeline Dataset B độc lập
-│   └── dataset_b/               # Namespace implementation Dataset B: preparation đến artifacts, tách khỏi Dataset A
-│
-└── tests/                       # Test cho utility và pipeline khi implementation được bổ sung
+│   ├── raw/                 # HMDA source read-only
+│   └── dataset_b/           # Dataset B derived data và split manifests
+├── artifacts/dataset_b/     # Frozen/working evidence; không tự ý sửa
+├── notebooks/dataset_b/     # Notebook evidence của Dataset B
+├── src/dataset_b/           # Dataset B implementation
+├── src/utils/               # Project path, config và logging helpers
+├── docs/handbook/           # Contract, runbook và trạng thái thực nghiệm
+├── reports/                 # Báo cáo tạo từ evidence đã khóa
+└── tests/                   # Unit, contract và integration tests
 ```
 
-`src/api/` hiện tồn tại như scaffold nhưng không thuộc research pipeline hiện tại. API serving chỉ được xem xét sau khi một model artifact đã được đăng ký rõ; không được dùng để quyết định feature selection, RQ2 hoặc RQ3.
-
-## Dataset A
-
-Dataset A là bridge analysis, không phải đại diện cho toàn bộ nghiên cứu Dataset B.
-
-- Chạy Logistic Regression và Random Forest.
-- Dùng cùng information content và bảy explanation groups đã khóa.
-- RQ1 đánh giá baseline; RQ2 so sánh GSV và SL trên `P(approved)`.
-- Không dùng kết quả Dataset A để suy rộng cho XGBoost, plain MLP, RealMLP hoặc TabMmini.
-
-## Dataset B
-
-Dataset B là nhánh thực nghiệm chính.
-
-[Dataset B Handbook](docs/handbook/README.md) là entry point authoritative cho
-data contract, feature governance, preprocessing, training, evaluation và
-đường dẫn tới trạng thái thực thi hiện hành.
-
-- RQ1 chạy sáu model: Logistic Regression, Random Forest, XGBoost, plain MLP, RealMLP và TabMmini.
-- Final feature governance đã khóa 15 raw fields và 12 business players cho giải thích; xem [Feature governance](docs/handbook/contracts/feature_governance.md).
-- `applicant_sex`, năm race slots, `lei`, `county_code` và `applicant_age` nằm ngoài `X` để audit/truy vết.
-- RQ2 dùng sáu final frozen models, giải thích `P(Approved)` theo [RQ2 explanation contract](docs/handbook/contracts/rq2_explanation.md). RQ3 đã hoàn tất descriptive fairness audit cho `applicant_sex` và `derived_race` trong accepted run `rq3_fairness_20261010_01`; notebook 09 chỉ đọc accepted outputs và không thực hiện fairness mitigation.
-
-## Artifact tối thiểu cần bảo tồn
-
-Mỗi run có thể tái tạo phải bảo tồn dataset/feature/split version, record IDs, fitted preprocessing, fitted model, threshold đã khóa, prediction theo `record_id`, metric outputs và bootstrap artifacts. RQ2/RQ3 chỉ đọc artifacts đã khóa, không âm thầm retrain hoặc tái tạo split.
-
-## Trạng thái thực thi hiện hành
-
-[STATUS](docs/handbook/STATUS.md) là nguồn duy nhất cho trạng thái thực thi
-hiện hành của Dataset B. Các trạng thái hoặc tiến độ được lưu trong tài liệu
-khác chỉ là lịch sử có nhãn, hợp đồng, hoặc quy trình; không dùng chúng thay
-cho STATUS.
+[Dataset B Handbook](docs/handbook/README.md) là router authoritative cho data
+contract, feature governance, preprocessing, training, evaluation và các
+research question. [STATUS](docs/handbook/STATUS.md) là nguồn duy nhất cho trạng
+thái thực nghiệm và accepted runs.

@@ -1,0 +1,41 @@
+"""Canonical PMLP-F04 full-Train façade."""
+
+from .training import (
+    CHECKPOINT_SCOPE,
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_FEATURE_CONTRACT_PATH,
+    DEFAULT_OUTPUT_DIR,
+    DEFAULT_SPLIT_DIR,
+    DEFAULT_SPLIT_MANIFEST_PATH,
+    EXPECTED_FEATURES,
+    EXPECTED_TRAIN_ROWS,
+    PlainMLPFullTrainError,
+    _lineage_matches_feature_provenance,
+    _read_json,
+    _sha256_file,
+    _sha256_ids,
+    load_plain_mlp_bundle,
+    main,
+    run_plain_mlp_full_train,
+    validate_plain_mlp_full_train,
+)
+
+__all__ = [
+    "CHECKPOINT_SCOPE",
+    "DEFAULT_CONFIG_PATH",
+    "DEFAULT_FEATURE_CONTRACT_PATH",
+    "DEFAULT_OUTPUT_DIR",
+    "DEFAULT_SPLIT_DIR",
+    "DEFAULT_SPLIT_MANIFEST_PATH",
+    "EXPECTED_FEATURES",
+    "EXPECTED_TRAIN_ROWS",
+    "PlainMLPFullTrainError",
+    "_lineage_matches_feature_provenance",
+    "_read_json",
+    "_sha256_file",
+    "_sha256_ids",
+    "load_plain_mlp_bundle",
+    "main",
+    "run_plain_mlp_full_train",
+    "validate_plain_mlp_full_train",
+]

@@ -529,9 +529,9 @@ Project sources used to reconstruct this contract:
 - `config/dataset_b/feature_set_v1.yaml` — machine-readable protected-metadata,
   target, and role-separation evidence; the final 15-field model-input list and
   12-player explanation mapping are owned by the feature-governance contract;
-- `src/dataset_b/preparation/dataset_view.py` — cohort filtering, target mapping,
+- `src/dataset_b/data/dataset_view.py` — cohort filtering, target mapping,
   record-ID generation, and controlled-view construction;
-- `src/dataset_b/preprocessing/split_inputs.py` — enforced model/audit/target
+- `src/dataset_b/data/split_inputs.py` — enforced model/audit/target
   separation at the downstream input boundary;
 - `tests/test_dataset_b_view.py` — executable evidence for cohort filtering,
   target mapping, raw-token preservation, required columns, and role overlap

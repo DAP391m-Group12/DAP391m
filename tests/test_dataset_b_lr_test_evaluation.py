@@ -10,7 +10,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation import lr_test_evaluation as evaluation
+from src.dataset_b.evaluation import lr_test_evaluation as compatibility
+from src.dataset_b.models.classical.lr import test_evaluation as evaluation
+
+
+def test_legacy_test_evaluation_module_delegates_to_canonical():
+    assert compatibility.LRTestEvaluationError is evaluation.LRTestEvaluationError
+    assert compatibility.run_lr_test_evaluation is evaluation.run_lr_test_evaluation
 
 
 def _setup(tmp_path: Path, monkeypatch):

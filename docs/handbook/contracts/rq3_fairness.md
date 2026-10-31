@@ -52,7 +52,8 @@ merged into Male, Female, or an `Other` group.
 
 `derived_race` is the HMDA application-level aggregation based on applicant and
 co-applicant information. It must not be described as applicant-only race.
-Using it keeps the group definition aligned with Dataset A.
+Using it keeps the group definition aligned with the documented HMDA
+application-level aggregation contract.
 
 White is the reference group. Black or African American and Asian are primary
 comparisons. American Indian or Alaska Native, 2 or more minority races, and
@@ -143,6 +144,10 @@ The Ellis paper may be discussed as a methodological reference, but RQ3 does
 not reproduce its Denied-positive orientation or claim an exact replication.
 
 ## 9. Accepted production evidence
+
+Canonical implementation ownership is under `src/dataset_b/research/rq3/`;
+the former `src/dataset_b/fairness/` paths remain compatibility aliases for
+active and frozen RQ4b consumers.
 
 Run `rq3_fairness_20261010_01` is the accepted implementation of this
 contract. Its audit view contains all 43,996 ordered Test records. The six

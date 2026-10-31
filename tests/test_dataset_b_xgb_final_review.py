@@ -7,7 +7,13 @@ import json
 
 import pytest
 
-from src.dataset_b.review import xgb_final_review as review
+from src.dataset_b.models.classical.xgboost import review
+from src.dataset_b.review import xgb_final_review as compatibility
+
+
+def test_legacy_review_module_delegates_to_canonical():
+    assert compatibility.XGBFinalReviewError is review.XGBFinalReviewError
+    assert compatibility.review_xgb_final is review.review_xgb_final
 
 
 def test_review_refuses_incomplete_bundle(tmp_path, monkeypatch):

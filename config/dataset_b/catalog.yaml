@@ -1,0 +1,21 @@
+schema_version: 1
+dataset: dataset_b
+
+contracts:
+  features: config/dataset_b/feature_set_v1.yaml
+  split: config/dataset_b/split_v1.yaml
+
+models:
+  classical: config/dataset_b/model_protocol_v1.yaml
+  plain_mlp: config/dataset_b/plain_mlp_v1.yaml
+  realmlp: config/dataset_b/realmlp_v1.yaml
+  tabmmini: config/dataset_b/tabmmini_v1.yaml
+
+research:
+  rq2: config/dataset_b/rq2_protocol.yaml
+  rq3: config/dataset_b/rq3_protocol.yaml
+  rq4a: config/dataset_b/rq4a_postprocessing.yaml
+  rq4b: config/dataset_b/rq4b_adversarial.yaml
+
+runtime:
+  colab_gpu_v1: config/dataset_b/runtime_colab_gpu_v1.yaml

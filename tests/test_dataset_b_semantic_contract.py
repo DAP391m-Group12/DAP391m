@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from src.dataset_b.contracts import (
+from src.dataset_b.core.feature_contract import (
     DatasetBSemanticValidationError,
     validate_feature_contract,
     validate_split_data_quality,

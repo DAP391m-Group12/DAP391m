@@ -1,6 +1,6 @@
 """Dataset B split-manifest contracts."""
 
-from .split_manifest import DatasetBSplitter, SplitManifest, SplitManifestError
+from src.dataset_b.data import DatasetBSplitter, SplitManifest, SplitManifestError
 
 __all__ = [
     "DatasetBSplitter",

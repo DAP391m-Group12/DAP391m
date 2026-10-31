@@ -12,7 +12,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation import xgb_validation_threshold as validation
+from src.dataset_b.evaluation import xgb_validation_threshold as compatibility
+from src.dataset_b.models.classical.xgboost import validation
+
+
+def test_legacy_validation_module_delegates_to_canonical():
+    assert compatibility.XGBValidationError is validation.XGBValidationError
+    assert compatibility.run_xgb_validation_threshold is validation.run_xgb_validation_threshold
 
 
 class CountingPipeline:

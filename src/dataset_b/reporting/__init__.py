@@ -16,7 +16,6 @@ from .model_reporting import (
     validate_reporting_directory,
     write_lr_reporting_package,
 )
-from .realmlp_reporting import write_realmlp_reporting
 
 __all__ = [
     "EXPECTED_REPORTING_FILES",
@@ -35,3 +34,12 @@ __all__ = [
     "write_lr_reporting_package",
     "write_realmlp_reporting",
 ]
+
+
+def __getattr__(name: str):
+    if name != "write_realmlp_reporting":
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    from src.dataset_b.models.neural.realmlp.reporting import write_realmlp_reporting
+
+    globals()[name] = write_realmlp_reporting
+    return write_realmlp_reporting

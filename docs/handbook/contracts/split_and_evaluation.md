@@ -509,7 +509,7 @@ This contract was reconstructed from:
 - `config/dataset_b/split_v1.yaml`;
 - `config/dataset_b/model_protocol_v1.yaml`;
 - `artifacts/dataset_b/split_v1.json`;
-- `src/dataset_b/splits/split_manifest.py`;
+- `src/dataset_b/data/split_manifest.py`;
 - `src/dataset_b/splits/run_split.py`;
 - `docs/Yêu cầu Kỹ thuật Set B cho RQ1 và RQ2 và RQ3 - HMDA NY 2024 - Revised.docx`.
 

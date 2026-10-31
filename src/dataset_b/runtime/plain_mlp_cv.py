@@ -1,19 +1,15 @@
-"""Public facade for the PMLP-F04 Train-only CV runner."""
+"""Compatibility access to the canonical PlainMLP module."""
 
-from .plain_mlp_training import (
-    CV_CONTRACT_ID,
-    DEFAULT_CV_OUTPUT_DIR,
-    EXPECTED_TRAIN_ROWS,
-    PlainMLPCVError,
-    run_plain_mlp_cv,
-    validate_plain_mlp_cv,
-)
+from importlib import import_module
+from typing import Any
 
-__all__ = [
-    "CV_CONTRACT_ID",
-    "DEFAULT_CV_OUTPUT_DIR",
-    "EXPECTED_TRAIN_ROWS",
-    "PlainMLPCVError",
-    "run_plain_mlp_cv",
-    "validate_plain_mlp_cv",
-]
+_CANONICAL = import_module("src.dataset_b.models.neural.plain_mlp.cv")
+__all__ = [name for name in dir(_CANONICAL) if not name.startswith("_")]
+
+
+def __getattr__(name: str) -> Any:
+    return getattr(_CANONICAL, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(dir(_CANONICAL)))

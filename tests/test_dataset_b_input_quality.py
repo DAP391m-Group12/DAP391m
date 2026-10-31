@@ -3,13 +3,13 @@
 import pandas as pd
 import pytest
 
-from src.dataset_b.preprocessing import (
+from src.dataset_b.data import (
     EXEMPTION_FLAG_COLUMNS,
+    FEATURE_COLUMNS,
     DatasetBInputQualityGate,
     DatasetBPartition,
     InputQualityError,
 )
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
 
 
 AUDIT_COLUMNS = (
