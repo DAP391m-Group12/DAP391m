@@ -6,12 +6,18 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation.lr_validation_threshold import (
+from src.dataset_b.models.classical.lr.validation import (
     LRValidationError,
     _predict_validation_once,
     _resolved_paths,
     _select_threshold,
 )
+from src.dataset_b.evaluation import lr_validation_threshold as compatibility
+
+
+def test_legacy_validation_module_delegates_to_canonical():
+    assert compatibility.LRValidationError is LRValidationError
+    assert compatibility._predict_validation_once is _predict_validation_once
 
 
 class _CountingPipeline:

@@ -2,7 +2,7 @@ import csv
 
 import yaml
 
-from src.dataset_b.splits import DatasetBSplitter
+from src.dataset_b.data import DatasetBSplitter
 from src.dataset_b.splits.run_split import main
 
 

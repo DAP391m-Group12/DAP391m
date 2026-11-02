@@ -7,8 +7,8 @@ import pytest
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 
-from src.dataset_b.preprocessing import DatasetBNumericMedianImputer, DatasetBRawParser
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.data import DatasetBNumericMedianImputer, DatasetBRawParser
+from src.dataset_b.data.raw_parser import FEATURE_COLUMNS
 
 
 def _row(**changes):
@@ -41,7 +41,7 @@ def test_medians_fit_only_on_fold_train_and_do_not_change_on_held_out_transform(
     train_before = fold_train.copy(deep=True)
     test_before = test.copy(deep=True)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.median_imputer"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.median_imputer"):
         imputer = DatasetBNumericMedianImputer().fit(fold_train)
         train_result = imputer.transform(fold_train)
         validation_result = imputer.transform(validation)

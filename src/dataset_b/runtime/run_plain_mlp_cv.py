@@ -1,9 +1,15 @@
-"""Command-line entry point for PMLP-F04 CV."""
+"""Compatibility access to the canonical neural workflow."""
 
-import sys
+from importlib import import_module
+from typing import Any
 
-from .plain_mlp_training import main
+_CANONICAL = import_module("src.dataset_b.workflows.run_plain_mlp_cv")
+__all__ = [name for name in dir(_CANONICAL) if not name.startswith("_")]
 
 
-if __name__ == "__main__":
-    raise SystemExit(main(["cv", *sys.argv[1:]]))
+def __getattr__(name: str) -> Any:
+    return getattr(_CANONICAL, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(dir(_CANONICAL)))

@@ -5,12 +5,25 @@ import pandas as pd
 import pytest
 from sklearn.exceptions import NotFittedError
 
+from src.dataset_b.models.classical.lr_log_transformer import (
+    LOG1P_VALUE_COLUMNS as CANONICAL_LOG1P_VALUE_COLUMNS,
+    DatasetBLRSelectiveLog1pTransformer as CanonicalLRSelectiveLog1pTransformer,
+)
 from src.dataset_b.preprocessing import (
     DatasetBLRSelectiveLog1pTransformer,
     DatasetBNumericTwoChannel,
     DatasetBRawParser,
 )
 from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.preprocessing.lr_log_transformer import LOG1P_VALUE_COLUMNS
+
+
+def test_lr_log1p_compatibility_exports_are_canonical():
+    assert DatasetBLRSelectiveLog1pTransformer is CanonicalLRSelectiveLog1pTransformer
+    assert LOG1P_VALUE_COLUMNS is CANONICAL_LOG1P_VALUE_COLUMNS
+    assert DatasetBLRSelectiveLog1pTransformer.__module__ == (
+        "src.dataset_b.models.classical.lr_log_transformer"
+    )
 
 
 def _semantic(**changes):

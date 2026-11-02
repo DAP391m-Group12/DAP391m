@@ -2,7 +2,14 @@ import csv
 
 import pytest
 
-from src.dataset_b.preparation.dataset_view import DatasetBViewBuilder, DatasetBViewError
+from src.dataset_b.data import DatasetBViewBuilder, DatasetBViewError
+from src.dataset_b.preparation.dataset_view import (
+    DatasetBViewBuilder as LegacyDatasetBViewBuilder,
+)
+
+
+def test_legacy_dataset_view_import_is_canonical():
+    assert LegacyDatasetBViewBuilder is DatasetBViewBuilder
 
 
 def _contract() -> dict:

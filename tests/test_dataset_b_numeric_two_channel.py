@@ -8,8 +8,8 @@ import pytest
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 
-from src.dataset_b.preprocessing import DatasetBNumericTwoChannel, DatasetBRawParser
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.data import DatasetBNumericTwoChannel, DatasetBRawParser
+from src.dataset_b.data.raw_parser import FEATURE_COLUMNS
 
 
 def _row(**changes):
@@ -43,7 +43,7 @@ def test_two_channel_preserves_states_and_uses_only_fold_train_medians(caplog):
     before_train = fold_train.copy(deep=True)
     before_test = test.copy(deep=True)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.numeric_two_channel"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.numeric_two_channel"):
         transformer = DatasetBNumericTwoChannel().fit(fold_train)
         medians = dict(transformer.imputer_.medians_)
         train_result = transformer.transform(fold_train)

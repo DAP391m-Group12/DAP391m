@@ -346,13 +346,16 @@ This contract was reconstructed from:
 - `config/dataset_b/feature_set_v1.yaml`;
 - `config/dataset_b/split_v1.yaml`;
 - `config/dataset_b/model_protocol_v1.yaml`;
-- `src/dataset_b/preprocessing/raw_parser.py`;
-- `src/dataset_b/preprocessing/median_imputer.py`;
-- `src/dataset_b/preprocessing/numeric_two_channel.py`;
-- `src/dataset_b/preprocessing/categorical_encoder.py`;
-- `src/dataset_b/preprocessing/profiles.py`;
-- `src/dataset_b/preprocessing/split_inputs.py`;
-- `src/dataset_b/preprocessing/export_cv.py`;
+- `src/dataset_b/data/raw_parser.py`;
+- `src/dataset_b/data/median_imputer.py`;
+- `src/dataset_b/data/numeric_two_channel.py`;
+- `src/dataset_b/data/categorical_encoder.py`;
+- `src/dataset_b/models/classical/lr_log_transformer.py`;
+- `src/dataset_b/models/classical/profiles.py`;
+- `src/dataset_b/data/numeric_value_scaler.py`;
+- `src/dataset_b/data/split_inputs.py`;
+- `src/dataset_b/workflows/export_classical_cv.py`;
+- compatibility CLI/import path `src/dataset_b/preprocessing/export_cv.py`;
 - `data/preprocessing/dataset_b_v1/cv_preprocessing_v2/manifest.json`;
 - the stored fold matrices and row artifacts under the same CV root.
 

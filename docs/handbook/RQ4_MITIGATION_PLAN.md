@@ -29,7 +29,7 @@ The separate RQ1 paired-bootstrap prerequisite (T1) is `COMPLETE` and locked.
 It compares all 15 pairs of the six frozen final models over the ten-metric
 RQ1 contract using the shared locked Test bootstrap rows; its evidence is the
 `RQ1 paired-bootstrap cross-model comparison` row of `STATUS.md` and
-`notebooks/dataset_b/07_model_total_review.ipynb`. RQ4 does not reopen it.
+`notebooks/dataset_b/final/research_questions/07_model_total_review.ipynb`. RQ4 does not reopen it.
 
 ## 2. Evidence boundary and baseline anchors
 

@@ -5,12 +5,12 @@ import logging
 import pandas as pd
 import pytest
 
-from src.dataset_b.preprocessing import (
+from src.dataset_b.data import (
     EXEMPTION_FLAG_COLUMNS,
+    FEATURE_COLUMNS,
     DatasetBRawParser,
     RawFeatureError,
 )
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
 
 
 def _row(**changes):
@@ -53,7 +53,7 @@ def test_parser_normalizes_five_exemption_flags_and_preserves_numeric_1111(caplo
     X = _frame(exempt)
     original = X.copy(deep=True)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.raw_parser"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.raw_parser"):
         parsed = DatasetBRawParser().parse(X)
 
     pd.testing.assert_frame_equal(X, original)
@@ -88,7 +88,7 @@ def test_parser_preserves_special_labels_and_maps_negative_income_only(caplog):
     X = _frame(negative, zero, special)
     original = X.copy(deep=True)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.raw_parser"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.raw_parser"):
         parsed = DatasetBRawParser().parse(X)
 
     pd.testing.assert_frame_equal(X, original)

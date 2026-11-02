@@ -7,7 +7,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = PROJECT_ROOT/ 'config'
 DATA_DIR = PROJECT_ROOT/ 'data'
 RAW_DATA_DIR = DATA_DIR /'raw'
-PROCESSED_DATA_DIR = DATA_DIR/'processed'
 
 SRC_DIR = PROJECT_ROOT / "src"
 NOTEBOOKS_DIR = PROJECT_ROOT / "notebooks"
@@ -21,20 +20,17 @@ TESTS_DIR = PROJECT_ROOT / "tests"
 AGENT_DIR = PROJECT_ROOT / ".agent"
 AGENT_TEST_RUNS_DIR = AGENT_DIR / "test-runs"
 
-# Configuration files
-FEATURES_CONFIG_PATH = CONFIG_DIR / "features.yaml"
-APP_CONFIG_PATH = CONFIG_DIR / "config.yaml"
-MODEL_CONFIG_PATH = CONFIG_DIR / "model_config.yaml"
+# Configuration entry points
+PROJECT_CONFIG_PATH = CONFIG_DIR / "project.yaml"
+CONFIG_CATALOG_PATH = CONFIG_DIR / "dataset_b" / "catalog.yaml"
 
 # Current raw source
 RAW_STATE_NY_PATH = RAW_DATA_DIR / "state_NY_2024.csv"
 
 # Dataset outputs
-DATASET_A_DIR = PROCESSED_DATA_DIR / "dataset_a"
 DATASET_B_DIR = DATA_DIR / "dataset_b"
 
 DATASET_DIRS = {
-    "dataset_a": DATASET_A_DIR,
     "dataset_b": DATASET_B_DIR,
 }
 
@@ -48,4 +44,3 @@ def processed_dataset_dir(dataset_name: str) -> Path:
             f"Unknown dataset_name={dataset_name!r}. Allowed: {allowed}."
         ) from exc
 
-    

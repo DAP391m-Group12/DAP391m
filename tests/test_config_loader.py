@@ -9,6 +9,7 @@ from src.utils.config_loader import (
     get_project_root,
     load_config,
 )
+from src.utils.path import CONFIG_CATALOG_PATH, PROJECT_CONFIG_PATH
 
 
 class TestConfig:
@@ -47,15 +48,16 @@ class TestPathResolutionAndLoading:
         cfg = load_config()
         assert isinstance(cfg, Config)
         assert cfg.project.name == "dap391m_gr12"
+        assert cfg.project.active_dataset == "dataset_b"
         assert cfg.logging.default_level == "INFO"
 
     def test_load_by_filename(self):
-        cfg = load_config("config.yaml")
+        cfg = load_config("project.yaml")
         assert cfg.source.raw_file == "data/raw/state_NY_2024.csv"
 
     def test_load_from_relative_path(self):
-        cfg = load_config("config/config.yaml")
-        assert cfg.contracts.dataset_b_split == "dataset_b/split_v1.yaml"
+        cfg = load_config("config/project.yaml")
+        assert cfg.configuration.catalog == "config/dataset_b/catalog.yaml"
 
     def test_load_nested_config_from_config_namespace(self):
         cfg = load_config("dataset_b/split_v1.yaml")
@@ -65,6 +67,32 @@ class TestPathResolutionAndLoading:
     def test_load_missing_file_raises(self):
         with pytest.raises(FileNotFoundError):
             load_config("non_existent_config_12345.yaml")
+
+    def test_removed_legacy_config_paths_raise(self):
+        for legacy_path in (
+            "config.yaml",
+            "features.yaml",
+            "dataset_b/data_contract.yaml",
+        ):
+            with pytest.raises(FileNotFoundError):
+                load_config(legacy_path)
+
+    def test_configuration_entry_points_exist(self):
+        assert PROJECT_CONFIG_PATH.is_file()
+        assert CONFIG_CATALOG_PATH.is_file()
+
+    def test_catalog_targets_exist_without_self_reference(self):
+        catalog = load_config("dataset_b/catalog.yaml")
+        assert catalog.dataset == "dataset_b"
+
+        targets = []
+        for group_name in ("contracts", "models", "research", "runtime"):
+            targets.extend(catalog[group_name].values())
+
+        assert len(targets) == len(set(targets))
+        assert "config/dataset_b/catalog.yaml" not in targets
+        for target in targets:
+            assert (get_project_root() / target).is_file(), target
 
 
 class TestEnvVarInterpolation:
@@ -114,46 +142,3 @@ class TestEnvVarInterpolation:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
 
-
-class TestSaveModelConfig:
-    def test_save_model_config_appends_history(self):
-        from src.utils.config_loader import save_model_config
-        import yaml
-        
-        with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False) as f:
-            temp_path = f.name
-            
-        try:
-            # Lần chạy 1
-            save_model_config(
-                "LogisticRegression",
-                training_time=1.23,
-                config_path=temp_path,
-                C=1.5,
-                max_iter=500,
-            )
-            # Lần chạy 2
-            save_model_config(
-                "RandomForest",
-                training_time=5.67,
-                config_path=temp_path,
-                n_estimators=100,
-            )
-            
-            with open(temp_path, "r", encoding="utf-8") as f:
-                history = yaml.safe_load(f)
-                
-            assert isinstance(history, list)
-            assert len(history) == 2
-            
-            assert history[0]["model_name"] == "LogisticRegression"
-            assert history[0]["training_time"] == "1.23s"
-            assert history[0]["hyperparameters"]["C"] == 1.5
-            
-            assert history[1]["model_name"] == "RandomForest"
-            assert history[1]["training_time"] == "5.67s"
-            assert history[1]["hyperparameters"]["n_estimators"] == 100
-        finally:
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            

@@ -1,0 +1,25 @@
+schema_version: 1
+
+project:
+  name: dap391m_gr12
+  study: hmda_new_york_2024_mortgage_approval
+  active_dataset: dataset_b
+
+source:
+  raw_file: data/raw/state_NY_2024.csv
+  raw_data_is_immutable: true
+
+paths:
+  dataset_output: data/dataset_b
+  artifacts: artifacts/dataset_b
+  reports: reports
+
+configuration:
+  catalog: config/dataset_b/catalog.yaml
+
+logging:
+  log_file: logs/app_logs.jsonl
+  default_level: INFO
+  max_bytes: 5242880
+  backup_count: 3
+  mask_pii: true

@@ -557,7 +557,7 @@ Prefer a public callback or public history API, followed by a backend-supported
 logger. Terminal parsing is temporary fallback evidence only. Do not
 monkey-patch private backend internals in a production run. The implementation
 in
-[`realmlp_history.py`](../../../src/dataset_b/runtime/realmlp_history.py) is
+[`history.py`](../../../src/dataset_b/models/neural/realmlp/history.py) is
 version-bound and must fail rather than fabricate unavailable fields.
 
 History must be sufficient to render loss, learning-rate, timing, and GPU-memory

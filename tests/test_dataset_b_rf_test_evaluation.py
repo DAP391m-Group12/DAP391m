@@ -11,7 +11,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.dataset_b.evaluation import rf_test_evaluation as evaluation
+from src.dataset_b.evaluation import rf_test_evaluation as compatibility
+from src.dataset_b.models.classical.rf import test_evaluation as evaluation
+
+
+def test_legacy_test_evaluation_module_delegates_to_canonical():
+    assert compatibility.RFTestEvaluationError is evaluation.RFTestEvaluationError
+    assert compatibility.run_rf_test_evaluation is evaluation.run_rf_test_evaluation
 
 
 def test_rf09_has_no_lr_implementation_dependency():

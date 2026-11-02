@@ -10,10 +10,10 @@ from scipy.sparse import csr_matrix
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 
-from src.dataset_b.preprocessing import (
+from src.dataset_b.data import (
     CATEGORICAL_SCHEMA, DatasetBOneHotEncoder, DatasetBNumericTwoChannel, DatasetBRawParser,
 )
-from src.dataset_b.preprocessing.raw_parser import FEATURE_COLUMNS
+from src.dataset_b.data.raw_parser import FEATURE_COLUMNS
 
 
 def _row(**changes):
@@ -57,7 +57,7 @@ def test_ohe_preserves_special_categories_unseen_in_fold_train(caplog):
     held_out_channels = two_channel.transform(held_out)
     before = held_out_channels.copy(deep=True)
 
-    with caplog.at_level(logging.INFO, logger="src.dataset_b.preprocessing.categorical_encoder"):
+    with caplog.at_level(logging.INFO, logger="src.dataset_b.data.categorical_encoder"):
         encoder = DatasetBOneHotEncoder().fit(train_channels)
         result = encoder.transform(held_out_channels)
 

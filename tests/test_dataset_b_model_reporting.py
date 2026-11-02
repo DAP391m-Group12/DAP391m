@@ -348,7 +348,7 @@ def test_xgboost_reporting_does_not_change_lr_or_rf_model_keys(tmp_path):
 
 
 def test_xgboost_notebook_has_complete_non_executing_stage_map():
-    notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/03_xgboost_final.ipynb"
+    notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/final/models/03_xgboost_final.ipynb"
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     stage_cells = [cell for cell in notebook["cells"] if "xgb-stage-map" in cell.get("metadata", {}).get("tags", [])]
     assert len(stage_cells) == 1
@@ -373,7 +373,7 @@ def test_xgboost_notebook_has_complete_non_executing_stage_map():
 
 
 def _publication_function():
-    notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/03_xgboost_final.ipynb"
+    notebook_path = Path(__file__).parents[1] / "notebooks/dataset_b/final/models/03_xgboost_final.ipynb"
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     cells = [cell for cell in notebook["cells"] if "xgb-publication" in cell.get("metadata", {}).get("tags", [])]
     assert len(cells) == 1

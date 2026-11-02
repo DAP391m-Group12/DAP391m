@@ -1,7 +1,15 @@
-"""Command-line entry point for the Dataset B RealMLP full-Train runner."""
+"""Compatibility access to the canonical neural workflow."""
 
-from .realmlp_full_train import main
+from importlib import import_module
+from typing import Any
+
+_CANONICAL = import_module("src.dataset_b.workflows.run_realmlp_full_train")
+__all__ = [name for name in dir(_CANONICAL) if not name.startswith("_")]
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def __getattr__(name: str) -> Any:
+    return getattr(_CANONICAL, name)
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(dir(_CANONICAL)))

@@ -1,5 +1,18 @@
-from src.dataset_b.preparation import DatasetBView
-from src.dataset_b.splits import DatasetBSplitter, SplitManifestError
+from src.dataset_b.data import DatasetBSplitter, DatasetBView, SplitManifestError
+from src.dataset_b.preparation import DatasetBView as LegacyDatasetBView
+from src.dataset_b.splits import DatasetBSplitter as LegacyDatasetBSplitter
+from src.dataset_b.splits import run_split as compatibility_workflow
+from src.dataset_b.workflows import create_split
+
+
+def test_legacy_split_imports_are_canonical():
+    assert LegacyDatasetBView is DatasetBView
+    assert LegacyDatasetBSplitter is DatasetBSplitter
+
+
+def test_legacy_split_workflow_delegates_to_canonical():
+    assert compatibility_workflow.SplitDataExportError is create_split.SplitDataExportError
+    assert compatibility_workflow.main is create_split.main
 
 
 def _contract() -> dict:

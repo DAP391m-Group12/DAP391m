@@ -239,7 +239,7 @@ def test_test_evaluation_uses_one_prediction_and_existing_indices(
 
 
 def test_final_notebook_is_executed_and_artifact_read_only():
-    path = Path(__file__).parents[1] / "notebooks/dataset_b/06_tabmmini_final.ipynb"
+    path = Path(__file__).parents[1] / "notebooks/dataset_b/final/models/06_tabmmini_final.ipynb"
     notebook = json.loads(path.read_text(encoding="utf-8"))
     code_cells = [
         cell for cell in notebook["cells"] if cell["cell_type"] == "code"

@@ -53,9 +53,9 @@ evidence.
 
 The saved evidence is divided across two notebooks:
 
-- `notebooks/eda_datasetB/04_feature_selection.ipynb` contains the executed
+- `notebooks/dataset_b/v1/eda/04_feature_selection.ipynb` contains the executed
   audit and decision outputs for priority groups 4.1–4.6;
-- `notebooks/eda_datasetB/05_feature_selction.ipynb` contains the executed
+- `notebooks/dataset_b/v1/eda/05_feature_selection.ipynb` contains the executed
   full-cohort screening and final reconciliation for review groups 5.1–5.5.
 
 The second notebook does not replace the first. Its initial schema table for
@@ -397,11 +397,11 @@ governance feature set, must not be renamed or reinterpreted as the approved
 15-field set, and its fitted preprocessors or trained models must not be reused
 for the new feature set.
 
-`config/features.yaml` still delegates Dataset B model inputs to this historical
-contract and labels that configured state as `temporary_training_lock_v0_2`.
-Those configuration files are unchanged by this governance update. They remain
-historical implementation state until the approved 15-field list is applied by
-the separately scoped configuration and preprocessing update.
+The former `config/features.yaml` delegation was retired during the Dataset
+B-only handover cleanup. Dataset B feature configuration is now discovered
+through `config/dataset_b/catalog.yaml`, whose `contracts.features` entry points
+to `config/dataset_b/feature_set_v1.yaml`. The catalog contains paths only and
+does not redefine feature-contract values.
 
 ### 6.1 Machine validation and run identity
 
@@ -431,7 +431,7 @@ it does not create an acceptance requirement for the final retraining workflow.
 
 ## 7. Completed screening of the 18 review candidates
 
-Notebook `05_feature_selction.ipynb` was executed from a clean kernel over the
+Notebook `05_feature_selection.ipynb` was executed from a clean kernel over the
 full 293,301-record cohort. Its 33 code cells have contiguous execution counts
 `1–33`, every code cell has output, and no stored runtime error is present. The
 execution does not create or read split membership and does not use or reconcile
@@ -698,16 +698,16 @@ Sources used to reconstruct this governance contract:
   former sources and records their governance, handoff, and data-gate
   destinations;
 - `docs/handbook/contracts/data_contract.md` — canonical handbook data roles;
-- `notebooks/eda_datasetB/04_feature_selection.ipynb` — executed evidence for
+- `notebooks/dataset_b/v1/eda/04_feature_selection.ipynb` — executed evidence for
   priority groups 4.1–4.6;
-- `notebooks/eda_datasetB/05_feature_selction.ipynb` — clean-kernel executed
+- `notebooks/dataset_b/v1/eda/05_feature_selection.ipynb` — clean-kernel executed
   evidence, decisions, and 18-field reconciliation for review groups 5.1–5.5;
 - `config/dataset_b/feature_set_v1.yaml` — `legacy evidence only` for the
   versioned temporary 12-input lock;
-- `config/features.yaml` — Dataset B delegation to the versioned feature
-  contract.
+- `config/dataset_b/catalog.yaml` — navigation entry for the versioned feature
+  contract; it does not duplicate feature values.
 
 No standalone feature-screening artifact was found under
 `artifacts/dataset_b/`. For this migration, saved notebook outputs and the two
-configuration files are the inspectable evidence for the decisions recorded
-above.
+versioned feature contract and catalog are the inspectable configuration
+evidence for the decisions recorded above.
