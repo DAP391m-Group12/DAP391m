@@ -26,6 +26,7 @@ outside this Markdown handbook.
 | Review the locked protocol or accepted six-model descriptive fairness audit for `applicant_sex` and `derived_race` | [RQ3 fairness contract](contracts/rq3_fairness.md) |
 | Review the closed RQ4a post-processing and RQ4b-3 adversarial mitigation evidence and governance | [RQ4 mitigation plan](RQ4_MITIGATION_PLAN.md) |
 | Check current execution stage and evidence | [Current execution status](STATUS.md) |
+| Review documentation-level reproducibility coverage against rubric sections 0–12 | [Reproducibility documentation acceptance](REPRODUCIBILITY_ACCEPTANCE.md) |
 
 ## Document ownership
 
@@ -70,6 +71,9 @@ outside this Markdown handbook.
 - [STATUS](STATUS.md) is the sole source for current execution status. Other
   files may define contracts/procedures or retain clearly labeled history, but
   must not act as a parallel current-status register.
+- [Reproducibility documentation acceptance](REPRODUCIBILITY_ACCEPTANCE.md)
+  owns the rubric-level documentation matrix and limitations. It does not
+  record or supersede experimental execution status.
 
 ## Final retraining policy
 
