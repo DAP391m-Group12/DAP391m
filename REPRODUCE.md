@@ -24,7 +24,7 @@ Experimental execution status remains exclusively in
 | Semester, supervisor, member roster, student IDs, and project contact list | `NOT_DECLARED` |
 | Submission identity | PR #12 merge commit `369fe494506fce888d6c917f504d086a1dfcb097` |
 | Reviewed PR head | `ed1afbf783db502ade5dfb959738df51cdb6a5e7` |
-| Document version | `2.0` |
+| Document version | `2.1` |
 | Document date | `2026-11-02` |
 
 Three identities must not be conflated:
@@ -51,6 +51,13 @@ the retained-artifact verification route below.
 Run every command from the repository root. These routes are read-only. They do
 not load a model or checkpoint, run inference, fit a model, execute a notebook,
 or regenerate a report.
+
+For this documentation acceptance, **Quick Start success** means that a reviewer
+can navigate the repository, validate its configuration and saved notebook
+structure, enumerate durable reports, and verify retained frozen locks when the
+local artifacts are present. It does not mean that the reviewer recalculates a
+headline metric. Numerical results remain accepted historical evidence tied to
+the run identities, manifests, and reports in Sections 7--10.
 
 ### 1.1 Repository and documentation verification
 
@@ -143,6 +150,19 @@ manifests. CPU model, host RAM, and peak VRAM are also not established for all
 families. The RQ2 accepted CPU run records 4,817.42 seconds total across six
 models; RQ3 records per-model totals from 87.52 to 175.75 seconds.
 
+The accepted neural evidence identifies an NVIDIA GeForce RTX 5050 Laptop GPU.
+PlainMLP and TabMmini record 8,546,484,224 bytes of device memory (nominal 8 GB)
+and CUDA build 13.0. The RealMLP manifest identifies the same GPU model and
+`cuda:0`, but does not independently record VRAM. Documentation acceptance does
+not require a new CUDA smoke run.
+
+Package versions must be reported exactly as stored by each accepted run. If
+successful retained evidence exists for more than one version of a package,
+the lowest observed successful version may be labeled **lowest verified working
+version**. This label is evidence-bounded; it is not a general minimum-supported
+version. When only one successful version is retained, report that exact version
+and do not infer a lower compatibility floor.
+
 ### 3.2 Recommended inspection environment
 
 [`pyproject.toml`](pyproject.toml) requires Python 3.10 or newer.
@@ -165,6 +185,10 @@ Classification: `DOCUMENTED_NOT_RERUN`. The command was not executed during
 this task, and clean-install success is not claimed. The file pins current
 package versions, but the accepted historical runs used more than one runtime
 profile; consult the relevant manifest before attempting numerical reproduction.
+Differences between profiles are recorded rather than normalized. A lowest
+verified working version may be stated only under the evidence rule in Section
+3.1; no package downgrade, reinstall, or CUDA smoke is required for this
+documentation acceptance.
 
 No conda lockfile, Dockerfile, GPU wheel lock, or accepted clean-host walkthrough
 is present. Do not modify the pinned environment merely to force a match with a
@@ -236,8 +260,27 @@ frozen config was intentionally left unchanged for lineage.
 
 ## 7. Training
 
-No training was run in this documentation task. The following are procedure
-routes, not current runtime PASS claims.
+No training was run in this documentation task. This section first records only
+training that accepted historical evidence says was completed; it then separates
+unrerun procedures so that a runbook is never presented as runtime evidence.
+
+### 7.1 Accepted completed-run inventory
+
+| Scope | Accepted completed runs | Recorded seed scope | Evidence-backed completion |
+|---|---|---|---|
+| Classical RQ1 | `lr_final_15f_20261002_01`, `rf_final_15f_20261002_01`, `xgb_final_15f_20261003_01` | split/CV seed 42; RF/XGBoost random state 42 | five fresh Train-only CV fits and a fresh full-Train refit per family; frozen checkpoint and Test package retained |
+| PlainMLP RQ1 | `plain_mlp_final_15f_20261004_03` | seed 42; deterministic-algorithm policy recorded | Train-only selection/CV and fresh full-Train fit retained as accepted historical evidence |
+| RealMLP RQ1 | `realmlp_final_15f_20261004_01` | seed 42; fixed epoch 50 selected from the Train-only pilot | five fresh Train-only CV fits and a fresh full-Train fit retained as accepted historical evidence |
+| TabMmini RQ1 | `tabmmini_final_15f_20261004_01` | pilot/CV seed 42; fixed accepted full-Train epoch 55 | Train-only pilot/CV and fresh full-Train fit retained as accepted historical evidence |
+| RQ4b-3 development | `rq4b3_adv_20261019_02`, `rq4b3_adv_20261021_01`, `rq4b3_adv_20261022_01` | lambdas 0 and 0.01 at seeds 42/43/44; screening lambdas 0.03/0.1/0.3 at seed 42 only | nine development units are recorded complete; Gate C selected lambda 0; closed evidence is not rerun |
+
+This inventory does not require or authorize fresh training. It reports only
+completed accepted runs and their actual seed coverage; it does not upgrade a
+single-seed screening arm into multi-seed evidence.
+
+### 7.2 Documented procedure routes
+
+The following routes are procedures, not current runtime PASS claims.
 
 | Family | Procedure | Classification |
 |---|---|---|
@@ -303,6 +346,20 @@ This mapping is inspectable without notebook execution.
 | RQ4b sex supplement | `13_rq4b_applicant_sex_supplementary_results.ipynb` | `rq4b3_sex_supplementary_20261024_02` | evaluation from saved predictions | supplementary package | `ACCEPTED_HISTORICAL_EVIDENCE` |
 | Publication figures and assembled report | `10_publication_figures.ipynb`, `14_research_report.ipynb`, `reports/paper_figures/` | inputs above | read/report procedure | PDFs and verification notes listed by `report-index` | `DOCUMENTED_NOT_RERUN` in this task |
 
+The retained reports provide object-level provenance beneath this scope map:
+
+- the RQ1 report records the six-model metric and bootstrap sources;
+- the RQ2 report records its contract, config, accepted run, and notebook;
+- the combined RQ3/RQ4 report includes Tables 2A, 2B, 5A, A1, and A2 with
+  accepted run and source-artifact lineage;
+- `reports/paper_figures/verification_notes.md` records the interpretation
+  boundaries for Figures 2, 3, 5, and 6.
+
+The scope-level map plus those retained report entries satisfies the current
+documentation-acceptance mapping gate. It does not claim that every table or
+figure was regenerated in this task. Per-object regeneration commands would be
+needed only if the acceptance scope is expanded to a fresh report rebuild.
+
 Notebook paths above are under `notebooks/dataset_b/final/`. The migration to
 that directory was path-only; it did not execute or regenerate notebook output.
 
@@ -330,6 +387,11 @@ compatibility, RAM sufficiency, and end-to-end train-from-scratch remain
 unverified.
 
 ## 12. License citation and AI declaration
+
+License and citation completeness is excluded from the current documentation
+acceptance score by owner decision. The `NOT_DECLARED` entries below are retained
+as transparent inventory and are not acceptance failures. The generative-AI
+declaration remains in scope.
 
 | Item | Repository-backed status |
 |---|---|

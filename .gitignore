@@ -240,12 +240,6 @@ __marimo__/
 *.[cC][sS][vV]
 *.[cC][sS][vV].*
 
-# Dataset A: tạm thời theo dõi evidence đã merge để xử lý kiến trúc
-!/data/processed/datasetA/results/figures/*.png
-!/data/processed/datasetA/results/tables/.gitignore
-!/data/processed/datasetA/results/tables/*.csv
-!/data/processed/datasetA/results/models/.gitignore
-
 # Database local, dump và log runtime; giữ migration SQL nguồn
 *.sqlite
 *.sqlite3
@@ -366,3 +360,4 @@ Desktop.ini
 *.swo
 *~
 ~$*
+*paper
