@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "classical_cpu": {
+      "python": "3.13.9",
+      "requirements": "classical_cpu.txt",
+      "compute": "cpu",
+      "models": ["logistic_regression", "random_forest", "xgboost"],
+      "smoke_imports": [
+        "src.dataset_b.models.classical.lr.test_evaluation",
+        "src.dataset_b.models.classical.rf.test_evaluation",
+        "src.dataset_b.models.classical.xgboost.test_evaluation"
+      ],
+      "version_evidence": "Python, NumPy, pandas, SciPy, scikit-learn, joblib, and XGBoost match the classical run manifests. PyYAML and threadpoolctl come from the base environment that matches those versions; the manifests do not record them."
+    },
+    "plain_mlp_cuda": {
+      "python": "3.12.13",
+      "requirements": "plain_mlp_cuda.txt",
+      "compute": "cuda",
+      "models": ["plain_mlp"],
+      "smoke_imports": ["src.dataset_b.models.neural.plain_mlp.test_evaluation"],
+      "version_evidence": "torch 2.14.0+cu130 and CUDA build 13.0 match the run evidence. The other versions come from the pmlp_cuda_probe environment; the run manifest does not record them, so linking that environment to the run is an inference."
+    },
+    "realmlp_cuda": {
+      "python": "3.13.14",
+      "requirements": "realmlp_cuda.txt",
+      "compute": "cuda",
+      "models": ["realmlp"],
+      "smoke_imports": ["src.dataset_b.models.neural.realmlp.evaluation"],
+      "version_evidence": "Python, torch, PyTabKit, NumPy, pandas, and scikit-learn match the RealMLP runtime manifest. The other versions come from the recorded .venv-realmlp-gpu environment."
+    },
+    "rq_cpu": {
+      "python": "3.13.14",
+      "requirements": "rq_cpu.txt",
+      "compute": "cpu",
+      "models": ["rq2", "rq3", "rq4a", "rq4b"],
+      "smoke_imports": [
+        "src.dataset_b.research.rq2.runner",
+        "src.dataset_b.research.rq3.runner",
+        "src.dataset_b.research.rq4.rq4a.runner",
+        "src.dataset_b.mitigation.rq4b_runner",
+        "src.dataset_b.mitigation.rq4b_sex_supplementary"
+      ],
+      "version_evidence": "Python, NumPy, pandas, SciPy, scikit-learn, PyYAML, joblib, and Fairlearn match the RQ4a run provenance. The other pins come from requirements.txt; the RQ2, RQ3, and RQ4b run outputs read for this profile do not record a package set."
+    },
+    "tabmmini_cuda": {
+      "python": "3.12.13",
+      "requirements": "tabmmini_cuda.txt",
+      "compute": "cuda",
+      "models": ["tabmmini"],
+      "smoke_imports": [
+        "src.dataset_b.models.neural.tabmmini.evaluation",
+        "src.dataset_b.models.neural.tabmmini.training"
+      ],
+      "version_evidence": "torch 2.14.0+cu130, CUDA build 13.0, and TabM 0.0.3 match the run evidence. The other versions come from the model_train environment; the run evidence does not record them, so linking that environment to the run is an inference."
+    }
+  }
+}

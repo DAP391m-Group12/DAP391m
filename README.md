@@ -64,6 +64,6 @@ thái thực nghiệm và accepted runs.
 
 [Reproducibility Guide](REPRODUCE.md) cung cấp cấu trúc Mục 0–12, còn
 [Reproducibility Documentation Acceptance](docs/handbook/REPRODUCIBILITY_ACCEPTANCE.md)
-là register nghiệm thu tài liệu. Register này không thay thế STATUS và không
-tuyên bố clean install, training, model inference/evaluation hoặc GPU execution
-đã được chạy lại.
+là register nghiệm thu tài liệu. Register này không thay thế STATUS. Mục 1 của
+guide có tuyến lệnh `python -m src.dataset_b.reproduce`; tuyến clean clone chưa
+được chạy đầu-cuối và không có mô hình nào được huấn luyện lại.

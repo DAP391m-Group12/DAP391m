@@ -84,6 +84,79 @@ Documentation acceptance requires all of the following:
 8. No public navigation command exposes train, evaluate, predict, inference,
    or serve.
 
+## Asset distribution decision
+
+On 2026-11-03 the owner decided that the project bundles will be distributed through
+Google Drive links, which the owner will add later. On that basis the owner accepted
+gate G1 and authorized work on the following gates. This is an owner decision, not
+download evidence: the links are not yet recorded, anonymous download through them is
+not verified, and anonymous repository access returned HTTP 401 when last checked. The
+clean-clone gate needs the links recorded and every download hash-verified.
+
+Later on 2026-11-03 the owner prohibited training or fitting any model and then set
+the acceptance criterion for the remaining work: the command-line route must work
+technically, with no process run again. As a result, the RQ4a route validates the
+stored packages without fitting its post-processor, the RQ2 route was not run, and
+the clean-clone gate was not run. These are recorded limits, not reproduction results.
+
+## Reproducibility guide template coverage plan
+
+On 2026-11-03 the owner added to the reproducibility plan the course reproducibility
+guide template requirements that a comparison on that date found outside the existing
+delivery gates. The list reflects that comparison and is not a proof of exhaustive
+coverage. This table is a plan, not execution status, and it does not change the
+matrix or the recorded decisions above, which define documentation acceptance only.
+Those decisions are less strict than the template in places: the template expects
+Quick Start to reproduce the main result. The matrix was reviewed against
+`REPRODUCE.md` version `2.1`, so it does not cover the sections added in version `2.2`.
+
+| ID | Template section | Requirement | State | Condition to proceed |
+|---|---|---|---|---|
+| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` rebuilds the split CSVs, and later preprocessing runs inside the model routes | none |
+| TG-2 | 4 | Declare environment variables | written in `REPRODUCE.md` Section 4; no `.env.example` is needed | none |
+| TG-3 | 9 | Multi-seed results for RQ1 | declared as a limitation in `REPRODUCE.md` Sections 9 and 11 | new training needs a separate owner authorization |
+| TG-4 | 7 | Training command per model, outside the read-only navigation CLI | written in `REPRODUCE.md` Section 7.2 as `DOCUMENTED_NOT_RERUN`; LR and TabMmini have no command-line training route; a reduced run is not required because accepted fits are under 4 GPU hours | execution needs a separate owner authorization |
+| TG-5 | 8 | Inference command for new data, outside the read-only navigation CLI | `predict` implemented with synthetic unit tests; not run on a frozen checkpoint | none for basic acceptance |
+| TG-6 | 3 | Minimum configuration, disk, and evaluation time | used configuration, disk, and time written in `REPRODUCE.md` Section 3.2; no lower floor was tested; CPU and RAM are not recorded | none for basic acceptance |
+| TG-7 | 2 | Notebook `Restart & Run All` evidence | not verified | notebook execution needs a separate owner authorization |
+| TG-8 | 0, 12 | Formal titles, roster, supervisor, code license, and citation | owner input required | the owner supplies the values |
+
+### Template checklist review, 2026-11-03
+
+The owner set the scope of this review on 2026-11-03: basic acceptance of `REPRODUCE.md`
+version `2.3` against the template, without counting process execution. `MET` means the
+guide contains the required content; it is not a runtime result.
+
+| Checklist item | State | Evidence or gap |
+|---|---|---|
+| Commit or tag and links in Section 0 | not met | branch is named; the tag and bundle links come from the owner at delivery |
+| Quick Start from clone to expected numbers | met in content; clean run not executed | `REPRODUCE.md` Section 1.0 |
+| Exact version locks installable in a new environment | met; installed on the author machine only | `environments/reproducibility/` |
+| Public data and checkpoint links with checksums | checksums met; links not met | Sections 5.1, 5.2, 5.5; manifest |
+| No absolute personal paths in code | met for `src`, `scripts`, and `tests`; the Colab profile config holds three `/content` paths | a search of tracked files on 2026-11-03 |
+| Fixed Test set not used for selection | met | `split_v1.json`; split and evaluation contract |
+| Seeds recorded; multi-seed mean and standard deviation | seeds met; multi-seed not met for RQ1, declared as a limitation | Section 9 |
+| Every report table and figure has a mapping row | met with gaps | Section 10.1 maps report sections, tables, and figures; many have no regeneration command, Figures 4 to 6 are absent from the repository, Figure 1 has no regeneration route, and tables were not checked cell by cell |
+| Baseline also reproducible | met in content; observed 2026-11-03 | Sections 1.0 and 8 |
+| No committed secrets; `.env.example` | no secrets found; `.env.example` not needed | Section 4 |
+| Notebooks run with `Restart & Run All` | not verified | saved structure is checked; execution was not authorized |
+| Non-reproducible parts and AI tools declared | met | Sections 11 and 12 |
+
+Open items that only the owner can supply: formal titles, semester, supervisor, roster,
+student IDs, contact, code license, HMDA data terms, the final tag, and the 11 bundle
+links.
+
+Other known gaps: CPU and RAM are not recorded; peak training VRAM is not recorded for
+the final fits; LR and TabMmini have no command-line training route; the Quick Start has
+12 commands against the template's guide of 5 to 10; and the code was edited after the
+last observed `evaluate`, `compare`, and `reports` runs.
+
+On 2026-11-03 the owner authorized correcting the two stale locks in
+`src/dataset_b/core/navigation.py`; they now hold the LF values pinned by the accepted
+run manifests. `REPRODUCIBILITY_DOCUMENTATION_ACCEPTANCE_COMPLETE` still depends on the
+delivery gates. The stale commands in `docs/handbook/runbooks/neural_training.md` (lines
+625 to 628) remain; that file is outside the current write scope.
+
 ## Acceptance conclusion
 
 The documentation target is

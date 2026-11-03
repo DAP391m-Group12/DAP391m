@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "source": "docs/handbook/contracts/split_and_evaluation.md section 7; prediction_atol is not locked by that contract and was fixed here at the point-metric tolerance before any reproduction run",
+  "default": {
+    "point_atol": 1e-12,
+    "bootstrap_atol": 1e-14,
+    "ci_atol": 1e-14,
+    "calibration_slope_decimals": 6,
+    "prediction_atol": 1e-12
+  },
+  "research": {
+    "source": "no contract locks a rerun tolerance for these tables; the value was fixed here at the RQ1 point-metric tolerance before any RQ2-RQ4 reproduction run",
+    "table_atol": 1e-12
+  },
+  "models": {
+    "logistic_regression": {},
+    "random_forest": {},
+    "xgboost": {},
+    "plain_mlp": {},
+    "realmlp": {},
+    "tabmmini": {}
+  }
+}

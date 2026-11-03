@@ -27,9 +27,9 @@ LOCKED_FILES = {
     "artifacts/dataset_b/rq1_test_bootstrap_indices.npz":
         "2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1",
     "artifacts/dataset_b/rq1_test_bootstrap_manifest.json":
-        "7b202b9523820c4ec6b2e777adf1a672a43c6bd39ae42842fd52726d1e88a1cb",
+        "5544af4ebe91bfdf8c5b3b574fa2ef24f3da8c14827f353970cbe9d759e9d21e",
     "artifacts/dataset_b/split_v1.json":
-        "65d15274095076dbd2306ac7c7b25cf02f1032ed4b2410b30e1d00e3f5b446ee",
+        "66816ba47da64bfd85c010a90a14b9d80443a46d319258bf9fc1b3657f731596",
 }
 
 

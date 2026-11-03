@@ -1,0 +1,13 @@
+{
+  "dataset_b_core_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_lr_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_plain_mlp_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_realmlp_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_rf_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_rq2_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_rq3_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_rq4a_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_rq4b_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_tabmmini_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view",
+  "dataset_b_xgboost_part01.zip": "https://drive.google.com/file/d/REPLACE_WITH_FILE_ID/view"
+}
