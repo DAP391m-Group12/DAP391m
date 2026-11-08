@@ -12,7 +12,7 @@ REPRODUCE = PROJECT_ROOT / "REPRODUCE.md"
 ACCEPTANCE = PROJECT_ROOT / "docs" / "handbook" / "REPRODUCIBILITY_ACCEPTANCE.md"
 HANDBOOK = PROJECT_ROOT / "docs" / "handbook" / "README.md"
 STATUS = PROJECT_ROOT / "docs" / "handbook" / "STATUS.md"
-PINNED_REPRODUCTION_COMMIT = "4bdfa0a5aebe138982b75a055891c1321a4d5496"
+PINNED_REPRODUCTION_COMMIT = "61a87bec7878c3507b0b76dd5fdae5d4d320b7ff"
 
 ALLOWED_STATUSES = {
     "PASS",
@@ -66,13 +66,13 @@ def test_submission_and_reviewed_commit_identities_are_exact() -> None:
     assert "ed1afbf783db502ade5dfb959738df51cdb6a5e7" in combined
 
 
-def test_current_guide_and_acceptance_pin_version_2_3_source() -> None:
+def test_current_guide_and_acceptance_pin_version_2_4_source() -> None:
     reproduce = _read(REPRODUCE)
     acceptance = _read(ACCEPTANCE)
 
     assert "| Document version" in reproduce
-    assert "| `2.3`" in reproduce
-    assert "Documentation version/date: `2.3`, `2026-11-03`" in acceptance
+    assert "| `2.4`" in reproduce
+    assert "Documentation version/date: `2.4`, `2026-11-09`" in acceptance
     assert PINNED_REPRODUCTION_COMMIT in reproduce
     assert PINNED_REPRODUCTION_COMMIT in acceptance
     assert "## Historical acceptance" in acceptance

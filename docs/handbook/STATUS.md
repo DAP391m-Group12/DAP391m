@@ -91,17 +91,18 @@ ZIPs, and writes the manifest. It has no training, fitting, inference, selection
 frozen-artifact write path. The focused asset/release/documentation suite passed 112
 tests when run with a Git ceiling that kept test fixtures outside repository discovery.
 
-The build completed with 654 assets, 635 required assets, and 11 core bundles totaling
-678,068,350 bytes. The post-build comparison found the bundle identities, asset
-inventory, and inventory digest unchanged from the prebuild manifest. Each ZIP passed
+The final build completed with 654 assets, 634 required assets, and 11 core bundles
+totaling 678,068,350 bytes. The bundle identities and content inventory digest remained
+unchanged; manifest policy changed only to make raw HMDA optional and the three locked
+splits direct downloads. Each ZIP passed
 its declared byte-size and SHA-256 check, and its exact member list matched the assets
 assigned to that bundle. RQ3 `runtime.csv` is excluded and the optional RQ4 audit
-archive is not present in the core manifest. The build updated only
-`source_provenance.source_revision` from the earlier implementation revision to
-`5a5667b13546e6b088756cd8e9da8e963a0ccfe0`.
+archive is not present in the core manifest. The final manifest records
+`source_provenance.source_revision` as direct-download implementation commit
+`0aa028a00845852d383e0a180ccae82942bafad2`.
 
 The verification record is
-`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T181358Z.json`.
 Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` was pushed to
 `origin/codex/cuda-phase-b-c-handoff`. The remote branch resolved to the same SHA,
 Git LFS reported no pending objects, all 11 core objects were listed with their locked
@@ -115,9 +116,10 @@ required `direct_download` assets with their locked byte sizes and SHA-256 ident
 the downloader uses `.part`, verifies before atomic publication, skips an already
 verified destination, and fails without overwriting a mismatched destination. The
 three URL fields remain null because the prompt supplied placeholders rather than
-usable links. The focused asset/release/documentation suite passed 115 tests after
-this change, `verify-assets` again passed 654/654, and the 11 bundle identities were
-unchanged.
+usable links. The full focused Phase B/asset/release/documentation suite passed 176
+tests after this change, `verify-assets` again passed 654/654, and the 11 bundle
+identities were unchanged. Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2`
+and final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` retain this evidence.
 
 ### Current-host Phase B attempt — 2026-11-05
 

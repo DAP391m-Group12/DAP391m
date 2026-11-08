@@ -48,13 +48,13 @@ Experimental execution status remains exclusively in
 | Contact                             |                                                                                                 |
 | Submission identity                 | PR #12 merge commit `369fe494506fce888d6c917f504d086a1dfcb097`                                |
 | Reviewed PR head                    | `ed1afbf783db502ade5dfb959738df51cdb6a5e7`                                                    |
-| Reproduction route version          | commit `4bdfa0a5aebe138982b75a055891c1321a4d5496` on `main`                                  |
+| Reproduction route version          | commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` on `codex/cuda-phase-b-c-handoff`          |
 | Final tag                           |                                                                                                 |
 | Processed data and checkpoint links |                                                                                                 |
 | Project bundle size                 | 11 bundles, 678,068,350 bytes in total (Section 5.5)                                            |
 | Raw data link                       | `https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024`; 145,740,132 bytes |
-| Document version                    | `2.3`                                                                                         |
-| Document date                       | `2026-11-03`                                                                                  |
+| Document version                    | `2.4`                                                                                         |
+| Document date                       | `2026-11-09`                                                                                  |
 
 Three identities must not be conflated:
 
@@ -87,7 +87,7 @@ for the host; its lock needs Python 3.11 or newer, although `pyproject.toml` all
 ```powershell
 git clone https://github.com/DAP391m-Group12/DAP391m.git
 Set-Location DAP391m
-git checkout 4bdfa0a5aebe138982b75a055891c1321a4d5496
+git checkout 61a87bec7878c3507b0b76dd5fdae5d4d320b7ff
 python -m venv .venv
 & .\.venv\Scripts\Activate.ps1
 python -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt
@@ -440,7 +440,7 @@ for LR and `full_train/model/preprocessor.joblib` for TabMmini.
 ### 5.5 Obtaining the assets
 
 [`asset_manifest.json`](config/dataset_b/reproducibility/asset_manifest.json) declares
-654 assets, 635 of them required, each with a size, SHA-256, role, and accepted run:
+654 assets, 634 of them required, each with a size, SHA-256, role, and accepted run:
 
 | Route                         | Assets | Handling by `download`                              |
 | ----------------------------- | -----: | ----------------------------------------------------- |
@@ -460,8 +460,9 @@ along with the source revision and a digest of the included source inventory.
 
 **Status:** Phase C rebuilt and verified all 11 local ZIPs on 2026-11-09. The bundle
 identities and 654-asset inventory were unchanged from the prebuild manifest; only
-`source_provenance.source_revision` advanced to the handoff revision. Evidence is in
-`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
+`source_provenance.source_revision` records direct-download implementation commit
+`0aa028a00845852d383e0a180ccae82942bafad2`. Final evidence is in
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T181358Z.json`.
 Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS
 objects were pushed to `codex/cuda-phase-b-c-handoff`; `git lfs fsck` passed before
 and after the push. The default data route does not rebuild the splits from the live

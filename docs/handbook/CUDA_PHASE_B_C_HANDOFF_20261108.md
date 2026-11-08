@@ -54,6 +54,9 @@ policies.
   locked split CSVs as required direct downloads with atomic `.part` publication and
   exact size/SHA-256 verification. Their URL fields remain null because no usable URLs
   were supplied; the route therefore blocks rather than rebuilding from live raw data.
+  Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2` and manifest commit
+  `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` record this final policy without
+  changing any core ZIP identity.
 
 ## Branch and transfer
 
