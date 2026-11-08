@@ -9,7 +9,7 @@
    "hash_mode": "bytes",
    "model_or_rq_scope": "data",
    "repository_relative_destination": "data/raw/state_NY_2024.csv",
-   "required": true,
+   "required": false,
    "role": "raw_source",
    "sha256": "e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d",
    "url": "https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024"
@@ -19,7 +19,7 @@
    "asset_id": "split_v1:train.csv",
    "bundle_id": null,
    "byte_size": 23631341,
-   "distribution_classification": "derived_from_raw",
+   "distribution_classification": "direct_download",
    "hash_mode": "bytes",
    "model_or_rq_scope": "data",
    "repository_relative_destination": "data/dataset_b/split_v1/train.csv",
@@ -33,7 +33,7 @@
    "asset_id": "split_v1:validation.csv",
    "bundle_id": null,
    "byte_size": 5063935,
-   "distribution_classification": "derived_from_raw",
+   "distribution_classification": "direct_download",
    "hash_mode": "bytes",
    "model_or_rq_scope": "data",
    "repository_relative_destination": "data/dataset_b/split_v1/validation.csv",
@@ -47,7 +47,7 @@
    "asset_id": "split_v1:test.csv",
    "bundle_id": null,
    "byte_size": 5064953,
-   "distribution_classification": "derived_from_raw",
+   "distribution_classification": "direct_download",
    "hash_mode": "bytes",
    "model_or_rq_scope": "data",
    "repository_relative_destination": "data/dataset_b/split_v1/test.csv",
@@ -9243,6 +9243,6 @@
    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
   ],
   "inventory_sha256": "aec8106c4a49e85fe9489c91d0040ffc154a7c4998ad74605123eade1a70af65",
-  "source_revision": "5a5667b13546e6b088756cd8e9da8e963a0ccfe0"
+  "source_revision": "0aa028a00845852d383e0a180ccae82942bafad2"
  }
 }
