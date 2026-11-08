@@ -21,8 +21,10 @@ Phase C subsequently rebuilt all 11 core ZIPs from the retained inventory. Every
 bundle kept the size and SHA-256 declared before the build, every ZIP member matched
 its assigned manifest inventory, RQ3 `runtime.csv` remained excluded, and the optional
 RQ4 audit archive remained outside the core manifest. The verified local bundle total
-is 678,068,350 bytes. This is local release-build evidence only; public URLs,
-anonymous download, and clean-clone installation remain unverified.
+is 678,068,350 bytes. The 11 core LFS pointers and objects were pushed on branch
+`codex/cuda-phase-b-c-handoff` in release commit
+`1d384482f7b00f84c06cdecbb4abd13380da91a2`. Public download URLs in the reproduction
+manifest, anonymous download, and clean-clone installation remain unverified.
 
 The authoritative documentation acceptance register is
 [REPRODUCIBILITY_ACCEPTANCE](docs/handbook/REPRODUCIBILITY_ACCEPTANCE.md).
@@ -200,7 +202,7 @@ scripts/reproduce.ps1    PowerShell wrapper for the reproduction CLI
 docs/handbook/           contracts, runbooks, STATUS, and acceptance register
 reports/                 durable metrics and publication outputs
 reports/reproducibility/ generated reproduction outputs; never accepted runs
-dist/reproducibility/    release bundles; not Git-distributed
+dist/reproducibility/    release bundles; Git LFS on the handoff branch
 tests/                   static, contract, and implementation tests
 ```
 
@@ -460,9 +462,11 @@ along with the source revision and a digest of the included source inventory.
 identities and 654-asset inventory were unchanged from the prebuild manifest; only
 `source_provenance.source_revision` advanced to the handoff revision. Evidence is in
 `reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
-The owner has not yet supplied the public bundle links or the three locked split-CSV
-URLs. Until then `download` exits 3, and no anonymous download through those links has
-been verified. To record bundle links, copy
+Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS
+objects were pushed to `codex/cuda-phase-b-c-handoff`; `git lfs fsck` passed before
+and after the push. The owner has not yet supplied public bundle links or the three
+locked split-CSV URLs. Until then `download` exits 3, and no anonymous download through
+those links has been verified. To record bundle links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
 to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
 anyone who has the link, and run:

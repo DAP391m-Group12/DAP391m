@@ -18,7 +18,7 @@ does not assign Claude a current implementer or verifier role.
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
 | CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
-| CUDA handoff Phase C local build, 2026-11-09 | `PASS` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed against the prebuild manifest; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Public URLs, anonymous download, clean-clone verification, and publication status remain separate gates. |
+| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed against the prebuild manifest; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed. Public URLs, anonymous download, and clean-clone verification remain separate gates. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
 
 ### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
@@ -83,7 +83,7 @@ Phase B is complete under the handoff rule that permits the already documented
 object-level report gaps after all scientific gates pass. Phase C was not opened by
 this task, and no release build, LFS staging, commit, or push was attempted.
 
-### CUDA handoff Phase C local build — 2026-11-09
+### CUDA handoff Phase C build and LFS publication — 2026-11-09
 
 After the Phase B scientific gates passed, static review confirmed that
 `maintainer-build` only inventories retained files, hashes them, creates deterministic
@@ -102,9 +102,12 @@ archive is not present in the core manifest. The build updated only
 
 The verification record is
 `reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
-Local Phase C build status is `PASS`. This does not establish publication: public
-bundle URLs and direct URLs for the three locked split CSVs are still absent, and
-anonymous download plus clean-clone installation have not run.
+Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` was pushed to
+`origin/codex/cuda-phase-b-c-handoff`. The remote branch resolved to the same SHA,
+Git LFS reported no pending objects, all 11 core objects were listed with their locked
+SHA-256 identities, and post-push `git lfs fsck` passed. Phase C build/stage/commit/push
+status is `COMPLETE`. Public bundle URLs and direct URLs for the three locked split
+CSVs are still absent; anonymous download and clean-clone installation have not run.
 
 ### Current-host Phase B attempt — 2026-11-05
 

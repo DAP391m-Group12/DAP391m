@@ -64,7 +64,7 @@ The following owner decisions define the current documentation-acceptance gate:
 | 2 Repository structure | `PASS` | `README.md`; `config/README.md`; `notebooks/dataset_b/README.md`; `src/dataset_b/README.md`; handbook router | none for documented Dataset B navigation | none |
 | 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; `environment_20261108T125329_497165Z.json`; STATUS | the 2026-11-08 host verified RTX 5050 Laptop GPU, 8,546,484,224 bytes, driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, cuDNN 92400, and finite CUDA operations in all three neural profiles; CPU model and RAM remain unrecorded | record CPU/RAM only from authoritative evidence; do not infer a lower compatibility floor |
 | 4 Environment installation | `PASS_WITH_LIMITATION` | five locks under `environments/reproducibility/`; `environment_20261108T125329_497165Z.json` | all five profiles installed and passed on the qualified host; this was an in-place handoff-host installation, not a clean-clone installation | rerun only as part of the final clean-clone gate after public links and final revision exist |
-| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; `verify-assets_20261108T122017_953903Z.json`; Phase C bundle verification record | 654 retained local assets passed integrity verification and all 11 core ZIPs passed deterministic identity/member checks; the three locked split CSVs and bundles still have no usable public URLs, so public distribution is unverified | supply the actual HTTPS URLs and verify anonymous download plus clean-clone installation |
+| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; `verify-assets_20261108T122017_953903Z.json`; Phase C bundle verification record; release commit `1d38448...` | 654 retained local assets and all 11 core ZIPs passed identity/member checks and were pushed through Git LFS; the manifest still has no usable public bundle or direct split-CSV URLs, so anonymous distribution is unverified | supply the actual HTTPS URLs and verify anonymous download plus clean-clone installation |
 | 6 Config and hyperparameters | `PASS` | `config/dataset_b/catalog.yaml` and its eleven targets; accepted manifests | config status may intentionally lag accepted STATUS for frozen lineage | none; interpret frozen config with STATUS |
 | 7 Training | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 7; six accepted frozen RQ1 run IDs; three completed RQ4b development runs; STATUS | the inventory records only completed accepted runs and actual seed coverage; no fresh training occurred in this task and several future routes are internal/operator-only | none for current documentation acceptance; fresh training requires a separate task |
 | 8 Evaluation and inference | `PASS_WITH_LIMITATION` | `evaluate_20261108T125910_329422Z.json`; `compare_20261108T125939_503172Z.json`; `research_20261108T174830_904582Z.json`; STATUS | six frozen-checkpoint Test evaluations, 402 RQ1 rows, and every RQ2-RQ4 route passed; this was an in-place qualified-host run rather than a clean clone | retain the receipts and repeat only in the final clean-clone gate |
@@ -199,9 +199,10 @@ remain unchanged. `reports` was run and returned the documented `INCOMPLETE` sta
 five objects passed and three notebook/authored-report objects were not regenerated.
 Phase C then rebuilt all 11 core ZIPs. All bundle identities and member inventories
 matched the prebuild manifest; RQ3 volatile runtime metadata and the optional RQ4 audit
-archive remained outside core. Local Phase C build status is `PASS`. Clean-clone and
-anonymous public-download verification remain unexecuted; bundle links and the three
-direct split-CSV URLs were not supplied.
+archive remained outside core. All 11 core LFS objects were pushed in release commit
+`1d38448...`; Phase C build/stage/commit/push is complete. Clean-clone and anonymous
+public-download verification remain unexecuted; bundle links and the three direct
+split-CSV URLs were not supplied.
 
 This acceptance does not establish a successful clean-clone end-to-end run,
 notebook regeneration, or universal runtime reproducibility.

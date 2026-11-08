@@ -47,7 +47,9 @@ policies.
 - On 2026-11-09 Phase C rebuilt all 11 core ZIPs, totaling 678,068,350 bytes.
   Bundle size, SHA-256, and exact member inventory all matched the prebuild manifest.
   RQ3 `runtime.csv` and the optional RQ4 audit archive remained outside core. Public
-  URLs, anonymous download, and clean-clone installation remain unverified.
+  URLs, anonymous download, and clean-clone installation remain unverified. Release
+  commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all core LFS objects were
+  pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed.
 
 ## Branch and transfer
 
