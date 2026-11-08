@@ -44,6 +44,7 @@ from src.dataset_b.reproduce.release import (
     check_publication,
     classify_role,
     direct_download_url,
+    source_provenance,
 )
 
 
@@ -596,11 +597,26 @@ def test_text_lf_identity_ignores_checkout_line_endings(tmp_path: Path) -> None:
         ("lr", "shared_bootstrap/rq1_test_bootstrap_manifest.json", "bootstrap_manifest"),
         ("lr", "manifest.json", "run_lineage"),
         ("rq3", "group_metrics.csv", "rq_input"),
+        ("rq3", "runtime.csv", "reference_report"),
         ("rq4a", "reporting/summary.csv", "reference_report"),
     ],
 )
 def test_role_classification(scope: str, relative: str, role: str) -> None:
     assert classify_role(scope, PurePosixPath(relative)) == role
+
+
+def test_release_source_provenance_is_path_free_and_inventory_sensitive(tmp_path: Path) -> None:
+    first = [make_asset("artifacts/a.json", b"a", bundle_id=None)]
+    second = [make_asset("artifacts/a.json", b"changed", bundle_id=None)]
+
+    provenance = source_provenance(tmp_path, first)
+
+    assert provenance["source_revision"] is None
+    assert len(provenance["inventory_sha256"]) == 64
+    assert provenance["inventory_sha256"] != source_provenance(tmp_path, second)["inventory_sha256"]
+    assert provenance["excluded_volatile_paths"] == [
+        "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
+    ]
 
 
 def bundle_fixture(tmp_path: Path) -> tuple[Path, list[dict]]:
@@ -726,6 +742,10 @@ def test_committed_manifest_is_valid_and_covers_the_pinned_evidence() -> None:
     root = Path(__file__).resolve().parents[1]
     manifest = load_manifest(root)
     by_destination = {a["repository_relative_destination"]: a for a in manifest["assets"]}
+    assert "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv" not in by_destination
+    assert manifest["source_provenance"]["excluded_volatile_paths"] == [
+        "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
+    ]
     raw = by_destination["data/raw/state_NY_2024.csv"]
     assert (raw["url"], raw["sha256"]) == (OFFICIAL_RAW_URL, RAW_PIN)
     assert raw["distribution_classification"] == "official_source"

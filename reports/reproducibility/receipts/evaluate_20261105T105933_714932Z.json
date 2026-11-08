@@ -1,0 +1,40 @@
+{
+  "command": "evaluate",
+  "created_at_utc": "2026-11-05T10:59:33.714932+00:00",
+  "failed": [
+    "logistic_regression",
+    "random_forest",
+    "xgboost",
+    "plain_mlp",
+    "realmlp",
+    "tabmmini"
+  ],
+  "manifest_sha256": "0a75c6e8fd31cab13cb4b29fc43108d0252a805ac6c2ccefc4a5ca8c6bd44b3f",
+  "models": {
+    "logistic_regression": {
+      "error": "environment classical_cpu is not installed",
+      "status": "FAIL"
+    },
+    "plain_mlp": {
+      "error": "environment plain_mlp_cuda is not installed",
+      "status": "FAIL"
+    },
+    "random_forest": {
+      "error": "environment classical_cpu is not installed",
+      "status": "FAIL"
+    },
+    "realmlp": {
+      "error": "environment realmlp_cuda is not installed",
+      "status": "FAIL"
+    },
+    "tabmmini": {
+      "error": "environment tabmmini_cuda is not installed",
+      "status": "FAIL"
+    },
+    "xgboost": {
+      "error": "environment classical_cpu is not installed",
+      "status": "FAIL"
+    }
+  },
+  "status": "FAIL"
+}

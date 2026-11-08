@@ -53,6 +53,9 @@ ASSET_FIELDS = frozenset(
     }
 )
 BUNDLE_FIELDS = frozenset({"bundle_id", "filename", "url", "byte_size", "sha256"})
+SOURCE_PROVENANCE_FIELDS = frozenset(
+    {"source_revision", "inventory_sha256", "excluded_volatile_paths"}
+)
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _WINDOWS_RESERVED = re.compile(r"^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$", re.IGNORECASE)
 
@@ -174,6 +177,29 @@ def validate_manifest(manifest: Any) -> None:
         errors.append(f"schema_version must be {SCHEMA_VERSION}")
     if manifest.get("dataset") != "dataset_b":
         errors.append("dataset must be dataset_b")
+
+    provenance = manifest.get("source_provenance")
+    if provenance is not None:
+        if not isinstance(provenance, dict) or set(provenance) != SOURCE_PROVENANCE_FIELDS:
+            errors.append("source_provenance fields must equal the schema")
+        else:
+            revision = provenance["source_revision"]
+            if revision is not None and (
+                not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None
+            ):
+                errors.append("source_provenance source_revision must be null or a full Git SHA")
+            inventory_sha256 = provenance["inventory_sha256"]
+            if not isinstance(inventory_sha256, str) or _SHA256.match(inventory_sha256) is None:
+                errors.append("source_provenance inventory_sha256 must be 64 lowercase hex characters")
+            excluded = provenance["excluded_volatile_paths"]
+            if not isinstance(excluded, list):
+                errors.append("source_provenance excluded_volatile_paths must be a list")
+            else:
+                for relative in excluded:
+                    try:
+                        check_relative_path(relative)
+                    except ReproduceError as exc:
+                        errors.append(f"source_provenance excluded path: {exc}")
 
     bundles: dict[str, Mapping[str, Any]] = {}
     raw_bundles = manifest.get("bundles")

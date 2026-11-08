@@ -5728,20 +5728,6 @@
   },
   {
    "accepted_run_id": "rq3_fairness_20261010_01",
-   "asset_id": "rq3_fairness_20261010_01:runtime.csv",
-   "bundle_id": "dataset_b_rq3_part01",
-   "byte_size": 477,
-   "distribution_classification": "project_bundle",
-   "hash_mode": "bytes",
-   "model_or_rq_scope": "rq3",
-   "repository_relative_destination": "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv",
-   "required": true,
-   "role": "rq_input",
-   "sha256": "8235f9ad9f888b40bf51b5162601954523ebd73e4ab43becc00d587a39a59c6b",
-   "url": null
-  },
-  {
-   "accepted_run_id": "rq3_fairness_20261010_01",
    "asset_id": "rq3_fairness_20261010_01:status.json",
    "bundle_id": "dataset_b_rq3_part01",
    "byte_size": 368,
@@ -9216,9 +9202,9 @@
   },
   {
    "bundle_id": "dataset_b_rq3_part01",
-   "byte_size": 266577,
+   "byte_size": 266084,
    "filename": "dataset_b_rq3_part01.zip",
-   "sha256": "0f5a71574b64bd33786f513907d5d3ed44ff580a81d0c2b51cce2d994d631a44",
+   "sha256": "b2a553143fbed46a822fe6b6b0efee8e0a5cdfa94aa1bd49578e26a140ebef36",
    "url": null
   },
   {
@@ -9251,5 +9237,12 @@
   }
  ],
  "dataset": "dataset_b",
- "schema_version": 1
+ "schema_version": 1,
+ "source_provenance": {
+  "excluded_volatile_paths": [
+   "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
+  ],
+  "inventory_sha256": "aec8106c4a49e85fe9489c91d0040ffc154a7c4998ad74605123eade1a70af65",
+  "source_revision": "4bdfa0a5aebe138982b75a055891c1321a4d5496"
+ }
 }

@@ -9,22 +9,27 @@ remains the sole register of experimental execution state.
 - Reviewed submission commit: PR #12 merge commit
   `369fe494506fce888d6c917f504d086a1dfcb097`.
 - Reviewed PR head: `ed1afbf783db502ade5dfb959738df51cdb6a5e7`.
-- Documentation version/date: `2.1`, `2026-11-02`.
+- Documentation version/date: `2.3`, `2026-11-03`.
+- Source version: commit `4bdfa0a5aebe138982b75a055891c1321a4d5496`
+  on `main`.
 - Scope: the rubric sections 0 through 12 in
-  [REPRODUCE](../../REPRODUCE.md), Dataset B only.
+  [REPRODUCE](../../REPRODUCE.md) version 2.3, Dataset B only.
 - Evidence rule: repository source, Git history, accepted historical manifests,
   receipts, frozen artifacts, reports, saved notebook structure, and handbook.
-- Runtime boundary: no environment installation, training, checkpoint load,
-  model inference, evaluation backend, notebook execution, or GPU execution was
-  performed for this acceptance.
+- Runtime boundary: this documentation review did not itself perform a new clean
+  installation, training run, checkpoint load, model inference, notebook execution,
+  or end-to-end clean-clone run. Historical author-machine observations of the
+  reproduction route are recorded separately in REPRODUCE Section 1 and
+  [STATUS](STATUS.md).
 
 ## Recorded acceptance decisions
 
 The following owner decisions define the current documentation-acceptance gate:
 
-1. Quick Start validates repository navigation, saved reporting structure, and
-   retained locks. It is not required to rerun a model or recalculate a headline
-   metric.
+1. Quick Start implements frozen-checkpoint evaluation and comparison against the
+   expected headline metrics. Parts of the route were historically observed on the
+   author machine, but the complete clean-clone sequence was not executed and the
+   current source was not rerun end to end after its final edits.
 2. Accepted GPU documentation records the NVIDIA GeForce RTX 5050 Laptop GPU,
    nominal 8 GB device memory where the run evidence contains the exact byte
    count, and CUDA build 13.0. No new CUDA smoke is required.
@@ -54,15 +59,15 @@ The following owner decisions define the current documentation-acceptance gate:
 
 | Item | Status | Evidence path | Limitation | Action required to raise status |
 |---:|---|---|---|---|
-| 0 General information | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 0; Git commits `369fe494...` and `ed1afbf...` | formal bilingual title, semester, supervisor, roster, IDs, and contact data are not declared | add only authoritative project metadata |
-| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/cli.py`; `src/dataset_b/core/navigation.py` | accepted scope verifies repository/report navigation and retained locks; it does not recalculate a headline metric, and the retained route needs local non-Git artifacts | none for current documentation acceptance; a clean-host artifact handoff is required only if scope expands |
+| 0 General information | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 0; source commit `4bdfa0a5...`; submission commits `369fe494...` and `ed1afbf...` | formal bilingual title, semester, supervisor, roster, IDs, and contact data are not declared | add only authoritative project metadata |
+| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; source commit `4bdfa0a5...`; focused unit tests; recorded 2026-11-03 author-machine observations in STATUS | the route evaluates frozen checkpoints and compares headline metrics, but the complete clean-clone sequence was not executed, bundle download was not verified, and `evaluate`, `compare`, and `reports` were edited after their last observed execution | run the pinned clean-clone route after the final tag and bundle links exist |
 | 2 Repository structure | `PASS` | `README.md`; `config/README.md`; `notebooks/dataset_b/README.md`; `src/dataset_b/README.md`; handbook router | none for documented Dataset B navigation | none |
 | 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; STATUS | RTX 5050 Laptop GPU, nominal 8 GB device memory where evidenced, and CUDA build 13.0 are recorded; CPU model, RAM, driver, cuDNN, and some exact OS/Python fields remain unrecorded | none for current acceptance; do not rerun CUDA smoke solely to fill fields |
-| 4 Environment installation | `DOCUMENTED_NOT_RERUN` | `requirements.txt`; `pyproject.toml`; accepted run package records; model runbooks | no clean resolver/install evidence; CPU and GPU profiles differ; exact per-run versions are preserved and no lower compatibility floor is inferred | none for current acceptance; a clean-host install is a separate expanded scope |
+| 4 Environment installation | `PASS_WITH_LIMITATION` | `environments/reproducibility/`; `requirements.txt`; `pyproject.toml`; recorded 2026-11-03 author-machine installation | the five profiles were installed on the author machine, but no clean-host resolver/install sequence was executed; CPU and GPU profiles differ and no lower compatibility floor is inferred | run the pinned install route on a clean qualified host |
 | 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests | raw data and retained artifacts are not Git-distributed; upstream terms are not declared in repository evidence | publish an authorized artifact/data handoff with checksums and terms |
 | 6 Config and hyperparameters | `PASS` | `config/dataset_b/catalog.yaml` and its eleven targets; accepted manifests | config status may intentionally lag accepted STATUS for frozen lineage | none; interpret frozen config with STATUS |
 | 7 Training | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 7; six accepted frozen RQ1 run IDs; three completed RQ4b development runs; STATUS | the inventory records only completed accepted runs and actual seed coverage; no fresh training occurred in this task and several future routes are internal/operator-only | none for current documentation acceptance; fresh training requires a separate task |
-| 8 Evaluation and inference | `DOCUMENTED_NOT_RERUN` | split/evaluation contract; accepted Test manifests; RQ2/RQ3/RQ4 evidence | no checkpoint was loaded and no model-facing evaluation/inference occurred in this task | separately authorize retained-checkpoint evaluation on a qualified host |
+| 8 Evaluation and inference | `DOCUMENTED_NOT_RERUN` | `REPRODUCE.md` Sections 1 and 8; split/evaluation contract; accepted Test manifests; STATUS | historical checkpoint evaluation was observed before the final source edits, but the pinned current source was not rerun end to end; RQ2 was not run | rerun only the pinned frozen-checkpoint route on a qualified host; no training or fitting |
 | 9 Seeds and determinism | `PASS_WITH_LIMITATION` | split/model/RQ configs; numerical comparison policies; accepted multi-seed RQ4b evidence | cross-host/GPU determinism is not established and tolerances are model-specific | repeat under a declared host matrix without changing locked policies |
 | 10 Result/report mapping | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 10; final notebook router; RQ1/RQ2/RQ3-RQ4 retained reports; figure verification notes; accepted run roots | RQ-level mapping and retained object-level provenance are accepted; notebooks and report generation were not rerun | none for current acceptance; per-object regeneration commands are needed only for an expanded fresh-report scope |
 | 11 Limitations and troubleshooting | `PASS` | `REPRODUCE.md` Section 11; runbooks; STATUS limitations | none for the documentation claim | none |
@@ -93,6 +98,20 @@ download evidence: the links are not yet recorded, anonymous download through th
 not verified, and anonymous repository access returned HTTP 401 when last checked. The
 clean-clone gate needs the links recorded and every download hash-verified.
 
+On 2026-11-05 the owner separately authorized preservation of selected RQ4 historical
+review evidence. The resulting `rq4_audit_evidence_manifest.json` is independent of
+the core asset manifest: it describes an optional audit archive, not a required
+reproduction bundle. `scratch/` remains ignored local state, the original files were
+not deleted or moved, and the archive URL is not yet recorded. This preservation work
+does not raise the current runtime status or establish public download verification.
+
+The same review reconciled RQ3 `runtime.csv` as volatile historical timing metadata,
+not a scientific reproduction input. The canonical file remains in its accepted run,
+while the core manifest and rebuilt RQ3 bundle exclude it. The manifest now records an
+included-inventory digest, source revision, and the excluded volatile path. Local
+asset verification passed 654/654; public bundle publication and anonymous download
+remain separate delivery gates.
+
 Later on 2026-11-03 the owner prohibited training or fitting any model and then set
 the acceptance criterion for the remaining work: the command-line route must work
 technically, with no process run again. As a result, the RQ4a route validates the
@@ -104,11 +123,10 @@ the clean-clone gate was not run. These are recorded limits, not reproduction re
 On 2026-11-03 the owner added to the reproducibility plan the course reproducibility
 guide template requirements that a comparison on that date found outside the existing
 delivery gates. The list reflects that comparison and is not a proof of exhaustive
-coverage. This table is a plan, not execution status, and it does not change the
-matrix or the recorded decisions above, which define documentation acceptance only.
-Those decisions are less strict than the template in places: the template expects
-Quick Start to reproduce the main result. The matrix was reviewed against
-`REPRODUCE.md` version `2.1`, so it does not cover the sections added in version `2.2`.
+coverage. This table records how version 2.3 addresses those requirements; it is not
+execution status and does not replace the matrix or STATUS. The template expects Quick
+Start to reproduce the main result, while the current evidence still stops short of a
+complete clean-clone execution.
 
 | ID | Template section | Requirement | State | Condition to proceed |
 |---|---|---|---|---|
@@ -129,7 +147,7 @@ guide contains the required content; it is not a runtime result.
 
 | Checklist item | State | Evidence or gap |
 |---|---|---|
-| Commit or tag and links in Section 0 | not met | branch is named; the tag and bundle links come from the owner at delivery |
+| Commit or tag and links in Section 0 | commit met; tag and links not met | source commit `4bdfa0a5...` is pinned; the final tag and bundle links come from the owner at delivery |
 | Quick Start from clone to expected numbers | met in content; clean run not executed | `REPRODUCE.md` Section 1.0 |
 | Exact version locks installable in a new environment | met; installed on the author machine only | `environments/reproducibility/` |
 | Public data and checkpoint links with checksums | checksums met; links not met | Sections 5.1, 5.2, 5.5; manifest |
@@ -153,17 +171,34 @@ last observed `evaluate`, `compare`, and `reports` runs.
 
 On 2026-11-03 the owner authorized correcting the two stale locks in
 `src/dataset_b/core/navigation.py`; they now hold the LF values pinned by the accepted
-run manifests. `REPRODUCIBILITY_DOCUMENTATION_ACCEPTANCE_COMPLETE` still depends on the
-delivery gates. The stale commands in `docs/handbook/runbooks/neural_training.md` (lines
-625 to 628) remain; that file is outside the current write scope.
+run manifests. Version 2.3 documentation coverage is accepted with the limitations
+recorded here; the delivery gates remain conditions for full clean-clone runtime
+reproducibility. The stale commands in `docs/handbook/runbooks/neural_training.md`
+(lines 625 to 628) remain; that file is outside the current write scope.
+
+## Historical acceptance
+
+Version 2.1 received documentation-only acceptance on 2026-11-02. It was
+superseded for current documentation coverage by the version 2.3 review after the
+reproduction CLI, environment profiles, asset manifest, and expanded Quick Start were
+added. This historical decision is not current execution status.
 
 ## Acceptance conclusion
 
-The documentation target is
-`REPRODUCIBILITY_DOCUMENTATION_ACCEPTANCE_COMPLETE` when the static tests,
-five read-only CLI checks on retained local evidence, diff/scope inspection,
-and delivery gates all pass.
+The current-host technical issue recorded on 2026-11-05 is resolved and `COMPLETE`:
+the asset gate passed 654/654; this machine has no CUDA and does not contain the five
+locked virtual environments; the owner records that those environments are on another
+machine; and the owner stopped the current Phase B and Phase C attempt. No checkpoint
+or metric comparison failed in this attempt.
 
-This conclusion is documentation acceptance only. It is not a clean-host
-runtime result, model evaluation result, training result, GPU compatibility
-result, or universal numerical reproducibility claim.
+The current machine has no CUDA and does not contain the locked virtual environments;
+the owner records that those environments are on another machine. This acceptance does
+not establish a successful clean-clone run, current-source end-to-end execution,
+notebook regeneration, or universal runtime reproducibility. Public download
+verification was also not completed. Completion applies only to diagnosis, recording,
+and closure of the current host/environment issue. It does not mark the entire
+reproduction runtime complete.
+
+This conclusion is a technical issue-resolution record. It is not a training result,
+a new model evaluation result, a current-host GPU compatibility result, or a universal
+numerical reproducibility claim.

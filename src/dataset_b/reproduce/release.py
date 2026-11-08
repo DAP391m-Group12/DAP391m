@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
+import subprocess
 import urllib.parse
 import urllib.request
 import zipfile
@@ -78,6 +80,9 @@ RQ_RUNS = {
 }
 # Retained on disk but not accepted evidence, so a reproduction does not need them.
 NOT_ACCEPTED_RUNS = frozenset({"rq4b3_adv_20261019_01", "rq4b3_sex_supplementary_20261024_01"})
+VOLATILE_RQ_METADATA = frozenset(
+    {"artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"}
+)
 CHECKPOINT_PINS = {
     "artifacts/dataset_b/lr/final/lr_final_15f_20261002_01/checkpoints/fitted_pipeline.joblib":
         "69770bc11558f56f147e2af89f79747c903e74e779aeae17d1347a25de620859",
@@ -111,6 +116,8 @@ def classify_role(scope: str, relative: PurePosixPath) -> str:
         return "bootstrap_indices"
     if name == "rq1_test_bootstrap_manifest.json":
         return "bootstrap_manifest"
+    if scope == "rq3" and name == "runtime.csv":
+        return "reference_report"
     if scope in RQ_RUNS:
         return "reference_report" if "reporting" in relative.parts else "rq_input"
     if relative.suffix in {".joblib", ".pt"}:
@@ -166,11 +173,14 @@ def _run_assets(source_root: Path, scope: str, run_root: str, run_id: str, *, re
     assets = []
     for path in _walk_files(source_root / run_root):
         relative = PurePosixPath(path.relative_to(source_root / run_root).as_posix())
+        destination = f"{run_root}/{relative}"
+        if destination in VOLATILE_RQ_METADATA:
+            continue
         assets.append(
             _asset(
                 asset_id=f"{run_id}:{relative}",
                 scope=scope,
-                destination=f"{run_root}/{relative}",
+                destination=destination,
                 identity=file_identity(path),
                 required=required,
                 accepted_run_id=run_id if required else None,
@@ -178,6 +188,38 @@ def _run_assets(source_root: Path, scope: str, run_root: str, run_id: str, *, re
             )
         )
     return assets
+
+
+def source_provenance(source_root: Path, assets: list[dict[str, Any]]) -> dict[str, Any]:
+    """Describe the retained source inventory without publishing a machine-local path."""
+    inventory = [
+        {
+            "destination": asset["repository_relative_destination"],
+            "byte_size": asset["byte_size"],
+            "sha256": asset["sha256"],
+            "hash_mode": asset["hash_mode"],
+        }
+        for asset in sorted(assets, key=lambda item: item["repository_relative_destination"])
+    ]
+    payload = json.dumps(inventory, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    revision = None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(source_root), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        candidate = result.stdout.strip().lower()
+        if result.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", candidate):
+            revision = candidate
+    except OSError:
+        pass
+    return {
+        "source_revision": revision,
+        "inventory_sha256": hashlib.sha256(payload).hexdigest(),
+        "excluded_volatile_paths": sorted(VOLATILE_RQ_METADATA),
+    }
 
 
 def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any]]:
@@ -305,7 +347,13 @@ def build_release(source_root: Path, project_root: Path) -> dict[str, Any]:
     project = project_root.resolve()
     assets = build_inventory(source, project)
     bundles = build_bundles(assets, source, project / BUNDLE_DIRECTORY)
-    manifest = {"schema_version": SCHEMA_VERSION, "dataset": "dataset_b", "bundles": bundles, "assets": assets}
+    manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "dataset": "dataset_b",
+        "source_provenance": source_provenance(source, assets),
+        "bundles": bundles,
+        "assets": assets,
+    }
     write_manifest(manifest, project)
     return {
         "status": "PASS",

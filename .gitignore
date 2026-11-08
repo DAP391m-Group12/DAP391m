@@ -11,6 +11,11 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!/dist/
+!/dist/reproducibility/
+!/dist/reproducibility/*.zip
+!/dist/reproducibility/evidence/
+!/dist/reproducibility/evidence/*.zip
 downloads/
 eggs/
 .eggs/
@@ -283,6 +288,7 @@ GEMINI.md
 /.tmp/
 /tmp/
 /output/
+/scratch/**
 
 # Secret và môi trường thật; chỉ cho phép mẫu không chứa secret
 .env.*

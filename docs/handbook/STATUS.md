@@ -1,7 +1,80 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-10-24
+**Reconciled:** 2026-11-05
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
+
+## Current Dataset B reproduction route — 2026-11-03
+
+The version 2.3 reproduction implementation is present at source commit
+`4bdfa0a5aebe138982b75a055891c1321a4d5496` on `main`. Claude Code implemented
+the route; the commit was authored and committed by Dan with Claude Opus 5.5
+recorded as co-author. This attribution records historical implementation work and
+does not assign Claude a current implementer or verifier role.
+
+| Component | Status | Evidence and limitation |
+|---|---|---|
+| Implementation | `COMPLETE` | Commit `4bdfa0a5aebe138982b75a055891c1321a4d5496` contains `src/dataset_b/reproduce/`, the asset manifest, five environment profiles, wrapper, guide, and focused tests. No model training or fitting is performed by the reproduction route. |
+| Documentation and focused static/unit validation | `PASS` | The version 2.3 guide and acceptance register pin the source commit, resolve their internal links, preserve the 0–12 rubric, and are covered by the focused documentation suite. This is static/unit evidence, not an end-to-end runtime result. |
+| Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
+| Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
+| Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
+
+### Current-host Phase B attempt — 2026-11-05
+
+The reconciled asset gate passed with 654/654 assets verified. The next environment
+gate failed before any model worker or inference process started: none of the five
+locked interpreters exists under `.venv-repro/`. The host has Python 3.13.0, `uv` is
+not installed, and `nvidia-smi` is unavailable. The retained `.venv-realmlp-gpu` and
+`.venv-rq4a-cpu` directories are not portable environments; their `pyvenv.cfg` files
+point to a missing `C:\Users\Dan\...\Python313\python.exe` base interpreter.
+
+Evidence is retained in
+`reports/reproducibility/receipts/environment_20261105T105959_367893Z.json` and
+`reports/reproducibility/receipts/evaluate_20261105T105933_714932Z.json`. The evaluate
+receipt lists all six models as failed on the missing-environment precondition; it is
+not a checkpoint, metric, or scientific-result failure. The owner stopped and closed
+all remaining Phase B and Phase C work on 2026-11-05. `compare`, RQ2, and `reports`
+were not run, and release Phase C was not opened. The current machine is not the CUDA
+execution host, and the owner records that the locked virtual environments are on
+another machine. Resolution and documentation of this specific technical issue are
+`COMPLETE`. This does not mark the full reproduction runtime complete.
+
+### Optional RQ4 audit-evidence handoff — 2026-11-05
+
+`scratch/` is ignored local development/review state and is not a dependency of the
+core reproduction route or the frozen RQ4 production packages. A curated 243-file,
+4,424,422-byte historical subset was copied into the local optional archive
+`dist/reproducibility/evidence/dataset_b_rq4_audit_evidence_20261105.zip` without
+deleting, moving, renaming, or overwriting its source files. The tracked
+`config/dataset_b/reproducibility/rq4_audit_evidence_manifest.json` records every
+member and the archive SHA-256. Pytest basetemp/fixture trees and scratch roots without
+saved review logs were excluded.
+
+This archive is audit/provenance evidence only. It is intentionally absent from the
+core asset manifest and does not replace production receipts, frozen artifacts, or a
+runtime reproduction result. Its public URL remains unrecorded; external publication
+is a later owner delivery action.
+
+### RQ3 volatile-runtime release reconciliation — 2026-11-05
+
+The canonical RQ3 `runtime.csv` remains unchanged in the accepted production run and
+continues to satisfy the RQ3 schema and semantic validator. It records wall-clock
+timings and is not compared by the RQ3 reproduction route. A prior release inventory
+had classified a different byte version as a required `rq_input`; the exact alternate
+copy and its maintainer source root were not retained.
+
+The core release policy now excludes this volatile timing file while preserving the
+historical artifact. The RQ3 bundle was rebuilt from its five deterministic members,
+and the manifest records source revision `4bdfa0a5aebe138982b75a055891c1321a4d5496`,
+an included-inventory digest, and the excluded path. Local `verify-assets` passed
+654/654 after reconciliation. This is local asset-integrity evidence only; it does not
+establish public download, current-source RQ execution, or clean-clone reproduction.
+
+The final tag, owner-supplied bundle links, anonymous download verification, and a
+qualified clean-host run remain delivery gates. Figures, text reports, and notebooks
+were not regenerated; Figures 4 to 6 are absent from the repository and Figure 1 has
+no regeneration route. These limitations do not change the accepted frozen
+experimental runs recorded elsewhere in this register.
 
 ## Current RQ4b handover ownership
 
