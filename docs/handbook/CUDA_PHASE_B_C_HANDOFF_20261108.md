@@ -50,6 +50,10 @@ policies.
   URLs, anonymous download, and clean-clone installation remain unverified. Release
   commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all core LFS objects were
   pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed.
+- The final default data route treats raw HMDA as optional provenance and the three
+  locked split CSVs as required direct downloads with atomic `.part` publication and
+  exact size/SHA-256 verification. Their URL fields remain null because no usable URLs
+  were supplied; the route therefore blocks rather than rebuilding from live raw data.
 
 ## Branch and transfer
 

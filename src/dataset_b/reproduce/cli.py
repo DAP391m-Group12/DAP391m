@@ -71,6 +71,12 @@ def build_parser() -> argparse.ArgumentParser:
     bind.add_argument("--base-url", required=True)
     links = subparsers.add_parser("maintainer-bind-links", help="Record one download link per bundle.")
     links.add_argument("--links-file", type=Path, required=True, help="JSON object: bundle filename to link.")
+    split_links = subparsers.add_parser(
+        "maintainer-bind-split-links", help="Record direct-download links for the three locked split CSVs."
+    )
+    split_links.add_argument(
+        "--links-file", type=Path, required=True, help="JSON object: split CSV filename to link."
+    )
     subparsers.add_parser("maintainer-check-publication", help="Check anonymous access to each bundle.")
     local = subparsers.add_parser("maintainer-install-local", help="Place assets from local bundles; not a public route.")
     local.add_argument("--bundle-directory", type=Path, default=Path("dist/reproducibility"))
@@ -139,7 +145,15 @@ def _run_public(command: str, project_root: Path, args: argparse.Namespace) -> d
 
 
 def _run_maintainer(args: argparse.Namespace, project_root: Path) -> dict[str, Any]:
-    from .release import bind_links, bind_release, build_release, check_publication, install_local_bundles, write_manifest
+    from .release import (
+        bind_links,
+        bind_release,
+        bind_split_links,
+        build_release,
+        check_publication,
+        install_local_bundles,
+        write_manifest,
+    )
 
     if args.command == "maintainer-build":
         return build_release(args.source_root, project_root)
@@ -148,6 +162,10 @@ def _run_maintainer(args: argparse.Namespace, project_root: Path) -> dict[str, A
         links = json.loads(args.links_file.read_text(encoding="utf-8"))
         write_manifest(bind_links(manifest, links), project_root)
         return {"status": "PASS", "bundle_count": len(manifest["bundles"])}
+    if args.command == "maintainer-bind-split-links":
+        links = json.loads(args.links_file.read_text(encoding="utf-8"))
+        write_manifest(bind_split_links(manifest, links), project_root)
+        return {"status": "PASS", "split_count": len(links)}
     if args.command == "maintainer-bind-release":
         write_manifest(bind_release(manifest, args.base_url), project_root)
         return {"status": "PASS", "bundle_count": len(manifest["bundles"])}

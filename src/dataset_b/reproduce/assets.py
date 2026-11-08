@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from .manifest import (
+    DIRECT_DOWNLOAD,
     DERIVED_FROM_RAW,
     GIT_TRACKED,
     OFFICIAL_SOURCE,
@@ -238,7 +239,7 @@ def download_assets(
 
     result: dict[str, Any] = {"downloaded": [], "extracted_count": 0, "derived_count": 0}
     for asset in assets:
-        if asset["distribution_classification"] == OFFICIAL_SOURCE:
+        if asset["distribution_classification"] == OFFICIAL_SOURCE and asset["required"]:
             if download_file(
                 asset["url"],
                 safe_destination(root, asset["repository_relative_destination"]),
@@ -248,6 +249,19 @@ def download_assets(
                 sleep=sleep,
             ):
                 result["downloaded"].append(asset["asset_id"])
+
+    for asset in assets:
+        if asset["distribution_classification"] != DIRECT_DOWNLOAD or asset["url"] is None:
+            continue
+        if download_file(
+            asset["url"],
+            safe_destination(root, asset["repository_relative_destination"]),
+            byte_size=asset["byte_size"],
+            sha256=asset["sha256"],
+            opener=opener,
+            sleep=sleep,
+        ):
+            result["downloaded"].append(asset["asset_id"])
 
     # Local copies never stand in for a public route, so this ignores on-disk state.
     blocked = unpublished_assets(assets)

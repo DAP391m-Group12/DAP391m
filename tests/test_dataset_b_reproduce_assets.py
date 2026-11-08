@@ -34,6 +34,7 @@ from src.dataset_b.reproduce.manifest import (
     validate_manifest,
 )
 from src.dataset_b.reproduce.release import (
+    bind_split_links,
     CHECKPOINT_PINS,
     LINEAGE_PINS,
     OFFICIAL_RAW_URL,
@@ -229,6 +230,21 @@ def test_manifest_rejects_official_source_without_url_and_url_mismatch() -> None
     mismatch = make_asset("artifacts/a.json", b"a", url="https://example.test/other.zip")
     with pytest.raises(ReproduceError, match="bundle url"):
         validate_manifest(make_manifest([mismatch]))
+
+
+def test_direct_download_allows_a_pending_https_link_but_never_a_bundle() -> None:
+    pending = make_asset(
+        "data/dataset_b/split_v1/test.csv",
+        b"test",
+        distribution_classification="direct_download",
+        bundle_id=None,
+    )
+    validate_manifest(make_manifest([pending], []))
+    pending["url"] = URL
+    validate_manifest(make_manifest([pending], []))
+    pending["bundle_id"] = "bundle_a"
+    with pytest.raises(ReproduceError, match="no bundle"):
+        validate_manifest(make_manifest([pending]))
 
 
 @pytest.mark.parametrize(
@@ -496,6 +512,32 @@ def test_missing_git_tracked_asset_fails(tmp_path: Path) -> None:
     assert result["missing"] == ["reports/a.txt"]
 
 
+def test_direct_split_download_is_verified_without_fetching_optional_raw(tmp_path: Path) -> None:
+    raw = make_asset(
+        "data/raw/state_NY_2024.csv",
+        b"raw",
+        url="https://example.test/raw.csv",
+        distribution_classification="official_source",
+        bundle_id=None,
+        required=False,
+        role="raw_source",
+    )
+    split = make_asset(
+        "data/dataset_b/split_v1/test.csv",
+        b"test",
+        url=URL,
+        distribution_classification="direct_download",
+        bundle_id=None,
+        role="derived_split",
+    )
+    server = RangeServer(b"test")
+    result = download_assets(make_manifest([raw, split], []), tmp_path, opener=server, sleep=no_sleep)
+    assert result["status"] == "PASS"
+    assert result["downloaded"] == [split["asset_id"]]
+    assert not (tmp_path / "data/raw/state_NY_2024.csv").exists()
+    assert (tmp_path / "data/dataset_b/split_v1/test.csv").read_bytes() == b"test"
+
+
 def derived_manifest(*, split_url: str | None) -> tuple[dict, RangeServer, list[dict]]:
     raw = b"raw"
     split = b"split"
@@ -704,6 +746,26 @@ def test_bind_links_requires_every_bundle_exactly() -> None:
     assert unpublished_assets(bound["assets"]) == []
 
 
+def test_bind_split_links_requires_all_three_locked_csv_names() -> None:
+    assets = [
+        make_asset(
+            f"data/dataset_b/split_v1/{name}",
+            name.encode(),
+            distribution_classification="direct_download",
+            bundle_id=None,
+            role="derived_split",
+        )
+        for name in ("train.csv", "validation.csv", "test.csv")
+    ]
+    manifest = make_manifest(assets, [])
+    links = {name: f"https://example.test/{name}" for name in ("train.csv", "validation.csv", "test.csv")}
+    bound = bind_split_links(manifest, links)
+    assert {asset["url"] for asset in bound["assets"]} == set(links.values())
+    assert unpublished_assets(bound["assets"]) == []
+    with pytest.raises(ReproduceError, match="exactly"):
+        bind_split_links(manifest, {"train.csv": links["train.csv"]})
+
+
 def test_check_publication_requires_url_declared_size_and_public_repository() -> None:
     good = lambda *_a, **_k: FakeResponse(b"z", 206, {"Content-Range": "bytes 0-0/3"})
     wrong = lambda *_a, **_k: FakeResponse(b"z", 206, {"Content-Range": "bytes 0-0/9"})
@@ -749,6 +811,11 @@ def test_committed_manifest_is_valid_and_covers_the_pinned_evidence() -> None:
     raw = by_destination["data/raw/state_NY_2024.csv"]
     assert (raw["url"], raw["sha256"]) == (OFFICIAL_RAW_URL, RAW_PIN)
     assert raw["distribution_classification"] == "official_source"
+    assert raw["required"] is False
+    for filename in ("train.csv", "validation.csv", "test.csv"):
+        split = by_destination[f"data/dataset_b/split_v1/{filename}"]
+        assert split["distribution_classification"] == "direct_download"
+        assert split["url"] is None
     for destination, pin in {**LINEAGE_PINS, **CHECKPOINT_PINS}.items():
         assert by_destination[destination]["sha256"] == pin
         assert by_destination[destination]["required"] is True

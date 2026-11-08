@@ -18,7 +18,7 @@ does not assign Claude a current implementer or verifier role.
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
 | CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
-| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed against the prebuild manifest; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed. Public URLs, anonymous download, and clean-clone verification remain separate gates. |
+| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed; post-push `git lfs fsck` passed. The default route now treats raw HMDA as optional provenance and the three locked CSVs as direct-download assets. Public URLs, anonymous download, and clean-clone verification remain separate gates. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
 
 ### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
@@ -108,6 +108,16 @@ Git LFS reported no pending objects, all 11 core objects were listed with their 
 SHA-256 identities, and post-push `git lfs fsck` passed. Phase C build/stage/commit/push
 status is `COMPLETE`. Public bundle URLs and direct URLs for the three locked split
 CSVs are still absent; anonymous download and clean-clone installation have not run.
+
+The final manifest policy no longer derives the three locked splits from the live HMDA
+endpoint. Raw HMDA is optional historical provenance. Train, Validation, and Test are
+required `direct_download` assets with their locked byte sizes and SHA-256 identities;
+the downloader uses `.part`, verifies before atomic publication, skips an already
+verified destination, and fails without overwriting a mismatched destination. The
+three URL fields remain null because the prompt supplied placeholders rather than
+usable links. The focused asset/release/documentation suite passed 115 tests after
+this change, `verify-assets` again passed 654/654, and the 11 bundle identities were
+unchanged.
 
 ### Current-host Phase B attempt — 2026-11-05
 

@@ -444,8 +444,8 @@ for LR and `full_train/model/preprocessor.joblib` for TabMmini.
 
 | Route                         | Assets | Handling by `download`                              |
 | ----------------------------- | -----: | ----------------------------------------------------- |
-| Official HMDA source          |      1 | downloaded from the official URL                      |
-| Derived split CSVs            |      3 | rebuilt from raw data and the retained split manifest |
+| Historical HMDA source        |      1 | optional provenance; not fetched by the default route |
+| Locked split CSVs             |      3 | downloaded directly, then verified by size and SHA-256 |
 | Project bundles               |    647 | 11 ZIP files downloaded, verified, and extracted      |
 | Git-tracked reference reports |      3 | already present in the clone                          |
 
@@ -464,9 +464,13 @@ identities and 654-asset inventory were unchanged from the prebuild manifest; on
 `reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
 Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS
 objects were pushed to `codex/cuda-phase-b-c-handoff`; `git lfs fsck` passed before
-and after the push. The owner has not yet supplied public bundle links or the three
-locked split-CSV URLs. Until then `download` exits 3, and no anonymous download through
-those links has been verified. To record bundle links, copy
+and after the push. The default data route does not rebuild the splits from the live
+HMDA endpoint. It downloads the three locked CSVs to `.part` files and publishes them
+only after their declared size and SHA-256 pass; an existing correct file is skipped
+and an existing incorrect file is never overwritten. The owner has not yet supplied
+public bundle links or the three locked split-CSV URLs. Until then `download` exits 3,
+and no anonymous download through those links has been verified. To record bundle
+links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
 to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
 anyone who has the link, and run:
@@ -474,6 +478,19 @@ anyone who has the link, and run:
 ```powershell
 python -m src.dataset_b.reproduce maintainer-bind-links --links-file config/dataset_b/reproducibility/bundle_links.json
 ```
+
+For the three split CSVs, copy
+[`split_links.example.json`](config/dataset_b/reproducibility/split_links.example.json)
+to `split_links.json`, replace all placeholders with the exact HTTPS links, and run:
+
+```powershell
+python -m src.dataset_b.reproduce maintainer-bind-split-links --links-file config/dataset_b/reproducibility/split_links.json
+```
+
+The locked identities are 23,631,341 bytes / `04575b2f...d692477` for Train,
+5,063,935 bytes / `cd233414...9d3cbb` for Validation, and 5,064,953 bytes /
+`5815caf7...2cae05` for Test. Raw HMDA remains historical provenance and is not a
+prerequisite for frozen-checkpoint evaluation.
 
 ### 5.6 Optional RQ4 audit evidence
 

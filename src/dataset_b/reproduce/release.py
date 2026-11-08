@@ -15,6 +15,7 @@ from typing import Any, Callable, Iterator, Mapping
 
 from .assets import extract_bundle
 from .manifest import (
+    DIRECT_DOWNLOAD,
     DERIVED_FROM_RAW,
     GIT_TRACKED,
     MANIFEST_RELATIVE_PATH,
@@ -232,6 +233,7 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
             identity=file_identity(source_root / RAW_ASSET),
             url=OFFICIAL_RAW_URL,
             distribution=OFFICIAL_SOURCE,
+            required=False,
             role="raw_source",
         )
     ]
@@ -242,7 +244,7 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
                 scope="data",
                 destination=destination,
                 identity=file_identity(source_root / destination),
-                distribution=DERIVED_FROM_RAW,
+                distribution=DIRECT_DOWNLOAD,
                 role="derived_split",
             )
         )
@@ -421,6 +423,26 @@ def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, 
     for asset in manifest["assets"]:
         if asset["distribution_classification"] == PROJECT_BUNDLE:
             asset["url"] = urls[asset["bundle_id"]]
+    validate_manifest(manifest)
+    return manifest
+
+
+def bind_split_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, Any]:
+    """Record direct-download links for the three locked split CSVs."""
+    expected = {PurePosixPath(path).name: path for path in DERIVED_SPLIT_ASSETS}
+    if set(links) != set(expected):
+        raise ReproduceError(
+            f"Split links must name train.csv, validation.csv, and test.csv exactly: "
+            f"missing={sorted(set(expected) - set(links))} unknown={sorted(set(links) - set(expected))}"
+        )
+    by_destination = {
+        asset["repository_relative_destination"]: asset for asset in manifest["assets"]
+    }
+    for filename, destination in expected.items():
+        asset = by_destination.get(destination)
+        if asset is None or asset["distribution_classification"] != DIRECT_DOWNLOAD:
+            raise ReproduceError(f"Manifest has no direct-download split asset: {filename}")
+        asset["url"] = direct_download_url(links[filename])
     validate_manifest(manifest)
     return manifest
 
