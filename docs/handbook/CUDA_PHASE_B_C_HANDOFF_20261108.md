@@ -29,6 +29,25 @@ policies.
   SHA-256 `f8bb82202ec167c51e16d3299b808d0af014d76dce67d2c38ac20200dbb6a40b`.
 - The other ten core ZIP bundles are not present in this workspace. Every source
   member named by the current manifest was present when checked on 2026-11-08.
+- A 2026-11-08 attempt at commit
+  `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` passed 654/654 assets, all five
+  locked environment fingerprints, all three finite CUDA tensor checks, six of six
+  frozen-checkpoint evaluations, and 402/402 RQ1 numerical comparisons. RQ3, RQ4a,
+  and RQ4b passed their reproduction comparisons. An initial RQ2 run completed all
+  six frozen CPU-inference models but failed 3/28 comparison rows, all for TabMmini:
+  `importance.csv` delta `2.12172445194711e-10`, `cube.npy` maximum delta
+  `5.960464477539063e-08`, and `gsv_local.npy` maximum delta
+  `1.9868215961338365e-09`, each against the locked `1e-12` tolerance. The policy
+  and accepted artifacts were not changed. Diagnosis isolated the current-host cause
+  to the unpinned Torch CPU intra-op thread count. After a scoped one-thread inference
+  lock, `research --route all` passed RQ2 28/28, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17.
+  `reports` then returned the allowed documented `INCOMPLETE` result with 5 objects
+  PASS and 3 `NOT_REGENERATED`. Phase B is complete; Phase C, LFS staging, commit,
+  and push did not run.
+- On 2026-11-09 Phase C rebuilt all 11 core ZIPs, totaling 678,068,350 bytes.
+  Bundle size, SHA-256, and exact member inventory all matched the prebuild manifest.
+  RQ3 `runtime.csv` and the optional RQ4 audit archive remained outside core. Public
+  URLs, anonymous download, and clean-clone installation remain unverified.
 
 ## Branch and transfer
 

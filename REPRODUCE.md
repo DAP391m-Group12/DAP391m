@@ -1,10 +1,28 @@
 # Dataset B Reproducibility Guide
 
 This guide is the reproducibility entry point for Dataset B. It distinguishes
-static verification, runs observed on 2026-11-03, accepted historical runtime
+static verification, runs observed on 2026-11-03 and 2026-11-08, accepted historical runtime
 evidence, procedures that were not rerun, and limitations that remain unverified.
 Section 1 gives the command route; the end-to-end clean-clone run has not been
 executed, and no model was trained or fitted for this guide.
+
+The qualified-host Phase B run on 2026-11-08 through 2026-11-09 passed asset
+verification, all five environment profiles, six-model frozen-checkpoint evaluation,
+all 402 RQ1 comparisons, and all four research routes. An initial RQ2 run failed three
+TabMmini comparisons because the frozen CPU inference path did not lock Torch's
+intra-op thread count. A one-thread lock scoped to each TabMmini inference call restored
+the caller's setting afterwards and the official rerun passed all 28 RQ2 rows without
+changing the numerical policy or accepted artifacts. `reports` then returned the
+documented `INCOMPLETE` status: five objects passed and three notebook/authored-report
+objects were not regenerated. Phase C was not opened in that task. See
+`docs/handbook/STATUS.md` for the receipts and exact limitations.
+
+Phase C subsequently rebuilt all 11 core ZIPs from the retained inventory. Every
+bundle kept the size and SHA-256 declared before the build, every ZIP member matched
+its assigned manifest inventory, RQ3 `runtime.csv` remained excluded, and the optional
+RQ4 audit archive remained outside the core manifest. The verified local bundle total
+is 678,068,350 bytes. This is local release-build evidence only; public URLs,
+anonymous download, and clean-clone installation remain unverified.
 
 The authoritative documentation acceptance register is
 [REPRODUCIBILITY_ACCEPTANCE](docs/handbook/REPRODUCIBILITY_ACCEPTANCE.md).
@@ -31,7 +49,7 @@ Experimental execution status remains exclusively in
 | Reproduction route version          | commit `4bdfa0a5aebe138982b75a055891c1321a4d5496` on `main`                                  |
 | Final tag                           |                                                                                                 |
 | Processed data and checkpoint links |                                                                                                 |
-| Project bundle size                 | 11 bundles, 678,068,843 bytes in total (Section 5.5)                                            |
+| Project bundle size                 | 11 bundles, 678,068,350 bytes in total (Section 5.5)                                            |
 | Raw data link                       | `https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024`; 145,740,132 bytes |
 | Document version                    | `2.3`                                                                                         |
 | Document date                       | `2026-11-03`                                                                                  |
@@ -101,6 +119,14 @@ rather than the host lock. `reports` currently exits 1 with `INCOMPLETE`, becaus
 Section 10 lists objects that were not run or regenerated. Parts of the CLI, including
 `evaluate`, `compare`, and `reports`, were edited after those observations and are
 covered since then by unit tests only; the commands were not repeated.
+
+Current-source status on the qualified handoff host: `evaluate`, `compare`,
+`research --route all`, and `reports` were repeated on 2026-11-08 through 2026-11-09.
+Evaluation passed 6/6, RQ1 comparison passed 402/402, RQ2 passed 28/28, RQ3 passed
+5/5, RQ4a passed 4/4, and RQ4b passed 17/17. `reports` remained `INCOMPLETE` only for
+the three documented notebook/authored-report objects that have no source-backed
+builder in the reproduction route. This was an in-place qualified-host run, not the
+clean-clone route above.
 
 Exit codes: 0 PASS; 1 FAIL or INCOMPLETE; 2 usage error; 3 gate BLOCKED. The stages
 above and the RQ routes also run in order through
@@ -430,9 +456,13 @@ from the core release inventory. It records non-deterministic wall-clock timings
 reproduction route. The manifest records this exclusion under `source_provenance`,
 along with the source revision and a digest of the included source inventory.
 
-**Status:** the owner distributes the bundles through Google Drive and will add the
-links. Until then `download` exits 3, and no download through those links has been
-verified. To record them, copy
+**Status:** Phase C rebuilt and verified all 11 local ZIPs on 2026-11-09. The bundle
+identities and 654-asset inventory were unchanged from the prebuild manifest; only
+`source_provenance.source_revision` advanced to the handoff revision. Evidence is in
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
+The owner has not yet supplied the public bundle links or the three locked split-CSV
+URLs. Until then `download` exits 3, and no anonymous download through those links has
+been verified. To record bundle links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
 to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
 anyone who has the link, and run:
@@ -732,7 +762,7 @@ covers both.
 | RQ1 report Section 6: CV folds, confusion matrix, calibration curve                     | none in the reproduction CLI; confusion counts are in `rq1_test_metrics.json`                                                                           | model configs in Section 6                     | each run's `reporting/cv_fold_metrics.csv`, `confusion_matrix.csv`, and `calibration_curve.csv` | not regenerated                                |
 | Other RQ1 and RQ2 report sections: scope, lineage, cohort, checks, ledgers, limitations | none; authored report text                                                                                                                                | Sections 5 and 6                               | `reports/RQ1_Research_Metrics_Final.txt`, `reports/RQ2_Research_Metrics_Final.txt`                | not regenerated                                |
 | RQ1 paired comparisons, Section 7 of the RQ1 report                                     | `07_model_total_review.ipynb`                                                                                                                           | `split_and_evaluation.md`                    | six stored bootstrap tables                                                                           | 150 rows; not regenerated                      |
-| RQ2 report Sections 5 to 8                                                              | `reproduce research --route rq2`                                                                                                                        | `rq2_protocol.yaml`                          | `reports/reproducibility/research/rq2/`                                                             | not run                                        |
+| RQ2 report Sections 5 to 8                                                              | `reproduce research --route rq2`                                                                                                                        | `rq2_protocol.yaml`                          | `reports/reproducibility/research/rq2/`                                                             | 28 of 28 comparison rows passed                |
 | RQ3 group, gap, and bootstrap tables                                                    | `reproduce research --route rq3`                                                                                                                        | `rq3_protocol.yaml`                          | `reports/reproducibility/research/rq3/output/`                                                      | 5 of 5 comparison rows passed                  |
 | Tables 4A to 4E                                                                         | `reproduce research --route rq4a`                                                                                                                       | `rq4a_postprocessing.yaml`                   | stored `reporting/` of both RQ4a runs                                                               | stored package validated; not regenerated      |
 | Tables 5A to 5E                                                                         | `reproduce research --route rq4b`                                                                                                                       | `rq4b_adversarial.yaml`                      | `reports/reproducibility/research/rq4b/output/`                                                     | 17 of 17 comparison rows passed                |
@@ -776,11 +806,10 @@ profile-specific and its recorded runtime execution remains not started.
 ### 11.1 Current-source runtime verification gaps
 
 - The clean-clone sequence and download through the Drive links were not executed.
-- The RQ2 route was not run.
-- `evaluate`, `compare`, and `reports` were edited after their last observed run and
-  were not repeated from the pinned current source.
-- The RQ route receipts in the author's working tree predate the current receipt format
-  and hold no input hashes.
+- The qualified-host route was run in place, not from a clean clone.
+- Public download through the missing direct split-CSV URLs was not verified.
+- Three notebook/authored-report objects remain `NOT_REGENERATED`; `reports` therefore
+  returns the documented `INCOMPLETE` status.
 
 These are conditions still needed for full current-source runtime reproducibility.
 

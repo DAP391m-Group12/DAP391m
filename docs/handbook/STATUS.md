@@ -1,6 +1,6 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-11-05
+**Reconciled:** 2026-11-09
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
 
 ## Current Dataset B reproduction route — 2026-11-03
@@ -17,7 +17,94 @@ does not assign Claude a current implementer or verifier role.
 | Documentation and focused static/unit validation | `PASS` | The version 2.3 guide and acceptance register pin the source commit, resolve their internal links, preserve the 0–12 rubric, and are covered by the focused documentation suite. This is static/unit evidence, not an end-to-end runtime result. |
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
+| CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
+| CUDA handoff Phase C local build, 2026-11-09 | `PASS` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed against the prebuild manifest; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Public URLs, anonymous download, clean-clone verification, and publication status remain separate gates. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
+
+### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
+
+The attempt ran from commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0`
+on `codex/cuda-phase-b-c-handoff`. Static inspection of every reachable Phase B
+entrypoint preceded execution. Imported modules that also contain training functions
+were traced to the inference-only helpers actually called. No training, fitting,
+refitting, threshold selection, lambda selection, or seed selection route ran.
+
+`verify-assets` exited 0 and passed 654/654 assets with no missing or mismatched
+entries. After the owner authorized installation, `environment --install` created
+the five locked profiles and the environment gate passed all five. The three CUDA
+profiles used Torch `2.14.0+cu130`, CUDA build `13.0`, cuDNN `92400`, driver
+`610.74`, and each completed a finite CUDA tensor operation on the NVIDIA GeForce
+RTX 5050 Laptop GPU with 8,546,484,224 bytes of device memory. The retained receipts
+are `verify-assets_20261108T122017_953903Z.json` and
+`environment_20261108T125329_497165Z.json` under
+`reports/reproducibility/receipts/`.
+
+`evaluate --model all` then passed six of six frozen-checkpoint evaluations. Every
+model receipt records zero model-fit calls, zero preprocessing-fit calls, one
+checkpoint-inference pass, and `training_code_called=false`. The three neural models
+recorded actual `cuda:0` allocations of 35,195,392, 52,161,536, and 86,641,664 bytes.
+`compare` passed all 402 rows with zero failures. The command receipts are
+`evaluate_20261108T125910_329422Z.json` and
+`compare_20261108T125939_503172Z.json`.
+
+The first research run completed all four workers. RQ3 passed 5/5 comparison rows, RQ4a
+passed 4/4 package-validation rows without fitting `ThresholdOptimizer`, and RQ4b
+passed 17/17 rows from saved predictions without reopening training, CV, lambda, or
+threshold selection. RQ2 completed all six frozen CPU-inference models and all 1,000
+bootstrap replicates per model, but its final comparison failed 3 of 28 rows. All
+three failures are TabMmini numerical differences above the locked `1e-12` tolerance:
+`importance.csv` delta `2.12172445194711e-10`, `cube.npy` maximum delta
+`5.960464477539063e-08`, and `gsv_local.npy` maximum delta
+`1.9868215961338365e-09`. The research receipt is
+`research_20261108T141813_840212Z.json`.
+
+Diagnosis found 432 of 1,048,576 TabMmini cube values different, with the
+maximum difference equal to one float32-scale step at the observed value. The derived
+`gsv_local.npy` differs in 63 of 3,072 values, and 23 to 24 importance rows differ by
+column. This pattern is consistent with environment-sensitive CPU inference rounding,
+but the accepted RQ2 package does not record enough runtime provenance to confirm a
+specific hardware or kernel cause from historical provenance alone. A controlled
+frozen-inference check then isolated the current-host divergence: 14 Torch intra-op
+threads reproduced the failed output exactly, while one thread matched the accepted
+TabMmini cube block exactly; repeated calls on the same host were stable. The minimal
+fix locks TabMmini CPU inference to one intra-op thread and restores the caller's
+process-wide setting in a `finally` block. Its focused suite passed 51 tests.
+
+The official `research --route all` rerun passed RQ2 28/28, RQ3 5/5, RQ4a 4/4,
+and RQ4b 17/17. Its receipt is
+`research_20261108T174830_904582Z.json`. A log scan found no fit, train, refit,
+backward, optimizer-step, or selection event. `reports` then returned the documented
+`INCOMPLETE` status with five objects PASS and three `NOT_REGENERATED`: Figures 2 and
+3 and the assembled RQ text reports have no source-backed builder and their notebooks
+were not executed. The reports receipt is `reports_20261108T174846_986881Z.json`.
+
+The locked numerical policy was not changed and accepted artifacts were not modified.
+Phase B is complete under the handoff rule that permits the already documented
+object-level report gaps after all scientific gates pass. Phase C was not opened by
+this task, and no release build, LFS staging, commit, or push was attempted.
+
+### CUDA handoff Phase C local build — 2026-11-09
+
+After the Phase B scientific gates passed, static review confirmed that
+`maintainer-build` only inventories retained files, hashes them, creates deterministic
+ZIPs, and writes the manifest. It has no training, fitting, inference, selection, or
+frozen-artifact write path. The focused asset/release/documentation suite passed 112
+tests when run with a Git ceiling that kept test fixtures outside repository discovery.
+
+The build completed with 654 assets, 635 required assets, and 11 core bundles totaling
+678,068,350 bytes. The post-build comparison found the bundle identities, asset
+inventory, and inventory digest unchanged from the prebuild manifest. Each ZIP passed
+its declared byte-size and SHA-256 check, and its exact member list matched the assets
+assigned to that bundle. RQ3 `runtime.csv` is excluded and the optional RQ4 audit
+archive is not present in the core manifest. The build updated only
+`source_provenance.source_revision` from the earlier implementation revision to
+`5a5667b13546e6b088756cd8e9da8e963a0ccfe0`.
+
+The verification record is
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T180034Z.json`.
+Local Phase C build status is `PASS`. This does not establish publication: public
+bundle URLs and direct URLs for the three locked split CSVs are still absent, and
+anonymous download plus clean-clone installation have not run.
 
 ### Current-host Phase B attempt — 2026-11-05
 

@@ -165,9 +165,8 @@ def test_documentation_does_not_overclaim_prohibited_runtime_results() -> None:
     ) in normalized
     assert "clean-host installation was attempted or accepted" in normalized
     assert (
-        "This acceptance does not establish a successful clean-clone run, "
-        "current-source end-to-end execution, notebook regeneration, or universal "
-        "runtime reproducibility."
+        "This acceptance does not establish a successful clean-clone end-to-end run, "
+        "notebook regeneration, or universal runtime reproducibility."
     ) in normalized
 
 

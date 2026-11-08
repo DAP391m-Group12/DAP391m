@@ -1,0 +1,33 @@
+{
+  "command": "research",
+  "created_at_utc": "2026-11-08T17:48:30.904582+00:00",
+  "failed": [],
+  "manifest_sha256": "f021ec2dd430aef7292eba68f41369d6ff5a9a48de047d5122ff9948fe798435",
+  "routes": {
+    "rq2": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/research/rq2.log",
+      "problems": [],
+      "status": "PASS"
+    },
+    "rq3": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/research/rq3.log",
+      "problems": [],
+      "status": "PASS"
+    },
+    "rq4a": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/research/rq4a.log",
+      "problems": [],
+      "status": "PASS"
+    },
+    "rq4b": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/research/rq4b.log",
+      "problems": [],
+      "status": "PASS"
+    }
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,31 @@
+{
+  "command": "maintainer-build --source-root .",
+  "created_at_utc": "2026-11-08T18:00:34.6733750Z",
+  "status": "PASS",
+  "source_revision": "5a5667b13546e6b088756cd8e9da8e963a0ccfe0",
+  "manifest_sha256": "8cda44a7f7fa59250711da493f09b16df9c139e00fe1b263e10ef89f5f3aec0d",
+  "asset_count": 654,
+  "required_asset_count": 635,
+  "bundle_count": 11,
+  "bundle_total_bytes": 678068350,
+  "prebuild_comparison": {
+    "bundle_identities_unchanged": true,
+    "asset_inventory_unchanged": true,
+    "inventory_digest_unchanged": true
+  },
+  "rq3_runtime_csv_in_core": false,
+  "optional_rq4_audit_in_core": false,
+  "bundles": [
+    {"filename": "dataset_b_core_part01.zip", "byte_size": 114824243, "sha256": "3d380071fa2ef70c5757f41ec9afd00ff3456b93d05e503e6f5e96a694ceb3b1", "member_count": 3, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_lr_part01.zip", "byte_size": 118443070, "sha256": "57b2958018e232045533733c557e8a56bb048caa07668f386b919492fb9e077c", "member_count": 29, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_plain_mlp_part01.zip", "byte_size": 9736071, "sha256": "993f38368cc2028ccc578336051c5932b4c7be7c8fc6519bb5f3e68466716200", "member_count": 42, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_realmlp_part01.zip", "byte_size": 11240811, "sha256": "55bd6c5b63c26c4493e287a02543041c606869877d246b02d298f4bb13246f29", "member_count": 52, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_rf_part01.zip", "byte_size": 347973633, "sha256": "b71607ad1e4d0b9541348cac2ad7f22d12d3709e5540942d24727b29b09fd7ee", "member_count": 29, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_rq2_part01.zip", "byte_size": 13140299, "sha256": "ed8f11d6013219ff574767c03c79f3605c8c26a59c06c2d15fc4226ff210277d", "member_count": 155, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_rq3_part01.zip", "byte_size": 266084, "sha256": "b2a553143fbed46a822fe6b6b0efee8e0a5cdfa94aa1bd49578e26a140ebef36", "member_count": 5, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_rq4a_part01.zip", "byte_size": 16950144, "sha256": "814ec17105dc72e4b7fee796ea26f6be7f51043ed016acc35b5170b7cdab7a22", "member_count": 32, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_rq4b_part01.zip", "byte_size": 28886818, "sha256": "0bf6940797128b48b75712f53a831ef190457a10444f358abf9c60aaa386e782", "member_count": 212, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_tabmmini_part01.zip", "byte_size": 12643897, "sha256": "dc24387968590c2dac5c9b3acb2e86013246329ed0d49a646b819f64acec6e17", "member_count": 61, "size_pass": true, "hash_pass": true, "members_pass": true},
+    {"filename": "dataset_b_xgboost_part01.zip", "byte_size": 3963280, "sha256": "43175c9142714e13ba6c48a6ed700e6ebdb1c2af61db59ec73e0a4ca5c40b6a3", "member_count": 27, "size_pass": true, "hash_pass": true, "members_pass": true}
+  ]
+}
