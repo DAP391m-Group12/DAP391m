@@ -1,0 +1,33 @@
+{
+  "accepted_run_ids": [
+    "tabmmini_final_15f_20261004_01"
+  ],
+  "classification": "checkpoint-based",
+  "compute": {
+    "device": "cuda:0",
+    "gpu_name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+    "peak_memory_allocated_bytes": 86641664
+  },
+  "execution": {
+    "checkpoint_inference_passes": 1,
+    "model_fit_calls": 0,
+    "preprocessing_fit_calls": 0,
+    "training_code_called": false
+  },
+  "input_hashes": {
+    "artifacts/dataset_b/rq1_test_bootstrap_indices.npz": "2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1",
+    "full_train/model/inference_bundle.pt": "0d3eacadb7a2e07ae5a6fb7396f87b00317a21711a0b0db8b6aaf4ec1e4d2229",
+    "split_v1/test.csv": "5815caf720ea5a9b3a1c8925f9fe193062ce862ee6a78c534a3aa14b572cae05",
+    "validation/threshold_selection.json": "ee5bc5ef41050d8ad9030bb9d7d598ce4c782b7be24c4f6f73e315741ffab86f"
+  },
+  "limitations": [
+    "Stored Test predictions are read only for record order and for comparison."
+  ],
+  "model": "tabmmini",
+  "output_hashes": {
+    "rq1_bootstrap_metrics.csv": "1a520460c0b4b812d1601eccf61be58e53126c4770a30a6a578d824896958dea",
+    "rq1_test_metrics.json": "78c6c6e68aa0d6ad137d337786e0bc780a53645ca264aa781497370f8a2a4ff4",
+    "test_predictions.csv": "1222f2fc28da2e100541df140ca2d32bbf2a600fc6056c56294ffdabcd5ece46"
+  },
+  "status": "EVALUATED"
+}

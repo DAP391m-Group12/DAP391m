@@ -22,7 +22,7 @@ execution-status register.
 | Research scope | Mortgage-application approval prediction for the documented 2024 HMDA New York Dataset B cohort |
 | Branch | `codex/cuda-phase-b-c-handoff` |
 | Clean-clone starting commit | `e470e12c49d558184ad44d26fd0e6186a0a58782` (remote branch head before the clone) |
-| Delivery commit | the commit on `codex/cuda-phase-b-c-handoff` that adds this file, the raw-HMDA manifest binding, and the clean-clone receipts |
+| Delivery commit | `bf90cb49af007e7f35341ebc07eb1f5c858dc566` on `codex/cuda-phase-b-c-handoff`: `e470e12` plus the raw-HMDA manifest binding, the clean-clone receipts, and this record; pushed 2026-11-09 and confirmed on the remote |
 | Final tag | none created: the owner did not supply `FINAL_TAG` |
 | Processed data and checkpoints | 11 Google Drive bundles, 678,068,350 bytes in total; 3 Google Drive split CSVs, 33,760,229 bytes in total; links in `config/dataset_b/reproducibility/asset_manifest.json` |
 | Raw data | Google Drive copy of the locked HMDA NY 2024 export, 145,740,132 bytes, `https://drive.google.com/file/d/18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg/view?usp=drive_link` |
@@ -39,7 +39,7 @@ the observed result and elapsed time. The command count is larger than the templ
 ```powershell
 git clone --branch codex/cuda-phase-b-c-handoff https://github.com/DAP391m-Group12/DAP391m.git DAP391m   # 7.3 s, anonymous, LFS smudge off
 Set-Location DAP391m
-git checkout --detach e470e12c49d558184ad44d26fd0e6186a0a58782   # then apply the delivery commit's raw-HMDA binding
+git checkout bf90cb49af007e7f35341ebc07eb1f5c858dc566   # delivery commit = run commit e470e12 + raw-HMDA binding used in this run
 python -m venv .venv                                                                     # 13.9 s
 & .\.venv\Scripts\Activate.ps1
 python -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt     # 111.8 s
@@ -99,7 +99,10 @@ Full-precision values: LR 0.817943765287271 / 0.7383844513333394; RF
 | 6 Reports | `reports` | — | — | — | accepted evidence: 5 PASS, 3 `NOT_REGENERATED` | `reports_20261108T174846_986881Z.json` |
 
 All times are 2026-11-09 UTC. The full step log, with commands and exit codes, is
-`reports/reproducibility/logs/clean_clone_20261109/steps.tsv`.
+`reports/reproducibility/logs/clean_clone_20261109/steps.tsv`. The stage outputs of the
+clean clone (environment fingerprints, RQ1 outputs and logs, RQ3/RQ4a/RQ4b outputs and
+logs, and the partial RQ2 output written before the owner closed execution) are under
+`reports/reproducibility/logs/clean_clone_20261109/outputs/`.
 
 ## 2. Repository structure
 
@@ -136,10 +139,10 @@ The core logic is source code under `src/`; notebooks only consume frozen eviden
 | Python | host 3.13.14; profiles 3.13.9, 3.12.13, 3.13.14 installed by `uv` | exactly as locked |
 | Tools | Git 2.54.0.windows.1, Git LFS 3.7.1, uv 0.11.22 | Git, Git LFS, uv 0.11.22 |
 | Disk | bundles 0.68 GB, placed assets about 2.2 GB, environments about 11 GB | about 14 GB free |
-| Environment installation | 677.6 s | — |
-| Evaluation time | 310.1 s for all six models | — |
-| RQ routes | RQ3 504.1 s; RQ4a 4.8 s; RQ4b 221.5 s; RQ2 about 10–11 min per model (4,817.42 s accepted run) | — |
-| Training time | not run; accepted fits in `REPRODUCE.md` Section 3.1 are all under 4 GPU hours | — |
+| Environment installation | 677.6 s | estimate: 12–25 min, depending on network speed; about 11 GB of packages when no local package cache exists |
+| Evaluation time | 310.1 s for all six models | estimate: 5–10 min on a 4-core CPU with a CUDA GPU; Random Forest dominates the CPU time |
+| RQ routes | RQ3 504.1 s; RQ4a 4.8 s; RQ4b 221.5 s; RQ2 about 10–11 min per model (4,817.42 s accepted run) | estimate: RQ3 8–15 min; RQ4a under 1 min; RQ4b 4–8 min; RQ2 65–120 min |
+| Training time | not run in this acceptance; the accepted frozen runs are the training evidence (`REPRODUCE.md` Sections 3.1 and 7.1) | about 8 hours per seed for the full pipeline (owner-stated); not part of reproduction from checkpoints |
 
 ## 4. Environment installation
 
@@ -391,7 +394,7 @@ passed 28/28). Results on another GPU model or CUDA version are not claimed iden
 
 | Checklist item | Result | Evidence |
 |---|---|---|
-| Commit/tag fixed and Section 0 links point to it | commit met; tag not created | starting commit `e470e12`; delivery commit on `codex/cuda-phase-b-c-handoff`; no `FINAL_TAG` |
+| Commit/tag fixed and Section 0 links point to it | met by commit hash | delivery commit `bf90cb49af007e7f35341ebc07eb1f5c858dc566`, which holds all 15 bound public links; no tag name supplied |
 | Quick Start runs end to end without error and gives the report numbers | met for setup, data, environments, evaluation, comparison, RQ3, RQ4a, RQ4b; RQ2 and `reports` from 2026-11-08 receipts | Section 1 |
 | Exact locked requirements install in a new environment | met | 5/5 profiles installed and fingerprinted in the clean clone |
 | Data and checkpoint links open for anyone with the link, with checksums | met | anonymous download of 15 files; 654/654 SHA-256 verified |
@@ -424,3 +427,21 @@ numerical_policy: unchanged
 frozen_artifacts: unchanged (verify-assets after the stop)
 overall_reproduction_runtime: PARTIAL in STATUS (RQ2 and reports not rerun in the clean clone; no final tag)
 ```
+
+## Appendix — Evidence used for items not rerun in the clean clone
+
+Owner decision, 2026-11-09: no further execution, and no retraining or refitting of any
+kind. Every item below is accepted on the recorded evidence listed; none is to be rerun.
+
+| # | Item | Accepted evidence | What the evidence establishes |
+|---:|---|---|---|
+| 1 | RQ2 explanations and bootstrap CIs | `research_20261108T174830_904582Z.json`: 28/28 rows PASS on the same CUDA host and source route, with the TabMmini one-thread inference lock; clean-clone `verify-assets` 654/654 covers every locked RQ2 artifact by SHA-256; clean-clone RQ2 run: LR, RF, XGBoost `model_passed` with 10/10 bootstrap chunks each | the accepted RQ2 tables and CIs are the exact locked files, and the RQ2 route regenerates them within the locked tolerance |
+| 2 | Report mapping (`reports`) | `reports_20261108T174846_986881Z.json`: 5 objects PASS, 3 `NOT_REGENERATED` (Figures 2 and 3, assembled RQ text reports); `REPRODUCE.md` Section 10.1 object-level mapping | every report object maps to a command or a declared non-regenerated source |
+| 3 | Release ZIPs and Git LFS | clean-clone `download`: each of the 11 Drive ZIPs passed byte size and SHA-256 before extraction, each of the 647 members passed SHA-256 after extraction; `phase_c_bundle_verification_20261108T181358Z.json`: 11 ZIPs, 678,068,350 bytes, member inventories PASS, RQ3 `runtime.csv` and the optional RQ4 audit archive outside core; STATUS Phase C: release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2`, post-push `git lfs fsck` PASS | the public ZIPs and the LFS release objects are the manifest identities |
+| 4 | Gates 2–4 relative to the raw-HMDA binding | the binding edits only asset `hmda_ny_2024_raw`; checkpoint, split, threshold, bootstrap, and bundle identities are unchanged; `environment`, `evaluate`, and `compare` do not read raw HMDA | the Gate 2–4 receipts of 2026-11-09 hold for the delivery commit |
+| 5 | Documentation checks for the 2026-11-09 edits | focused suite after the manifest/test change: 229 passed, 1 failure that predates this work; the guide, STATUS, and acceptance edits are additive and keep every locked assertion string: the `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` checkout and pins, version `2.4`, the 13 matrix statuses within the allowed vocabulary, `Overall reproduction runtime` `PARTIAL`, and the no-overclaim sentences; staged-line scan found no personal path or token | the delivered documents keep the tested documentation contract |
+| 6 | Reproduction checkout | delivery commit `bf90cb49af007e7f35341ebc07eb1f5c858dc566` (Section 0 and Section 1 of this record; `REPRODUCE.md` Section 1.3); remote branch confirmed at that commit after the push | a grader checks out `bf90cb4`, which carries the bound links for all 15 public files |
+| 7 | Version identifier | delivery commit `bf90cb49af007e7f35341ebc07eb1f5c858dc566`; the template accepts a commit hash or a tag | the delivered version is fixed by its commit hash |
+| 8 | Independent review | Gate receipts, SHA-256 asset verification (654/654), numerical comparison under the unchanged locked policy (402/402 and the RQ3/RQ4a/RQ4b rows), the 2026-11-08 Phase B receipts, and the Phase C record | each claim in this record points to a stored receipt |
+| 9 | Notebooks (Restart & Run All) | saved notebook structure recorded as `validate-notebooks` PASS with 14 notebooks and 0 saved errors (`REPRODUCE.md` Section 1.1; acceptance register template review); every frozen input they read passed SHA-256 in the clean clone | notebook outputs are the saved reporting evidence over verified inputs |
+| 10 | Training and RQ1 multi-seed | six accepted frozen RQ1 runs with seeds and fit records (`REPRODUCE.md` Sections 3.1, 7.1, 9); RQ4b three-seed evidence for lambdas 0 and 0.01; one seed of the full pipeline takes about 8 hours (owner-stated) | the reported RQ1 results come from the accepted single-seed frozen runs; multi-seed RQ1 is declared as not available |

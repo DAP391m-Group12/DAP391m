@@ -1,0 +1,13 @@
+{
+  "bootstrap_seconds": 494.60228330000007,
+  "completed_chunks": 10,
+  "cube_seconds": 36.81096590000001,
+  "method_seconds": 2.955766,
+  "model_key": "rf",
+  "model_run_id": "rf_final_15f_20261002_01",
+  "protocol_version": "rq2_explanation_v1",
+  "run_id": "rq2_reproduction_20261103_01",
+  "stage": "complete",
+  "status": "PASS",
+  "total_seconds": 534.3690152
+}

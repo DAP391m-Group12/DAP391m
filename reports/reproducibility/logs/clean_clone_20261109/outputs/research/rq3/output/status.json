@@ -1,0 +1,16 @@
+{
+  "bootstrap_indices_generated": false,
+  "model_fit_calls": 0,
+  "model_status": {
+    "lr": "PASS",
+    "plain_mlp": "PASS",
+    "realmlp": "PASS",
+    "rf": "PASS",
+    "tabmmini": "PASS",
+    "xgboost": "PASS"
+  },
+  "prediction_calls": 0,
+  "run_id": "rq3_fairness_20261010_01",
+  "status": "PASS",
+  "target_orientation": "Approved-positive"
+}

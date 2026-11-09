@@ -1,0 +1,31 @@
+{
+  "accepted_run_ids": [
+    "lr_final_15f_20261002_01"
+  ],
+  "classification": "checkpoint-based",
+  "compute": {
+    "device": "cpu"
+  },
+  "execution": {
+    "checkpoint_inference_passes": 1,
+    "model_fit_calls": 0,
+    "preprocessing_fit_calls": 0,
+    "training_code_called": false
+  },
+  "input_hashes": {
+    "artifacts/dataset_b/rq1_test_bootstrap_indices.npz": "2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1",
+    "checkpoints/fitted_pipeline.joblib": "69770bc11558f56f147e2af89f79747c903e74e779aeae17d1347a25de620859",
+    "split_v1/test.csv": "5815caf720ea5a9b3a1c8925f9fe193062ce862ee6a78c534a3aa14b572cae05",
+    "validation/threshold_selection.json": "3401b51ec120cf61cc0daa641e64b54d19d5a8526f55f46054d2f228cda3fda6"
+  },
+  "limitations": [
+    "Stored Test predictions are read only for record order and for comparison."
+  ],
+  "model": "logistic_regression",
+  "output_hashes": {
+    "rq1_bootstrap_metrics.csv": "5334a8df40123e3ccf3b9e040ca2c72e031bca42dab51dbff1619c36e0441eab",
+    "rq1_test_metrics.json": "42c01649adc0daf9be716d4f43696fe175de6100ed753d92f9c931fc13b9e355",
+    "test_predictions.csv": "e3763121962434f5ee69dd1264c3d26dd640b08fc5d2b428a37244015cd30f67"
+  },
+  "status": "EVALUATED"
+}

@@ -1,0 +1,56 @@
+{
+  "accepted_run_ids": [
+    "rq4b3_test_20261024_01",
+    "rq4b3_sex_supplementary_20261024_02",
+    "rq4b3_gatec_20261024_01"
+  ],
+  "classification": "artifact-based",
+  "comparison_result": {
+    "failed_count": 0,
+    "row_count": 17,
+    "status": "PASS"
+  },
+  "failed": [],
+  "input_hashes": {
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_across_seed_summary.csv": "a915ad95eb044039c18e0281c344c042a2685c5d09e28c73467e6836c610a777",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_arm_metrics.csv": "8b0efe74e00d669fc666c338d4ee641cbc93d6f03f8a0e73a864db22509da017",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_bootstrap_replicates.csv": "863d356f4a69a32d8f698966b4a0659f866bce5bfa1da8a97e556fe9810f7054",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_bootstrap_summary.csv": "be4587614bd445aa69b782495a24ccbe6ec307ef7ef995598300a0dccd73dff7",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_decision_changes.csv": "585c214c746dc4fda847826bdf64111ac0ae9e86674abfcb0df3f99627a1ad5b",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_generalization_gaps.csv": "3ad5722e64e6a89bc2ea8df4a20a1e94a456f344a55606a416a8c10c00ce7094",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_group_metrics.csv": "615138fb73160fa1002c0c1956191d1eda2eeea7db7e346f7c52c8dc029ace1b",
+    "artifacts/dataset_b/rq4/rq4b/sex_supplementary/rq4b3_sex_supplementary_20261024_02/stages/sex_evaluation/sex_matched_deltas.csv": "6be048e8405738eafa22c2234124d0a495c05a7fe4e278198d105743103fd3c2",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/across_seed_summary.csv": "687b585e0a541b95ef173736681fa26c9f7b61e0c0421fbb7831f481401902e0",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/arm_metrics.csv": "0a820f27b42e1dd85bc9d40c74eea7479d30dd6850fc8c48e70d0809f26fefad",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/bootstrap_replicates.csv": "349d42055b9c18d786374c776e8ffd7649a194a83c6385b515b9a170aca026e9",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/bootstrap_summary.csv": "e137dae08640173b96de7c1b379fd839a2c466b82233c0ca14caab3174f7ebe6",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/decision_changes.csv": "559d3d604e46536a22f69e1f9459421f0403e2fb8524aa57053857e70eb32e2b",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/generalization_gaps.csv": "a6d41ebdf1dbc112cd386002768cce5ad3f8ca97df6a3f6be83e9e9442ff2e48",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/group_metrics.csv": "2c61c75c623e479b88335584bae5a8aaf4995482641630308acd07f917ca8da7",
+    "artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/stages/test_evaluation/matched_deltas.csv": "cec238e58fac8d96b64315bbdcdc6b7f09bc30ee4cd298abdd58a85d41aeaf29"
+  },
+  "limitations": [
+    "Test and applicant-sex tables are recomputed from saved predictions; no fit, refit, CV, or inference.",
+    "Gate C is read only: lambda selection is not reopened and its stored selection is checked, not recomputed.",
+    "No research interpretation is produced."
+  ],
+  "output_hashes": {
+    "reports/reproducibility/research/rq4b/output/across_seed_summary.csv": "687b585e0a541b95ef173736681fa26c9f7b61e0c0421fbb7831f481401902e0",
+    "reports/reproducibility/research/rq4b/output/arm_metrics.csv": "0a820f27b42e1dd85bc9d40c74eea7479d30dd6850fc8c48e70d0809f26fefad",
+    "reports/reproducibility/research/rq4b/output/bootstrap_replicates.csv": "349d42055b9c18d786374c776e8ffd7649a194a83c6385b515b9a170aca026e9",
+    "reports/reproducibility/research/rq4b/output/bootstrap_summary.csv": "e137dae08640173b96de7c1b379fd839a2c466b82233c0ca14caab3174f7ebe6",
+    "reports/reproducibility/research/rq4b/output/decision_changes.csv": "559d3d604e46536a22f69e1f9459421f0403e2fb8524aa57053857e70eb32e2b",
+    "reports/reproducibility/research/rq4b/output/generalization_gaps.csv": "a6d41ebdf1dbc112cd386002768cce5ad3f8ca97df6a3f6be83e9e9442ff2e48",
+    "reports/reproducibility/research/rq4b/output/group_metrics.csv": "2c61c75c623e479b88335584bae5a8aaf4995482641630308acd07f917ca8da7",
+    "reports/reproducibility/research/rq4b/output/matched_deltas.csv": "cec238e58fac8d96b64315bbdcdc6b7f09bc30ee4cd298abdd58a85d41aeaf29",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_across_seed_summary.csv": "a915ad95eb044039c18e0281c344c042a2685c5d09e28c73467e6836c610a777",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_arm_metrics.csv": "8b0efe74e00d669fc666c338d4ee641cbc93d6f03f8a0e73a864db22509da017",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_bootstrap_replicates.csv": "863d356f4a69a32d8f698966b4a0659f866bce5bfa1da8a97e556fe9810f7054",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_bootstrap_summary.csv": "be4587614bd445aa69b782495a24ccbe6ec307ef7ef995598300a0dccd73dff7",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_decision_changes.csv": "585c214c746dc4fda847826bdf64111ac0ae9e86674abfcb0df3f99627a1ad5b",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_generalization_gaps.csv": "3ad5722e64e6a89bc2ea8df4a20a1e94a456f344a55606a416a8c10c00ce7094",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_group_metrics.csv": "615138fb73160fa1002c0c1956191d1eda2eeea7db7e346f7c52c8dc029ace1b",
+    "reports/reproducibility/research/rq4b/output/sex_supplementary/sex_matched_deltas.csv": "6be048e8405738eafa22c2234124d0a495c05a7fe4e278198d105743103fd3c2"
+  },
+  "route": "rq4b"
+}

@@ -1,0 +1,13 @@
+{
+  "bootstrap_seconds": 648.8642384000001,
+  "completed_chunks": 10,
+  "cube_seconds": 14.846132499999996,
+  "method_seconds": 3.226238,
+  "model_key": "xgboost",
+  "model_run_id": "xgb_final_15f_20261003_01",
+  "protocol_version": "rq2_explanation_v1",
+  "run_id": "rq2_reproduction_20261103_01",
+  "stage": "complete",
+  "status": "PASS",
+  "total_seconds": 666.9366089000001
+}

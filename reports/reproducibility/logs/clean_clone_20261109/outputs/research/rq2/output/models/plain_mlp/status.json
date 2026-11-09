@@ -1,0 +1,11 @@
+{
+  "completed_chunks": 9,
+  "cube_seconds": 16.70192239999999,
+  "method_seconds": 3.3293547,
+  "model_key": "plain_mlp",
+  "model_run_id": "plain_mlp_final_15f_20261004_03",
+  "protocol_version": "rq2_explanation_v1",
+  "run_id": "rq2_reproduction_20261103_01",
+  "stage": "bootstrap",
+  "status": "IN_PROGRESS"
+}

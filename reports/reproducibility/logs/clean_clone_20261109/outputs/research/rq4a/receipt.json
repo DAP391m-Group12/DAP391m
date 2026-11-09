@@ -1,0 +1,23 @@
+{
+  "accepted_run_ids": [
+    "rq4a3_postproc_20261017_01",
+    "rq4a6_postproc_20261017_01"
+  ],
+  "classification": "report-only",
+  "comparison_result": {
+    "failed_count": 0,
+    "row_count": 4,
+    "status": "PASS"
+  },
+  "failed": [],
+  "input_hashes": {},
+  "limitations": [
+    "The owner prohibited any fit, so the Fairlearn post-processor was not fitted again and decisions were not regenerated.",
+    "This route checks the stored package layout, counts, statuses, and file index; it does not reproduce the post-processing result."
+  ],
+  "output_hashes": {
+    "reports/reproducibility/research/rq4a/output/rq4a3_postproc_20261017_01_validation.json": "2a7638902c3836c07cdb7b4c611f0a5e5fae6a04e0aee82bf8a2a99a5abefa66",
+    "reports/reproducibility/research/rq4a/output/rq4a6_postproc_20261017_01_validation.json": "2a7638902c3836c07cdb7b4c611f0a5e5fae6a04e0aee82bf8a2a99a5abefa66"
+  },
+  "route": "rq4a"
+}
