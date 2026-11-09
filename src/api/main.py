@@ -257,14 +257,14 @@ def predict_loan(
 
     if is_approved:
         result_md = (
-            f"## 🟢 KẾT QUẢ: ACCEPT (PHÊ DUYỆT)\n"
+            f"##  KẾT QUẢ: ACCEPT (PHÊ DUYỆT)\n"
             f"- **Tỷ lệ Accept (Approved):** `{prob_approved * 100:.2f}%`\n"
             f"- **Tỷ lệ Denied (Từ chối):** `{prob_denied * 100:.2f}%`\n"
             f"- **Mô hình sử dụng:** `{model_name}`"
         )
     else:
         result_md = (
-            f"## 🔴 KẾT QUẢ: DENIED (TỪ CHỐI)\n"
+            f"##  KẾT QUẢ: DENIED (TỪ CHỐI)\n"
             f"- **Tỷ lệ Accept (Approved):** `{prob_approved * 100:.2f}%`\n"
             f"- **Tỷ lệ Denied (Từ chối):** `{prob_denied * 100:.2f}%`\n"
             f"- **Mô hình sử dụng:** `{model_name}`"
@@ -285,7 +285,7 @@ def build_ui() -> gr.Blocks:
         title="Dự đoán Khoản vay Thế chấp",
         theme=gr.themes.Soft(),
     ) as demo:
-        gr.Markdown("# 🏦 DỰ ĐOÁN PHÊ DUYỆT KHOẢN VAY (ACCEPT / DENIED)")
+        gr.Markdown("# DỰ ĐOÁN PHÊ DUYỆT KHOẢN VAY (ACCEPT / DENIED)")
 
         with gr.Row():
             # Cột trái: Nhập thông tin đầu vào
@@ -300,11 +300,11 @@ def build_ui() -> gr.Blocks:
                 with gr.Row():
                     income_input = gr.Number(
                         value=135.0,
-                        label="Thu nhập hàng năm - income (Nghìn USD, VD: 135 = $135,000)",
+                        label="Thu nhập hàng năm",
                     )
                     loan_amount_input = gr.Number(
                         value=385000.0,
-                        label="Số tiền vay - loan_amount (USD)",
+                        label="Số tiền vay",
                     )
                 with gr.Row():
                     ltv_input = gr.Slider(
@@ -312,11 +312,11 @@ def build_ui() -> gr.Blocks:
                         maximum=130.0,
                         step=0.5,
                         value=78.0,
-                        label="Tỷ lệ Khoản vay / Giá trị tài sản - LTV (%)",
+                        label="Tỷ lệ Khoản vay / Giá trị tài sản (%)",
                     )
                     loan_term_input = gr.Number(
                         value=360,
-                        label="Kỳ hạn vay - loan_term (Tháng)",
+                        label="Kỳ hạn vay (Tháng)",
                     )
                 dti_input = gr.Dropdown(
                     choices=[
@@ -331,50 +331,50 @@ def build_ui() -> gr.Blocks:
                         "Exempt",
                     ],
                     value="30%-<36%",
-                    label="Tỷ lệ Nợ trên Thu nhập - debt_to_income_ratio (DTI)",
+                    label="Tỷ lệ Nợ trên Thu nhập",
                 )
 
                 gr.Markdown("### 2. Đặc trưng Khoản vay & Tài sản")
                 with gr.Row():
                     loan_type_input = gr.Dropdown(
                         choices=[
-                            "1 - Conventional (Thông thường)",
-                            "2 - FHA insured (Bảo hiểm FHA)",
-                            "3 - VA guaranteed (Bảo lãnh VA)",
+                            "1 - Conventional",
+                            "2 - FHA insured",
+                            "3 - VA guaranteed",
                             "4 - RHS or FSA guaranteed",
                         ],
-                        value="1 - Conventional (Thông thường)",
-                        label="Loại khoản vay (loan_type)",
+                        value="1 - Conventional",
+                        label="Loại khoản vay",
                     )
                     loan_purpose_input = gr.Dropdown(
                         choices=[
-                            "1 - Home purchase (Mua nhà)",
-                            "2 - Home improvement (Sửa nhà)",
-                            "31 - Refinancing (Tái cấp vốn)",
+                            "1 - Home purchase",
+                            "2 - Home improvement",
+                            "31 - Refinancing",
                             "32 - Cash-out refinancing",
-                            "4 - Other purpose (Mục đích khác)",
+                            "4 - Other purpose",
                             "5 - Not applicable",
                         ],
-                        value="1 - Home purchase (Mua nhà)",
-                        label="Mục đích vay (loan_purpose)",
+                        value="1 - Home purchase",
+                        label="Mục đích vay",
                     )
                 with gr.Row():
                     lien_status_input = gr.Dropdown(
                         choices=[
-                            "1 - First lien (Thế chấp ưu tiên 1)",
-                            "2 - Subordinate lien (Thế chấp thứ cấp)",
+                            "1 - First lien",
+                            "2 - Subordinate lien",
                         ],
-                        value="1 - First lien (Thế chấp ưu tiên 1)",
-                        label="Trạng thái thế chấp (lien_status)",
+                        value="1 - First lien",
+                        label="Trạng thái thế chấp",
                     )
                     occupancy_input = gr.Dropdown(
                         choices=[
-                            "1 - Principal residence (Nhà ở chính)",
-                            "2 - Second residence (Nhà thứ hai)",
-                            "3 - Investment property (Đầu tư)",
+                            "1 - Principal residence",
+                            "2 - Second residence",
+                            "3 - Investment property",
                         ],
-                        value="1 - Principal residence (Nhà ở chính)",
-                        label="Loại hình cư trú (occupancy_type)",
+                        value="1 - Principal residence",
+                        label="Loại hình cư trú ",
                     )
                 with gr.Row():
                     preapproval_input = gr.Dropdown(
@@ -383,7 +383,7 @@ def build_ui() -> gr.Blocks:
                             "2 - Preapproval not requested",
                         ],
                         value="2 - Preapproval not requested",
-                        label="Phê duyệt trước (preapproval)",
+                        label="Phê duyệt trước",
                     )
                     reverse_mortgage_input = gr.Dropdown(
                         choices=[
@@ -392,7 +392,7 @@ def build_ui() -> gr.Blocks:
                             "Exempt",
                         ],
                         value="2 - Not a reverse mortgage",
-                        label="Thế chấp ngược (reverse_mortgage)",
+                        label="Thế chấp ngược ",
                     )
                 with gr.Row():
                     open_end_loc_input = gr.Dropdown(
@@ -402,7 +402,7 @@ def build_ui() -> gr.Blocks:
                             "Exempt",
                         ],
                         value="2 - Not an open-end line of credit",
-                        label="Hạn mức tín dụng mở (open-end_line_of_credit)",
+                        label="Hạn mức tín dụng mở",
                     )
                     business_purpose_input = gr.Dropdown(
                         choices=[
@@ -411,7 +411,7 @@ def build_ui() -> gr.Blocks:
                             "Exempt",
                         ],
                         value="2 - Not primarily business/commercial",
-                        label="Mục đích thương mại (business_or_commercial_purpose)",
+                        label="Mục đích thương mại",
                     )
                 with gr.Row():
                     interest_only_input = gr.Dropdown(
@@ -421,7 +421,7 @@ def build_ui() -> gr.Blocks:
                             "Exempt",
                         ],
                         value="2 - No interest-only payments",
-                        label="Chỉ trả lãi (interest_only_payment)",
+                        label="Chỉ trả lãi",
                     )
                     balloon_payment_input = gr.Dropdown(
                         choices=[
@@ -430,14 +430,14 @@ def build_ui() -> gr.Blocks:
                             "Exempt",
                         ],
                         value="2 - No balloon payment",
-                        label="Thanh toán cuối kỳ lớn (balloon_payment)",
+                        label="Thanh toán cuối kỳ lớn",
                     )
 
-                predict_btn = gr.Button("🚀 Dự đoán", variant="primary", size="lg")
+                predict_btn = gr.Button(" Dự đoán", variant="primary", size="lg")
 
             # Cột phải: Chỉ hiển thị kết quả và tỷ lệ Accept / Denied
             with gr.Column(scale=4):
-                gr.Markdown("### 🎯 Kết quả Dự đoán")
+                gr.Markdown("###  Kết quả Dự đoán")
                 result_markdown = gr.Markdown()
                 prob_label = gr.Label(
                     num_top_classes=2,
