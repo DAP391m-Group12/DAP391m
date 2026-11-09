@@ -453,7 +453,7 @@ def check_publication(
     opener: Callable[..., Any] = urllib.request.urlopen,
     repository_url: str = REPOSITORY_URL,
 ) -> dict[str, Any]:
-    """Confirm the repository and every bundle are reachable without credentials."""
+    """Confirm the repository and every published download are anonymously reachable."""
     failures: dict[str, str] = {}
     if not manifest["bundles"]:
         failures["bundles"] = "no bundles declared"
@@ -474,4 +474,42 @@ def check_publication(
                     failures[bundle["bundle_id"]] = f"size mismatch: {total!r}"
         except OSError as exc:
             failures[bundle["bundle_id"]] = str(exc)
-    return {"status": "FAIL" if failures else "PASS", "bundle_count": len(manifest["bundles"]), "failures": failures}
+    direct_assets = [
+        asset
+        for asset in manifest["assets"]
+        if asset["distribution_classification"] == DIRECT_DOWNLOAD and asset["required"]
+    ]
+    for asset in direct_assets:
+        if asset["url"] is None:
+            failures[asset["asset_id"]] = "no public url"
+            continue
+        request = urllib.request.Request(asset["url"])
+        try:
+            with opener(request, timeout=60) as response:
+                final_url = response.geturl() if hasattr(response, "geturl") else asset["url"]
+                if not final_url.startswith("https://"):
+                    failures[asset["asset_id"]] = "redirected away from https"
+                    continue
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                if content_type.startswith("text/html"):
+                    failures[asset["asset_id"]] = "returned HTML instead of a file"
+                    continue
+                digest = hashlib.sha256()
+                size = 0
+                for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                    size += len(chunk)
+                    digest.update(chunk)
+                identity = (size, digest.hexdigest())
+                expected = (asset["byte_size"], asset["sha256"])
+                if identity != expected:
+                    failures[asset["asset_id"]] = (
+                        f"identity mismatch: size={size} sha256={identity[1]}"
+                    )
+        except OSError as exc:
+            failures[asset["asset_id"]] = str(exc)
+    return {
+        "status": "FAIL" if failures else "PASS",
+        "bundle_count": len(manifest["bundles"]),
+        "direct_asset_count": len(direct_assets),
+        "failures": failures,
+    }

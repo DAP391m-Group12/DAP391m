@@ -60,11 +60,11 @@ The following owner decisions define the current documentation-acceptance gate:
 | Item | Status | Evidence path | Limitation | Action required to raise status |
 |---:|---|---|---|---|
 | 0 General information | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 0; source commit `4bdfa0a5...`; submission commits `369fe494...` and `ed1afbf...` | formal bilingual title, semester, supervisor, roster, IDs, and contact data are not declared | add only authoritative project metadata |
-| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; source commit `4bdfa0a5...`; focused unit tests; 2026-11-08/09 qualified-host receipts in STATUS | the full qualified-host sequence through `reports` was executed, but it was not a clean clone and bundle download was not verified | run the pinned clean-clone route after the final tag and bundle links exist |
+| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; focused unit tests; 2026-11-08/09 qualified-host receipts; 2026-11-09 detached-worktree download receipts in STATUS | public download and asset verification passed in a detached worktree, while the qualified runtime sequence passed separately in place; the complete sequence was not executed from one clean clone | run the pinned complete clean-clone route after the final tag exists |
 | 2 Repository structure | `PASS` | `README.md`; `config/README.md`; `notebooks/dataset_b/README.md`; `src/dataset_b/README.md`; handbook router | none for documented Dataset B navigation | none |
 | 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; `environment_20261108T125329_497165Z.json`; STATUS | the 2026-11-08 host verified RTX 5050 Laptop GPU, 8,546,484,224 bytes, driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, cuDNN 92400, and finite CUDA operations in all three neural profiles; CPU model and RAM remain unrecorded | record CPU/RAM only from authoritative evidence; do not infer a lower compatibility floor |
 | 4 Environment installation | `PASS_WITH_LIMITATION` | five locks under `environments/reproducibility/`; `environment_20261108T125329_497165Z.json` | all five profiles installed and passed on the qualified host; this was an in-place handoff-host installation, not a clean-clone installation | rerun only as part of the final clean-clone gate after public links and final revision exist |
-| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; latest 654/654 receipt; final Phase C bundle verification record; release commits `1d38448...`, `0aa028a...`, and `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` | 654 retained assets and all 11 core ZIPs passed identity/member checks and were pushed through Git LFS; the default route now uses three locked direct-download CSVs and keeps raw HMDA as optional provenance, but the URL fields remain null, so anonymous distribution is unverified | supply the actual HTTPS URLs and verify anonymous download plus clean-clone installation |
+| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff`; Phase C verification; 2026-11-09 publication and detached-worktree receipts | 654 retained assets and all 11 core ZIPs passed identity/member checks and were pushed through Git LFS; all 14 public URLs are bound, and anonymous plus detached-worktree asset verification passed; raw HMDA remains optional provenance | retain the recorded links/hashes and complete the final clean-clone route |
 | 6 Config and hyperparameters | `PASS` | `config/dataset_b/catalog.yaml` and its eleven targets; accepted manifests | config status may intentionally lag accepted STATUS for frozen lineage | none; interpret frozen config with STATUS |
 | 7 Training | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 7; six accepted frozen RQ1 run IDs; three completed RQ4b development runs; STATUS | the inventory records only completed accepted runs and actual seed coverage; no fresh training occurred in this task and several future routes are internal/operator-only | none for current documentation acceptance; fresh training requires a separate task |
 | 8 Evaluation and inference | `PASS_WITH_LIMITATION` | `evaluate_20261108T125910_329422Z.json`; `compare_20261108T125939_503172Z.json`; `research_20261108T174830_904582Z.json`; STATUS | six frozen-checkpoint Test evaluations, 402 RQ1 rows, and every RQ2-RQ4 route passed; this was an in-place qualified-host run rather than a clean clone | retain the receipts and repeat only in the final clean-clone gate |
@@ -109,8 +109,8 @@ The same review reconciled RQ3 `runtime.csv` as volatile historical timing metad
 not a scientific reproduction input. The canonical file remains in its accepted run,
 while the core manifest and rebuilt RQ3 bundle exclude it. The manifest now records an
 included-inventory digest, source revision, and the excluded volatile path. Local
-asset verification passed 654/654; public bundle publication and anonymous download
-remain separate delivery gates.
+asset verification passed 654/654. Public bundle publication and anonymous download
+later passed on 2026-11-09, as recorded in STATUS.
 
 Later on 2026-11-03 the owner prohibited training or fitting any model and then set
 the acceptance criterion for the remaining work: the command-line route must work
@@ -130,7 +130,7 @@ complete clean-clone execution.
 
 | ID | Template section | Requirement | State | Condition to proceed |
 |---|---|---|---|---|
-| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` rebuilds the split CSVs, and later preprocessing runs inside the model routes | none |
+| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` obtains the three locked split CSVs directly, and later preprocessing runs inside the model routes | none |
 | TG-2 | 4 | Declare environment variables | written in `REPRODUCE.md` Section 4; no `.env.example` is needed | none |
 | TG-3 | 9 | Multi-seed results for RQ1 | declared as a limitation in `REPRODUCE.md` Sections 9 and 11 | new training needs a separate owner authorization |
 | TG-4 | 7 | Training command per model, outside the read-only navigation CLI | written in `REPRODUCE.md` Section 7.2 as `DOCUMENTED_NOT_RERUN`; LR and TabMmini have no command-line training route; a reduced run is not required because accepted fits are under 4 GPU hours | execution needs a separate owner authorization |
@@ -147,10 +147,10 @@ guide contains the required content; it is not a runtime result.
 
 | Checklist item | State | Evidence or gap |
 |---|---|---|
-| Commit or tag and links in Section 0 | commit met; tag and links not met | source commit `4bdfa0a5...` is pinned; the final tag and bundle links come from the owner at delivery |
+| Commit or tag and links in Section 0 | commits and public links met; tag not met | source and release commits are pinned; all 14 public links are bound; the final tag remains owner-supplied |
 | Quick Start from clone to expected numbers | met in content; clean run not executed | `REPRODUCE.md` Section 1.0 |
 | Exact version locks installable in a new environment | met; installed on the author machine only | `environments/reproducibility/` |
-| Public data and checkpoint links with checksums | checksums met; links not met | Sections 5.1, 5.2, 5.5; manifest |
+| Public data and checkpoint links with checksums | met for the 3 locked CSVs and 11 core bundles | Sections 5.1, 5.2, 5.5; manifest; retained detached-worktree receipts |
 | No absolute personal paths in code | met for `src`, `scripts`, and `tests`; the Colab profile config holds three `/content` paths | a search of tracked files on 2026-11-03 |
 | Fixed Test set not used for selection | met | `split_v1.json`; split and evaluation contract |
 | Seeds recorded; multi-seed mean and standard deviation | seeds met; multi-seed not met for RQ1, declared as a limitation | Section 9 |
@@ -161,8 +161,7 @@ guide contains the required content; it is not a runtime result.
 | Non-reproducible parts and AI tools declared | met | Sections 11 and 12 |
 
 Open items that only the owner can supply: formal titles, semester, supervisor, roster,
-student IDs, contact, code license, HMDA data terms, the final tag, and the 11 bundle
-links.
+student IDs, contact, code license, HMDA data terms, and the final tag.
 
 Other known gaps: CPU and RAM are not recorded; peak training VRAM is not recorded for
 the final fits; LR and TabMmini have no command-line training route; the Quick Start has
@@ -200,9 +199,9 @@ five objects passed and three notebook/authored-report objects were not regenera
 Phase C then rebuilt all 11 core ZIPs. All bundle identities and member inventories
 matched the prebuild manifest; RQ3 volatile runtime metadata and the optional RQ4 audit
 archive remained outside core. All 11 core LFS objects were pushed in release commit
-`1d38448...`; Phase C build/stage/commit/push is complete. Clean-clone and anonymous
-public-download verification remain unexecuted; bundle links and the three direct
-split-CSV URLs were not supplied.
+`1d38448...`; Phase C build/stage/commit/push is complete. Anonymous publication and
+detached-worktree `download`/`verify-assets` subsequently passed for all 14 bound URLs.
+The complete clean-clone end-to-end route remains unexecuted.
 
 This acceptance does not establish a successful clean-clone end-to-end run,
 notebook regeneration, or universal runtime reproducibility.

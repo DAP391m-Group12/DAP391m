@@ -797,6 +797,49 @@ def test_check_publication_rejects_an_empty_bundle_list() -> None:
     assert result["failures"] == {"bundles": "no bundles declared"}
 
 
+def test_check_publication_checks_direct_asset_identity() -> None:
+    url = "https://example.test/train.csv"
+    direct = make_asset(
+        "data/dataset_b/split_v1/train.csv",
+        b"train",
+        url=url,
+        distribution_classification="direct_download",
+        bundle_id=None,
+    )
+    manifest = make_manifest([direct], [])
+
+    def opener(request, timeout=None):
+        if "info/refs" in request.full_url:
+            return FakeResponse(b"")
+        return FakeResponse(b"train", headers={"Content-Type": "text/csv"})
+
+    result = check_publication(manifest, opener=opener)
+    assert result["direct_asset_count"] == 1
+    assert result["failures"] == {"bundles": "no bundles declared"}
+
+
+def test_check_publication_rejects_wrong_direct_asset_identity() -> None:
+    direct = make_asset(
+        "data/dataset_b/split_v1/train.csv",
+        b"train",
+        url="https://example.test/train.csv",
+        distribution_classification="direct_download",
+        bundle_id=None,
+    )
+    manifest = make_manifest([direct], [make_bundle("https://example.test/bundle.zip", b"zip")])
+
+    def opener(request, timeout=None):
+        if "info/refs" in request.full_url:
+            return FakeResponse(b"")
+        if request.headers.get("Range"):
+            return FakeResponse(b"z", 206, {"Content-Range": "bytes 0-0/3"})
+        return FakeResponse(b"wrong", headers={"Content-Type": "text/csv"})
+
+    result = check_publication(manifest, opener=opener)
+    assert result["status"] == "FAIL"
+    assert direct["asset_id"] in result["failures"]
+
+
 # Committed manifest
 
 
@@ -812,10 +855,15 @@ def test_committed_manifest_is_valid_and_covers_the_pinned_evidence() -> None:
     assert (raw["url"], raw["sha256"]) == (OFFICIAL_RAW_URL, RAW_PIN)
     assert raw["distribution_classification"] == "official_source"
     assert raw["required"] is False
+    split_urls = {
+        "train.csv": "https://drive.usercontent.google.com/download?id=1VDDEO3uSQUq7dWj-3ir6_g4bmGVoposo&export=download&confirm=t",
+        "validation.csv": "https://drive.usercontent.google.com/download?id=1t_qV893lbcrdlFDb22mCvadvNwGXzWTV&export=download&confirm=t",
+        "test.csv": "https://drive.usercontent.google.com/download?id=16z2rvUUoRzJx6n3wB61fiqeMjSDJfDGX&export=download&confirm=t",
+    }
     for filename in ("train.csv", "validation.csv", "test.csv"):
         split = by_destination[f"data/dataset_b/split_v1/{filename}"]
         assert split["distribution_classification"] == "direct_download"
-        assert split["url"] is None
+        assert split["url"] == split_urls[filename]
     for destination, pin in {**LINEAGE_PINS, **CHECKPOINT_PINS}.items():
         assert by_destination[destination]["sha256"] == pin
         assert by_destination[destination]["required"] is True

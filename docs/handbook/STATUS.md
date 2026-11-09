@@ -18,7 +18,7 @@ does not assign Claude a current implementer or verifier role.
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
 | CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
-| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed; post-push `git lfs fsck` passed. The default route now treats raw HMDA as optional provenance and the three locked CSVs as direct-download assets. Public URLs, anonymous download, and clean-clone verification remain separate gates. |
+| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed; post-push `git lfs fsck` passed. The default route treats raw HMDA as optional provenance and the three locked CSVs as direct-download assets. Public links and partial clean-worktree verification passed later on 2026-11-09; complete clean-clone verification remains separate. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
 
 ### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
@@ -108,18 +108,37 @@ Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` was pushed to
 Git LFS reported no pending objects, all 11 core objects were listed with their locked
 SHA-256 identities, and post-push `git lfs fsck` passed. Phase C build/stage/commit/push
 status is `COMPLETE`. Public bundle URLs and direct URLs for the three locked split
-CSVs are still absent; anonymous download and clean-clone installation have not run.
+CSVs were absent at Phase C completion; they were supplied and verified later on
+2026-11-09 as recorded below.
 
 The final manifest policy no longer derives the three locked splits from the live HMDA
 endpoint. Raw HMDA is optional historical provenance. Train, Validation, and Test are
 required `direct_download` assets with their locked byte sizes and SHA-256 identities;
 the downloader uses `.part`, verifies before atomic publication, skips an already
 verified destination, and fails without overwriting a mismatched destination. The
-three URL fields remain null because the prompt supplied placeholders rather than
-usable links. The full focused Phase B/asset/release/documentation suite passed 176
+three URL fields were null at implementation commit time because that prompt supplied
+placeholders rather than usable links. The full focused Phase B/asset/release/documentation suite passed 176
 tests after this change, `verify-assets` again passed 654/654, and the 11 bundle
 identities were unchanged. Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2`
 and final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` retain this evidence.
+
+### Non-CUDA public distribution gate — 2026-11-09
+
+The owner subsequently supplied 11 public bundle links and byte-preserving links for
+Train, Validation, and Test. The manifest binds all 14 URLs. Anonymous publication
+verification passed the repository endpoint, the expected remote sizes of all 11 ZIPs,
+and exact byte-size/SHA-256 checks for the three required direct-download CSVs.
+
+A detached worktree at remote source commit `63a7f41` plus the scoped publication
+checker change downloaded all three CSVs and all eleven bundles, extracted 647 members,
+and passed with 653/654 assets verified. Independent `verify-assets` returned the same
+PASS: no mismatch or required asset was missing; the single absent asset is optional
+raw-HMDA provenance. The retained receipts are
+`download_20261109T073546_424715Z.json` and
+`verify-assets_20261109T073632_076796Z.json`. No environment installation, training,
+fitting, inference, evaluation, comparison, research route, report generation, CUDA,
+or notebook execution ran in this detached worktree. This closes the anonymous
+publication and partial clean-worktree gates, not the complete clean-clone route.
 
 ### Current-host Phase B attempt — 2026-11-05
 
@@ -169,11 +188,13 @@ The core release policy now excludes this volatile timing file while preserving 
 historical artifact. The RQ3 bundle was rebuilt from its five deterministic members,
 and the manifest records source revision `4bdfa0a5aebe138982b75a055891c1321a4d5496`,
 an included-inventory digest, and the excluded path. Local `verify-assets` passed
-654/654 after reconciliation. This is local asset-integrity evidence only; it does not
-establish public download, current-source RQ execution, or clean-clone reproduction.
+654/654 after reconciliation. This local record by itself did not establish public
+download. The later non-CUDA public-distribution gate above established anonymous
+download and partial clean-worktree asset verification, but not complete clean-clone
+reproduction.
 
-The final tag, owner-supplied bundle links, anonymous download verification, and a
-qualified clean-host run remain delivery gates. Figures, text reports, and notebooks
+The final tag and a qualified complete clean-host run remain delivery gates. Figures,
+text reports, and notebooks
 were not regenerated; Figures 4 to 6 are absent from the repository and Figure 1 has
 no regeneration route. These limitations do not change the accepted frozen
 experimental runs recorded elsewhere in this register.

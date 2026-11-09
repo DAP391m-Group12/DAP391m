@@ -23,8 +23,10 @@ its assigned manifest inventory, RQ3 `runtime.csv` remained excluded, and the op
 RQ4 audit archive remained outside the core manifest. The verified local bundle total
 is 678,068,350 bytes. The 11 core LFS pointers and objects were pushed on branch
 `codex/cuda-phase-b-c-handoff` in release commit
-`1d384482f7b00f84c06cdecbb4abd13380da91a2`. Public download URLs in the reproduction
-manifest, anonymous download, and clean-clone installation remain unverified.
+`1d384482f7b00f84c06cdecbb4abd13380da91a2`. The 11 bundle URLs and three locked
+split-CSV URLs were subsequently bound and passed anonymous publication verification.
+A detached worktree also passed `download` and `verify-assets`; complete clean-clone
+installation and the remaining runtime stages were not executed there.
 
 The authoritative documentation acceptance register is
 [REPRODUCIBILITY_ACCEPTANCE](docs/handbook/REPRODUCIBILITY_ACCEPTANCE.md).
@@ -114,13 +116,16 @@ Execution status of this route on 2026-11-03: `environment`, `verify-assets`,
 `evaluate`, `compare`, and `reports` were each observed on the author machine from
 a working tree whose assets came from verified local bundles. `evaluate` ran the
 classical and neural models in separate invocations after a first full invocation
-failed on a defect that was then fixed. `download` stops with exit code 3 until the
-links are recorded. The bootstrap lines above and the complete sequence on a clean
+failed on a defect that was then fixed. At that time `download` stopped with exit code
+3 because the public links had not been recorded. The bootstrap lines above and the complete sequence on a clean
 machine were not executed; the observed commands used the author's Python 3.13.14 host
 rather than the host lock. `reports` currently exits 1 with `INCOMPLETE`, because
 Section 10 lists objects that were not run or regenerated. Parts of the CLI, including
 `evaluate`, `compare`, and `reports`, were edited after those observations and are
-covered since then by unit tests only; the commands were not repeated.
+covered since then by unit tests only; the commands were not repeated in that 2026-11-03
+observation. On 2026-11-09 the bound public links and a detached-worktree
+`download`/`verify-assets` run passed, without running an environment install,
+evaluation, comparison, research route, or reports in that worktree.
 
 Current-source status on the qualified handoff host: `evaluate`, `compare`,
 `research --route all`, and `reports` were repeated on 2026-11-08 through 2026-11-09.
@@ -468,10 +473,17 @@ objects were pushed to `codex/cuda-phase-b-c-handoff`; `git lfs fsck` passed bef
 and after the push. The default data route does not rebuild the splits from the live
 HMDA endpoint. It downloads the three locked CSVs to `.part` files and publishes them
 only after their declared size and SHA-256 pass; an existing correct file is skipped
-and an existing incorrect file is never overwritten. The owner has not yet supplied
-public bundle links or the three locked split-CSV URLs. Until then `download` exits 3,
-and no anonymous download through those links has been verified. To record bundle
-links, copy
+and an existing incorrect file is never overwritten. On 2026-11-09 the owner supplied
+the 11 public bundle links and three byte-preserving locked split links. Anonymous
+publication verification passed, including exact byte-size/SHA-256 checks for all
+three CSVs. A detached worktree then downloaded all 14 files, extracted 647 bundle
+members, and passed `download` plus independent `verify-assets` with 653/654 assets
+verified, no mismatch or required asset missing, and one optional provenance asset
+absent. The retained receipts are
+`reports/reproducibility/receipts/download_20261109T073546_424715Z.json` and
+`reports/reproducibility/receipts/verify-assets_20261109T073632_076796Z.json`.
+
+To record a replacement set of bundle links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
 to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
 anyone who has the link, and run:
@@ -827,9 +839,9 @@ profile-specific and its recorded runtime execution remains not started.
 
 ### 11.1 Current-source runtime verification gaps
 
-- The clean-clone sequence and download through the Drive links were not executed.
+- Anonymous publication and detached-worktree `download`/`verify-assets` passed on
+  2026-11-09. The complete clean-clone sequence was not executed.
 - The qualified-host route was run in place, not from a clean clone.
-- Public download through the missing direct split-CSV URLs was not verified.
 - Three notebook/authored-report objects remain `NOT_REGENERATED`; `reports` therefore
   returns the documented `INCOMPLETE` status.
 
@@ -869,7 +881,9 @@ not contain the five locked virtual environments.
 The owner records that the locked virtual environments are on another machine. The
 stopped current-host attempt is an environment-boundary record, not a checkpoint,
 metric, or scientific-result failure. `compare`, RQ2, `reports`, clean-clone execution,
-public download verification, final tagging, and release publication were not run.
+public download verification, final tagging, and release publication were not run in
+that 2026-11-05 attempt. Public download and partial clean-worktree verification passed
+later on 2026-11-09.
 Completion here applies only to diagnosis, recording, and closure of this technical
 issue; it does not state that the entire reproduction runtime is complete.
 

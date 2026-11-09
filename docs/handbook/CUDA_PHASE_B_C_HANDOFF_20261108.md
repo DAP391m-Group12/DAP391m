@@ -46,14 +46,14 @@ policies.
   and push did not run.
 - On 2026-11-09 Phase C rebuilt all 11 core ZIPs, totaling 678,068,350 bytes.
   Bundle size, SHA-256, and exact member inventory all matched the prebuild manifest.
-  RQ3 `runtime.csv` and the optional RQ4 audit archive remained outside core. Public
-  URLs, anonymous download, and clean-clone installation remain unverified. Release
+  RQ3 `runtime.csv` and the optional RQ4 audit archive remained outside core. Release
   commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all core LFS objects were
   pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed.
 - The final default data route treats raw HMDA as optional provenance and the three
   locked split CSVs as required direct downloads with atomic `.part` publication and
-  exact size/SHA-256 verification. Their URL fields remain null because no usable URLs
-  were supplied; the route therefore blocks rather than rebuilding from live raw data.
+  exact size/SHA-256 verification. All 14 URLs were later supplied and bound. Anonymous
+  publication plus detached-worktree `download`/`verify-assets` passed on 2026-11-09;
+  the complete clean-clone route remains separate.
   Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2` and manifest commit
   `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` record this final policy without
   changing any core ZIP identity.
@@ -175,6 +175,15 @@ upload, keep the commit and ZIPs unchanged, upload the exact ZIP bytes to the ch
 release store, fill `bundle_links.json`, bind the links, and run
 `maintainer-check-publication`. Do not commit credentials or private tokens.
 
+On 2026-11-09 the owner supplied the 11 bundle URLs and three locked split URLs.
+`maintainer-check-publication` passed, including full identity checks for the CSVs. A
+detached worktree then downloaded all bundles and split files; `download` and
+`verify-assets` both passed with 653/654 assets verified, no mismatch or required asset
+missing, and one optional provenance asset absent. Retain
+`download_20261109T073546_424715Z.json` and
+`verify-assets_20261109T073632_076796Z.json` as the non-CUDA public-distribution
+evidence. This did not rerun Phase B/C and is not a complete clean-clone claim.
+
 ## Evidence to return
 
 Return the following to the original host or commit it on the handoff branch:
@@ -186,5 +195,5 @@ Return the following to the original host or commit it on the handoff branch:
 - the Git commit and branch containing the LFS pointers;
 - any blocked or incomplete gate without changing its status wording.
 
-Completion of Phase B/C must remain separate from clean-clone and anonymous public
-download claims until those routes are actually executed.
+Phase B/C completion remains distinct from the later anonymous publication and partial
+clean-worktree PASS. The complete clean-clone route is still unexecuted.
