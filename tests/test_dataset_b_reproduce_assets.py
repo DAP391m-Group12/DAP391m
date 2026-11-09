@@ -37,7 +37,6 @@ from src.dataset_b.reproduce.release import (
     bind_split_links,
     CHECKPOINT_PINS,
     LINEAGE_PINS,
-    OFFICIAL_RAW_URL,
     RAW_PIN,
     bind_links,
     bind_release,
@@ -852,9 +851,11 @@ def test_committed_manifest_is_valid_and_covers_the_pinned_evidence() -> None:
         "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
     ]
     raw = by_destination["data/raw/state_NY_2024.csv"]
-    assert (raw["url"], raw["sha256"]) == (OFFICIAL_RAW_URL, RAW_PIN)
-    assert raw["distribution_classification"] == "official_source"
-    assert raw["required"] is False
+    # RQ3 reads derived_race from the locked raw file, so the clean-clone route needs it.
+    raw_url = "https://drive.usercontent.google.com/download?id=18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg&export=download&confirm=t"
+    assert (raw["url"], raw["sha256"]) == (raw_url, RAW_PIN)
+    assert raw["distribution_classification"] == "direct_download"
+    assert raw["required"] is True
     split_urls = {
         "train.csv": "https://drive.usercontent.google.com/download?id=1VDDEO3uSQUq7dWj-3ir6_g4bmGVoposo&export=download&confirm=t",
         "validation.csv": "https://drive.usercontent.google.com/download?id=1t_qV893lbcrdlFDb22mCvadvNwGXzWTV&export=download&confirm=t",

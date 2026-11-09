@@ -191,6 +191,43 @@ Expected retained-workspace results:
 On a clean clone without retained artifacts, `status` may be `INCOMPLETE` and
 `validate-artifacts` must fail on a missing locked file.
 
+### 1.3 Anonymous clean-clone acceptance run, 2026-11-09
+
+The qualified CUDA host ran the route from a new anonymous clone of
+`codex/cuda-phase-b-c-handoff` at commit `e470e12c49d558184ad44d26fd0e6186a0a58782`,
+with Git LFS smudge off and nothing copied from an earlier workspace. The sequence and
+results were:
+
+```powershell
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+python -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt
+python -m src.dataset_b.reproduce maintainer-check-publication   # PASS: 11 bundles, 4 direct assets
+python -m src.dataset_b.reproduce download                       # PASS: 654/654 verified
+python -m src.dataset_b.reproduce verify-assets                  # PASS: 654/654
+python -m src.dataset_b.reproduce environment --install          # PASS: 5/5; 677.6 s
+python -m src.dataset_b.reproduce environment                    # PASS: 5/5; finite CUDA in 3 profiles
+python -m src.dataset_b.reproduce evaluate --model all           # PASS: 6/6; 310.1 s; no fit
+python -m src.dataset_b.reproduce compare                        # PASS: 402/402
+python -m src.dataset_b.reproduce research --route rq3           # PASS: 5/5; 504.1 s
+python -m src.dataset_b.reproduce research --route rq4a          # PASS: 4/4
+python -m src.dataset_b.reproduce research --route rq4b          # PASS: 17/17
+```
+
+The host was Windows 11 10.0.26200, Intel Core i7-13650HX (14 cores, 20 threads),
+34,053,414,912 bytes of RAM, NVIDIA GeForce RTX 5050 Laptop GPU with 8,546,484,224
+bytes, driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, and cuDNN 92400. The RQ1
+Test values equal the table in Section 1.0.
+
+The first `research --route all` attempt stopped in RQ3 because raw HMDA was optional
+and absent. The owner then supplied a Google Drive copy of the locked raw file, and the
+manifest now binds it as a required direct download (Section 5.5). Run the four
+research routes one at a time: `research --route all` continues after a failed route.
+The owner closed execution during `research --route rq2` after three of six models,
+so RQ2 28/28 and the `reports` result rest on the 2026-11-08 receipts. Receipts, step
+log, and the template-structured acceptance record are in
+[clean_clone_acceptance_20261109.md](reports/reproducibility/receipts/clean_clone_acceptance_20261109.md).
+
 ## 2. Repository structure
 
 ```text
@@ -332,7 +369,7 @@ comparison only. The hash below remains the identity check. Data terms are in Se
 
 | Item                          | Role                                     | Local path                                               | Size (bytes) | SHA-256                                                              | Distribution                             |
 | ----------------------------- | ---------------------------------------- | -------------------------------------------------------- | -----------: | -------------------------------------------------------------------- | ---------------------------------------- |
-| HMDA NY 2024 CSV              | immutable raw source                     | `data/raw/state_NY_2024.csv`                           |  145,740,132 | `e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d` | official source; not in a project bundle |
+| HMDA NY 2024 CSV              | immutable raw source                     | `data/raw/state_NY_2024.csv`                           |  145,740,132 | `e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d` | required direct download (Google Drive copy of the locked export); not in a project bundle |
 | split v1 manifest             | ordered Train/Validation/Test membership | `artifacts/dataset_b/split_v1.json`                    |    7,919,382 | `66816ba47da64bfd85c010a90a14b9d80443a46d319258bf9fc1b3657f731596` | project bundle                           |
 | shared Test bootstrap indices | 1,000 locked paired-bootstrap replicates | `artifacts/dataset_b/rq1_test_bootstrap_indices.npz`   |  113,753,708 | `2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1` | project bundle                           |
 | bootstrap manifest            | index contract and lineage               | `artifacts/dataset_b/rq1_test_bootstrap_manifest.json` |          886 | `5544af4ebe91bfdf8c5b3b574fa2ef24f3da8c14827f353970cbe9d759e9d21e` | project bundle                           |
@@ -449,7 +486,7 @@ for LR and `full_train/model/preprocessor.joblib` for TabMmini.
 
 | Route                         | Assets | Handling by `download`                              |
 | ----------------------------- | -----: | ----------------------------------------------------- |
-| Historical HMDA source        |      1 | optional provenance; not fetched by the default route |
+| Locked HMDA raw source        |      1 | downloaded directly from Google Drive, then verified by size and SHA-256; RQ3 reads `derived_race` from it |
 | Locked split CSVs             |      3 | downloaded directly, then verified by size and SHA-256 |
 | Project bundles               |    647 | 11 ZIP files downloaded, verified, and extracted      |
 | Git-tracked reference reports |      3 | already present in the clone                          |
@@ -502,8 +539,13 @@ python -m src.dataset_b.reproduce maintainer-bind-split-links --links-file confi
 
 The locked identities are 23,631,341 bytes / `04575b2f...d692477` for Train,
 5,063,935 bytes / `cd233414...9d3cbb` for Validation, and 5,064,953 bytes /
-`5815caf7...2cae05` for Test. Raw HMDA remains historical provenance and is not a
-prerequisite for frozen-checkpoint evaluation.
+`5815caf7...2cae05` for Test. Raw HMDA is not needed for frozen-checkpoint evaluation,
+but RQ3 needs it for `derived_race`. Since 2026-11-09 the manifest binds the owner's
+Google Drive copy
+(`https://drive.google.com/file/d/18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg/view?usp=drive_link`)
+as a required direct download; an anonymous download returned 145,740,132 bytes with the
+locked SHA-256. `maintainer-build` still writes the raw asset as optional with the live
+endpoint, so a rebuilt manifest must re-apply this binding.
 
 ### 5.6 Optional RQ4 audit evidence
 
@@ -830,6 +872,8 @@ covers both.
 | Multi-seed RQ1 mean and standard deviation are absent                                                               | each of the six final RQ1 models has one final fit                                                                              | read Section 9; do not present fold variation as seed variation                                      |
 | Notebook contains saved error output                                                                                | it is not clean saved reporting evidence                                                                                        | inspect the named notebook as JSON; do not execute or resave without separate authorization          |
 | Historical `D:\Proj\...` or `/content/drive/MyDrive/...` path appears                                           | it is run-profile lineage, not a portable repository default                                                                    | interpret against the recorded runtime; use repository-relative catalog paths for current navigation |
+| RQ3 fails with `FileNotFoundError` for `data/raw/state_NY_2024.csv`                                             | the raw HMDA file was not downloaded; RQ3 reads `derived_race` from it                                                          | use a manifest that binds the raw file as a required direct download (Section 5.5), then rerun `download` |
+| `research --route all` keeps running after one route fails                                                        | the command runs every selected route before it reports                                                                         | run `--route rq3`, `rq4a`, `rq4b`, and `rq2` one at a time and check each result                     |
 
 The frozen configuration and manifests intentionally preserve historical
 absolute paths. Do not edit them for portability. Current navigation resolves
@@ -840,7 +884,9 @@ profile-specific and its recorded runtime execution remains not started.
 ### 11.1 Current-source runtime verification gaps
 
 - Anonymous publication and detached-worktree `download`/`verify-assets` passed on
-  2026-11-09. The complete clean-clone sequence was not executed.
+  2026-11-09. The anonymous clean-clone run in Section 1.3 then passed publication,
+  download, asset verification, all five environments, evaluation, comparison, RQ3,
+  RQ4a, and RQ4b. RQ2 and `reports` were not rerun in that clone.
 - The qualified-host route was run in place, not from a clean clone.
 - Three notebook/authored-report objects remain `NOT_REGENERATED`; `reports` therefore
   returns the documented `INCOMPLETE` status.

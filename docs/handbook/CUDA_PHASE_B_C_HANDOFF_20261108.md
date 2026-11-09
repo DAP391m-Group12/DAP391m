@@ -196,4 +196,16 @@ Return the following to the original host or commit it on the handoff branch:
 - any blocked or incomplete gate without changing its status wording.
 
 Phase B/C completion remains distinct from the later anonymous publication and partial
-clean-worktree PASS. The complete clean-clone route is still unexecuted.
+clean-worktree PASS.
+
+## Clean-clone acceptance run — 2026-11-09
+
+An anonymous clean clone of this branch at `e470e12c49d558184ad44d26fd0e6186a0a58782`
+ran on the qualified CUDA host. Publication, download, `verify-assets`, all five
+environments, `evaluate` 6/6, `compare` 402/402, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17
+passed with no training or fitting. RQ3 needed the raw HMDA file, which the manifest had
+marked optional; the owner's Google Drive copy matched the locked size and SHA-256 and
+is now bound as a required direct download. The owner closed execution during RQ2. The
+11 core ZIPs were not rebuilt or restaged. Receipts and the full record are under
+`reports/reproducibility/receipts/`, with the step log under
+`reports/reproducibility/logs/clean_clone_20261109/`.

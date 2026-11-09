@@ -19,6 +19,7 @@ does not assign Claude a current implementer or verifier role.
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
 | CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
 | CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed; post-push `git lfs fsck` passed. The default route treats raw HMDA as optional provenance and the three locked CSVs as direct-download assets. Public links and partial clean-worktree verification passed later on 2026-11-09; complete clean-clone verification remains separate. |
+| Anonymous clean-clone acceptance run, 2026-11-09 | `PARTIAL` | From a new anonymous clone at `e470e12c49d558184ad44d26fd0e6186a0a58782`: publication, download, `verify-assets` 654/654, five environments, `evaluate` 6/6 with no fit, `compare` 402/402, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17 passed. Raw HMDA was bound as a required Google Drive direct download after RQ3 stopped on the missing file. The owner closed execution during RQ2 after three of six models; RQ2 and `reports` were not rerun in the clone. Record: `reports/reproducibility/receipts/clean_clone_acceptance_20261109.md`. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
 
 ### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
@@ -121,6 +122,47 @@ placeholders rather than usable links. The full focused Phase B/asset/release/do
 tests after this change, `verify-assets` again passed 654/654, and the 11 bundle
 identities were unchanged. Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2`
 and final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` retain this evidence.
+
+### Anonymous clean-clone acceptance run — 2026-11-09
+
+A new directory outside every existing worktree received an anonymous clone of
+`codex/cuda-phase-b-c-handoff` (credential helper off, Git LFS smudge off), checked out
+at `e470e12c49d558184ad44d26fd0e6186a0a58782`. No data, artifact, output, checkpoint,
+or environment was copied from another workspace. The host was Windows 11 10.0.26200,
+Intel Core i7-13650HX, 34,053,414,912 bytes of RAM, NVIDIA GeForce RTX 5050 Laptop GPU
+(8,546,484,224 bytes), driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, cuDNN 92400.
+
+`maintainer-check-publication` passed (11 bundles, 3 direct assets). `download` fetched
+all 14 public files, extracted 647 members, and verified 653/654 with the optional raw
+HMDA absent (`download_20261109T080608_979875Z.json`); `verify-assets` matched
+(`verify-assets_20261109T080611_501473Z.json`). `environment --install` created all five
+profiles in 677.6 s and `environment` passed 5/5 with finite CUDA operations in the three
+neural profiles (`environment_20261109T081829_471874Z.json`). `evaluate --model all`
+passed 6/6 with zero model and preprocessing fits; the neural models used `cuda:0`
+with peak allocations of 35,195,392, 52,161,536, and 86,641,664 bytes
+(`evaluate_20261109T082407_179201Z.json`). `compare` passed 402/402 under the unchanged
+numerical policy (`compare_20261109T082435_073547Z.json`).
+
+The first `research --route all` stopped in RQ3 with `FileNotFoundError` for
+`data/raw/state_NY_2024.csv`: RQ3 reads `derived_race` from the raw file, but the
+manifest classified raw HMDA as optional. The route continued into RQ4a, RQ4b, and RQ2
+and was stopped. `verify-assets` then still passed 653/654, so no frozen asset changed.
+The owner supplied a Google Drive copy; an anonymous download matched 145,740,132 bytes
+and the locked SHA-256. With owner approval the manifest now records `hmda_ny_2024_raw`
+as a required `direct_download` from that link, and the committed-manifest test asserts
+it. Publication then passed with four direct assets, `download` fetched the raw file,
+and `verify-assets` passed 654/654 (`verify-assets_20261109T100857_361857Z.json`).
+
+Run one route at a time, RQ3 passed 5/5 (`research_20261109T101841_240460Z.json`), RQ4a
+4/4 without fitting `ThresholdOptimizer` (`research_20261109T101853_337649Z.json`), and
+RQ4b 17/17 with Gate C read only (`research_20261109T102246_041527Z.json`). The owner
+closed all execution while RQ2 was running, after LR, RF, and XGBoost passed their
+per-model checks; no RQ2 comparison receipt exists from the clone. `reports`, Phase C
+ZIP/LFS re-verification, and a final tag did not run in this acceptance. The focused
+reproduction and documentation suite passed 229 tests; the one failure,
+`test_removed_empty_scaffolds_remain_absent`, predates this work because `src/api/main.py`
+is tracked. No training, fitting, threshold or lambda selection, or bootstrap-index
+replacement occurred.
 
 ### Non-CUDA public distribution gate — 2026-11-09
 

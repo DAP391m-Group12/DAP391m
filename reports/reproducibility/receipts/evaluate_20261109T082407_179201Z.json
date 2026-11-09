@@ -1,0 +1,45 @@
+{
+  "command": "evaluate",
+  "created_at_utc": "2026-11-09T08:24:07.179201+00:00",
+  "failed": [],
+  "manifest_sha256": "19d8f2c293103cb0353bc78fbc4de32f100911260cdef3fcbf9d23e0ac6bc5ff",
+  "models": {
+    "logistic_regression": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/logistic_regression.log",
+      "profile": "classical_cpu",
+      "status": "EVALUATED"
+    },
+    "plain_mlp": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/plain_mlp.log",
+      "profile": "plain_mlp_cuda",
+      "status": "EVALUATED"
+    },
+    "random_forest": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/random_forest.log",
+      "profile": "classical_cpu",
+      "status": "EVALUATED"
+    },
+    "realmlp": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/realmlp.log",
+      "profile": "realmlp_cuda",
+      "status": "EVALUATED"
+    },
+    "tabmmini": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/tabmmini.log",
+      "profile": "tabmmini_cuda",
+      "status": "EVALUATED"
+    },
+    "xgboost": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/rq1/xgboost.log",
+      "profile": "classical_cpu",
+      "status": "EVALUATED"
+    }
+  },
+  "status": "PASS"
+}

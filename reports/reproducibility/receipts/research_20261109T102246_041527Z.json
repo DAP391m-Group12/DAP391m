@@ -1,0 +1,15 @@
+{
+  "command": "research",
+  "created_at_utc": "2026-11-09T10:22:46.041527+00:00",
+  "failed": [],
+  "manifest_sha256": "28ee35baa4f98561250cd2b3437d2aaa8d7a81f339fa70bc39a74b553ac62deb",
+  "routes": {
+    "rq4b": {
+      "exit_code": 0,
+      "log": "reports/reproducibility/research/rq4b.log",
+      "problems": [],
+      "status": "PASS"
+    }
+  },
+  "status": "PASS"
+}

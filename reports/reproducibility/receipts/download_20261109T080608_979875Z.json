@@ -1,0 +1,29 @@
+{
+  "asset_count": 654,
+  "command": "download",
+  "created_at_utc": "2026-11-09T08:06:08.979875+00:00",
+  "derived_count": 0,
+  "downloaded": [
+    "split_v1:train.csv",
+    "split_v1:validation.csv",
+    "split_v1:test.csv",
+    "dataset_b_core_part01",
+    "dataset_b_lr_part01",
+    "dataset_b_plain_mlp_part01",
+    "dataset_b_realmlp_part01",
+    "dataset_b_rf_part01",
+    "dataset_b_rq2_part01",
+    "dataset_b_rq3_part01",
+    "dataset_b_rq4a_part01",
+    "dataset_b_rq4b_part01",
+    "dataset_b_tabmmini_part01",
+    "dataset_b_xgboost_part01"
+  ],
+  "extracted_count": 647,
+  "manifest_sha256": "19d8f2c293103cb0353bc78fbc4de32f100911260cdef3fcbf9d23e0ac6bc5ff",
+  "mismatch": [],
+  "missing_optional_count": 1,
+  "missing_required": [],
+  "status": "PASS",
+  "verified_count": 653
+}
