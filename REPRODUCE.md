@@ -94,13 +94,23 @@ Execution status of this route on 2026-11-03: `environment`, `verify-assets`,
 `evaluate`, `compare`, and `reports` were each observed on the author machine from
 a working tree whose assets came from verified local bundles. `evaluate` ran the
 classical and neural models in separate invocations after a first full invocation
-failed on a defect that was then fixed. `download` stops with exit code 3 until the
-links are recorded. The bootstrap lines above and the complete sequence on a clean
+failed on a defect that was then fixed. The bootstrap lines above and the complete sequence on a clean
 machine were not executed; the observed commands used the author's Python 3.13.14 host
 rather than the host lock. `reports` currently exits 1 with `INCOMPLETE`, because
 Section 10 lists objects that were not run or regenerated. Parts of the CLI, including
 `evaluate`, `compare`, and `reports`, were edited after those observations and are
 covered since then by unit tests only; the commands were not repeated.
+
+Non-CUDA publication preparation on 2026-11-09 recorded all 14 download URLs. After
+correcting the RQ2 URL and replacing the three split links with byte-preserving files,
+anonymous publication verification passed: the repository endpoint and all eleven ZIP
+URLs passed reachability and expected remote-size checks, and Train, Validation, and
+Test matched their locked byte sizes and SHA-256 values. A detached temporary worktree
+then completed `download` and `verify-assets`: 653 of 654 assets were verified, with
+no mismatch or required asset missing and one optional provenance asset absent. This
+closes the public-link and partial clean-worktree gates, not the complete Quick Start.
+No environment, model, CUDA, evaluation, comparison, research, or report command was
+run in that worktree. The preparation changes remain uncommitted and unpushed.
 
 Exit codes: 0 PASS; 1 FAIL or INCOMPLETE; 2 usage error; 3 gate BLOCKED. The stages
 above and the RQ routes also run in order through
@@ -412,12 +422,12 @@ for LR and `full_train/model/preprocessor.joblib` for TabMmini.
 ### 5.5 Obtaining the assets
 
 [`asset_manifest.json`](config/dataset_b/reproducibility/asset_manifest.json) declares
-654 assets, 635 of them required, each with a size, SHA-256, role, and accepted run:
+654 assets, 634 of them required, each with a size, SHA-256, role, and accepted run:
 
 | Route                         | Assets | Handling by `download`                              |
 | ----------------------------- | -----: | ----------------------------------------------------- |
-| Official HMDA source          |      1 | downloaded from the official URL                      |
-| Derived split CSVs            |      3 | rebuilt from raw data and the retained split manifest |
+| Historical HMDA provenance    |      1 | optional; not downloaded by the default frozen route  |
+| Locked split CSVs             |      3 | downloaded independently and hash-verified            |
 | Project bundles               |    647 | 11 ZIP files downloaded, verified, and extracted      |
 | Git-tracked reference reports |      3 | already present in the clone                          |
 
@@ -430,11 +440,17 @@ from the core release inventory. It records non-deterministic wall-clock timings
 reproduction route. The manifest records this exclusion under `source_provenance`,
 along with the source revision and a digest of the included source inventory.
 
-**Status:** the owner distributes the bundles through Google Drive and will add the
-links. Until then `download` exits 3, and no download through those links has been
-verified. To record them, copy
+**Status, 2026-11-09:** the 3 CSV and 11 bundle links are bound in the manifest and
+anonymous publication verification is `PASS`. Train, Validation, and Test match their
+locked byte sizes and SHA-256 values. The anonymous repository endpoint and all eleven
+ZIP URLs pass reachability and expected remote-size checks. A detached temporary
+worktree subsequently downloaded the eleven ZIPs and verified their extracted assets;
+full remote ZIP integrity is therefore covered by that clean-download evidence rather
+than by the publication check alone.
+
+To bind a corrected set of links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
-to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
+to `bundle_links.json` in the same folder, fill in the 3 split and 11 bundle links, share each file with
 anyone who has the link, and run:
 
 ```powershell
@@ -775,7 +791,10 @@ profile-specific and its recorded runtime execution remains not started.
 
 ### 11.1 Current-source runtime verification gaps
 
-- The clean-clone sequence and download through the Drive links were not executed.
+- The complete clean-clone sequence was not executed.
+- The 2026-11-09 partial clean-worktree `download` and `verify-assets` gates passed with
+  653/654 assets verified, no mismatch or required asset missing, and one optional
+  provenance asset absent. This was not the complete clean-clone sequence.
 - The RQ2 route was not run.
 - `evaluate`, `compare`, and `reports` were edited after their last observed run and
   were not repeated from the pinned current source.
@@ -817,8 +836,9 @@ not contain the five locked virtual environments.
 
 The owner records that the locked virtual environments are on another machine. The
 stopped current-host attempt is an environment-boundary record, not a checkpoint,
-metric, or scientific-result failure. `compare`, RQ2, `reports`, clean-clone execution,
-public download verification, final tagging, and release publication were not run.
+metric, or scientific-result failure. `compare`, RQ2, `reports`, complete clean-clone
+execution, final tagging, and release publication were not run. Public download and
+partial clean-worktree verification passed later on 2026-11-09.
 Completion here applies only to diagnosis, recording, and closure of this technical
 issue; it does not state that the entire reproduction runtime is complete.
 

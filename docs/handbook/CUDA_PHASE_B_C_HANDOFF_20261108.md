@@ -27,8 +27,16 @@ policies.
 - The optional RQ4 audit archive also exists and matches its separate manifest:
   `dataset_b_rq4_audit_evidence_20261105.zip`, 1,830,814 bytes,
   SHA-256 `f8bb82202ec167c51e16d3299b808d0af014d76dce67d2c38ac20200dbb6a40b`.
-- The other ten core ZIP bundles are not present in this workspace. Every source
-  member named by the current manifest was present when checked on 2026-11-08.
+- All eleven core ZIP bundles are present locally. On 2026-11-09 each passed its
+  manifest byte size, SHA-256, and member inventory; their total is 678,068,350 bytes.
+- The three locked split URLs and eleven bundle URLs are bound. Anonymous publication
+  verification passes: all three split files match their exact locked identities, and
+  the repository endpoint plus all eleven ZIP URLs pass reachability and expected
+  remote-size checks.
+- A partial non-CUDA clean-worktree `download` and independent `verify-assets` both
+  pass with 653/654 assets verified, no mismatch or required asset missing, and one
+  optional provenance asset absent. CUDA Phase B and the full clean-clone route remain
+  pending.
 
 ## Branch and transfer
 
@@ -64,6 +72,9 @@ handoff. Do not copy or inspect local `scratch/` as part of the core route.
 - Keep `scratch/` and `refactor/` local and out of commits.
 
 ## Phase B sequence
+
+This sequence remains pending. The 2026-11-09 non-CUDA preparation did not run any
+command in this section.
 
 Run from the repository root. Use `--env-root` consistently if the five profiles
 are not under `.venv-repro/`.
@@ -127,6 +138,10 @@ stop and retain both the old manifest and observed identity. Do not silently upd
 an accepted identity merely to make the check pass.
 
 ## Publishing the remaining bundles
+
+The current three CSV and eleven core bundle links passed anonymous publication and
+partial clean-worktree checks on 2026-11-09. Preserve those exact links and identities.
+This evidence does not replace CUDA Phase B or the complete clean-clone route.
 
 The release ZIP paths are configured for Git LFS. After Phase B and Phase C pass:
 

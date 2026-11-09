@@ -30,10 +30,13 @@ ROLES = frozenset(
     }
 )
 OFFICIAL_SOURCE = "official_source"
+DIRECT_DOWNLOAD = "direct_download"
 DERIVED_FROM_RAW = "derived_from_raw"
 PROJECT_BUNDLE = "project_bundle"
 GIT_TRACKED = "git_tracked"
-DISTRIBUTIONS = frozenset({OFFICIAL_SOURCE, DERIVED_FROM_RAW, PROJECT_BUNDLE, GIT_TRACKED})
+DISTRIBUTIONS = frozenset(
+    {OFFICIAL_SOURCE, DIRECT_DOWNLOAD, DERIVED_FROM_RAW, PROJECT_BUNDLE, GIT_TRACKED}
+)
 HASH_MODES = frozenset({"bytes", "text_lf"})
 RQ1_SCOPES = frozenset({"lr", "rf", "xgboost", "plain_mlp", "realmlp", "tabmmini"})
 ASSET_FIELDS = frozenset(
@@ -157,6 +160,9 @@ def _asset_errors(asset: Any, bundles: Mapping[str, Mapping[str, Any]]) -> list[
     elif distribution == OFFICIAL_SOURCE:
         if not asset["url"] or asset["bundle_id"] is not None:
             errors.append(f"{owner}: official source needs a url and no bundle")
+    elif distribution == DIRECT_DOWNLOAD:
+        if asset["bundle_id"] is not None:
+            errors.append(f"{owner}: direct download must not name a bundle")
     elif distribution == PROJECT_BUNDLE:
         bundle = bundles.get(asset["bundle_id"])
         if bundle is None:
@@ -257,6 +263,6 @@ def unpublished_assets(assets: Iterable[Mapping[str, Any]]) -> list[str]:
         asset["asset_id"]
         for asset in assets
         if asset["required"]
-        and asset["distribution_classification"] == PROJECT_BUNDLE
+        and asset["distribution_classification"] in {PROJECT_BUNDLE, DIRECT_DOWNLOAD}
         and asset["url"] is None
     ]

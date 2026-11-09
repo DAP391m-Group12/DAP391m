@@ -60,11 +60,11 @@ The following owner decisions define the current documentation-acceptance gate:
 | Item | Status | Evidence path | Limitation | Action required to raise status |
 |---:|---|---|---|---|
 | 0 General information | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 0; source commit `4bdfa0a5...`; submission commits `369fe494...` and `ed1afbf...` | formal bilingual title, semester, supervisor, roster, IDs, and contact data are not declared | add only authoritative project metadata |
-| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; source commit `4bdfa0a5...`; focused unit tests; recorded 2026-11-03 author-machine observations in STATUS | the route evaluates frozen checkpoints and compares headline metrics, but the complete clean-clone sequence was not executed, bundle download was not verified, and `evaluate`, `compare`, and `reports` were edited after their last observed execution | run the pinned clean-clone route after the final tag and bundle links exist |
+| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; focused unit tests; recorded 2026-11-03 author-machine observations and 2026-11-09 partial clean-worktree PASS in STATUS | public download and asset verification passed in a detached worktree, but environment, evaluation, comparison, research, and reports were not run there | run the pinned complete clean-clone route on a qualified host |
 | 2 Repository structure | `PASS` | `README.md`; `config/README.md`; `notebooks/dataset_b/README.md`; `src/dataset_b/README.md`; handbook router | none for documented Dataset B navigation | none |
 | 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; STATUS | RTX 5050 Laptop GPU, nominal 8 GB device memory where evidenced, and CUDA build 13.0 are recorded; CPU model, RAM, driver, cuDNN, and some exact OS/Python fields remain unrecorded | none for current acceptance; do not rerun CUDA smoke solely to fill fields |
 | 4 Environment installation | `PASS_WITH_LIMITATION` | `environments/reproducibility/`; `requirements.txt`; `pyproject.toml`; recorded 2026-11-03 author-machine installation | the five profiles were installed on the author machine, but no clean-host resolver/install sequence was executed; CPU and GPU profiles differ and no lower compatibility floor is inferred | run the pinned install route on a clean qualified host |
-| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests | raw data and retained artifacts are not Git-distributed; upstream terms are not declared in repository evidence | publish an authorized artifact/data handoff with checksums and terms |
+| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; 2026-11-09 public-link and partial clean-worktree checks in STATUS | raw HMDA is optional provenance and upstream terms are not declared in repository evidence | none for the locked public split and bundle identities; retain the recorded links and hashes |
 | 6 Config and hyperparameters | `PASS` | `config/dataset_b/catalog.yaml` and its eleven targets; accepted manifests | config status may intentionally lag accepted STATUS for frozen lineage | none; interpret frozen config with STATUS |
 | 7 Training | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 7; six accepted frozen RQ1 run IDs; three completed RQ4b development runs; STATUS | the inventory records only completed accepted runs and actual seed coverage; no fresh training occurred in this task and several future routes are internal/operator-only | none for current documentation acceptance; fresh training requires a separate task |
 | 8 Evaluation and inference | `DOCUMENTED_NOT_RERUN` | `REPRODUCE.md` Sections 1 and 8; split/evaluation contract; accepted Test manifests; STATUS | historical checkpoint evaluation was observed before the final source edits, but the pinned current source was not rerun end to end; RQ2 was not run | rerun only the pinned frozen-checkpoint route on a qualified host; no training or fitting |
@@ -91,11 +91,11 @@ Documentation acceptance requires all of the following:
 
 ## Asset distribution decision
 
-On 2026-11-03 the owner decided that the project bundles will be distributed through
-Google Drive links, which the owner will add later. On that basis the owner accepted
+On 2026-11-03 the owner decided that the project bundles would be distributed through
+Google Drive links, which were not yet available at that date. On that basis the owner accepted
 gate G1 and authorized work on the following gates. This is an owner decision, not
-download evidence: the links are not yet recorded, anonymous download through them is
-not verified, and anonymous repository access returned HTTP 401 when last checked. The
+download evidence: at that date the links were not recorded, anonymous download through them was
+not verified, and anonymous repository access returned HTTP 401. The
 clean-clone gate needs the links recorded and every download hash-verified.
 
 On 2026-11-05 the owner separately authorized preservation of selected RQ4 historical
@@ -111,6 +111,18 @@ while the core manifest and rebuilt RQ3 bundle exclude it. The manifest now reco
 included-inventory digest, source revision, and the excluded volatile path. Local
 asset verification passed 654/654; public bundle publication and anonymous download
 remain separate delivery gates.
+
+On 2026-11-09 the owner supplied byte-preserving links for the three locked split CSVs
+and links for eleven core ZIPs. The manifest treats the CSVs as independent direct
+downloads and retains raw HMDA only as optional historical provenance. Implementation
+tests passed 119/119 and all eleven local ZIP identities and member inventories passed,
+totaling 678,068,350 bytes. Anonymous publication verification passed for the
+repository endpoint, all three exact split identities, and the expected remote sizes
+of all eleven ZIPs. A detached temporary worktree then downloaded the CSVs and ZIPs;
+`download` and `verify-assets` both passed with 653/654 assets verified, no mismatch or
+required asset missing, and one optional provenance asset absent. This closes the
+public-download and partial clean-worktree gates, not CUDA Phase B or the full
+clean-clone route.
 
 Later on 2026-11-03 the owner prohibited training or fitting any model and then set
 the acceptance criterion for the remaining work: the command-line route must work
@@ -130,7 +142,7 @@ complete clean-clone execution.
 
 | ID | Template section | Requirement | State | Condition to proceed |
 |---|---|---|---|---|
-| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` rebuilds the split CSVs, and later preprocessing runs inside the model routes | none |
+| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` obtained the three locked split CSVs directly in the partial clean-worktree PASS, and later preprocessing runs inside the model routes | none for the data-download gate; model-route execution remains separate |
 | TG-2 | 4 | Declare environment variables | written in `REPRODUCE.md` Section 4; no `.env.example` is needed | none |
 | TG-3 | 9 | Multi-seed results for RQ1 | declared as a limitation in `REPRODUCE.md` Sections 9 and 11 | new training needs a separate owner authorization |
 | TG-4 | 7 | Training command per model, outside the read-only navigation CLI | written in `REPRODUCE.md` Section 7.2 as `DOCUMENTED_NOT_RERUN`; LR and TabMmini have no command-line training route; a reduced run is not required because accepted fits are under 4 GPU hours | execution needs a separate owner authorization |
@@ -150,7 +162,7 @@ guide contains the required content; it is not a runtime result.
 | Commit or tag and links in Section 0 | commit met; tag and links not met | source commit `4bdfa0a5...` is pinned; the final tag and bundle links come from the owner at delivery |
 | Quick Start from clone to expected numbers | met in content; clean run not executed | `REPRODUCE.md` Section 1.0 |
 | Exact version locks installable in a new environment | met; installed on the author machine only | `environments/reproducibility/` |
-| Public data and checkpoint links with checksums | checksums met; links not met | Sections 5.1, 5.2, 5.5; manifest |
+| Public data and checkpoint links with checksums | met for the 3 locked CSVs and 11 core bundles | Sections 5.1, 5.2, 5.5; manifest; retained partial clean-worktree receipts |
 | No absolute personal paths in code | met for `src`, `scripts`, and `tests`; the Colab profile config holds three `/content` paths | a search of tracked files on 2026-11-03 |
 | Fixed Test set not used for selection | met | `split_v1.json`; split and evaluation contract |
 | Seeds recorded; multi-seed mean and standard deviation | seeds met; multi-seed not met for RQ1, declared as a limitation | Section 9 |
@@ -192,12 +204,11 @@ machine; and the owner stopped the current Phase B and Phase C attempt. No check
 or metric comparison failed in this attempt.
 
 The current machine has no CUDA and does not contain the locked virtual environments;
-the owner records that those environments are on another machine. This acceptance does
-not establish a successful clean-clone run, current-source end-to-end execution,
-notebook regeneration, or universal runtime reproducibility. Public download
-verification was also not completed. Completion applies only to diagnosis, recording,
-and closure of the current host/environment issue. It does not mark the entire
-reproduction runtime complete.
+the owner records that those environments are on another machine. Public publication
+and partial clean-worktree download/asset verification passed on 2026-11-09. This
+acceptance does not establish a successful clean-clone run, current-source end-to-end
+execution, notebook regeneration, or universal runtime reproducibility. Completion of
+the public-download gate does not mark the entire reproduction runtime complete.
 
 This conclusion is a technical issue-resolution record. It is not a training result,
 a new model evaluation result, a current-host GPU compatibility result, or a universal

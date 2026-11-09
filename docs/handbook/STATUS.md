@@ -1,6 +1,6 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-11-05
+**Reconciled:** 2026-11-09
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
 
 ## Current Dataset B reproduction route — 2026-11-03
@@ -18,6 +18,38 @@ does not assign Claude a current implementer or verifier role.
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
+
+### Non-CUDA publication preparation — 2026-11-09
+
+The direct-download implementation for the three locked split CSVs is present in the
+working tree. Raw HMDA remains an optional historical-provenance asset and is not a
+default frozen-checkpoint-route prerequisite. The downloader uses a `.part` file,
+checks exact byte size and SHA-256, atomically publishes only a verified file, skips an
+already verified destination, and refuses to overwrite a mismatched destination.
+Focused asset, release/link-binding, and documentation tests passed 119/119 on the
+current host after the final publication-status update.
+
+All eleven local core ZIPs passed filename, byte-size, SHA-256, and member-inventory
+checks; their manifest total is 678,068,350 bytes. RQ3 `runtime.csv` remains excluded,
+and the optional RQ4 audit archive remains outside the core manifest.
+
+Anonymous publication verification is `PASS`. After the corrected RQ2 link and three
+byte-preserving split links were bound, the anonymous repository endpoint and all
+eleven ZIP URLs passed reachability and expected remote-size checks. Train, Validation,
+and Test matched their locked byte sizes and SHA-256 values. The publication check
+alone does not hash the complete remote ZIP bodies.
+
+A detached temporary worktree at source commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0`
+with the current downloader and manifest changes ran the allowed non-CUDA route.
+`download` fetched the three locked CSVs and all eleven ZIPs, extracted 647 members,
+and passed with 653/654 assets verified, no mismatch or required asset missing, and one
+optional provenance asset absent. Independent `verify-assets` returned the same PASS.
+The retained receipts are
+`reports/reproducibility/receipts/download_20261109T071729_398185Z.json` and
+`reports/reproducibility/receipts/verify-assets_20261109T071743_149615Z.json`.
+This closes the public publication and partial clean-worktree gates, not the complete
+clean-clone reproduction. CUDA Phase B and the full clean-clone route remain pending.
+No training, fitting, neural inference, or CUDA command ran.
 
 ### Current-host Phase B attempt — 2026-11-05
 

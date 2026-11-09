@@ -15,7 +15,7 @@ from typing import Any, Callable, Iterator, Mapping
 
 from .assets import extract_bundle
 from .manifest import (
-    DERIVED_FROM_RAW,
+    DIRECT_DOWNLOAD,
     GIT_TRACKED,
     MANIFEST_RELATIVE_PATH,
     OFFICIAL_SOURCE,
@@ -34,7 +34,7 @@ _ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
 
 OFFICIAL_RAW_URL = "https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024"
 RAW_ASSET = "data/raw/state_NY_2024.csv"
-DERIVED_SPLIT_ASSETS = (
+LOCKED_SPLIT_ASSETS = (
     "data/dataset_b/split_v1/train.csv",
     "data/dataset_b/split_v1/validation.csv",
     "data/dataset_b/split_v1/test.csv",
@@ -230,19 +230,20 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
             scope="data",
             destination=RAW_ASSET,
             identity=file_identity(source_root / RAW_ASSET),
+            required=False,
             url=OFFICIAL_RAW_URL,
             distribution=OFFICIAL_SOURCE,
             role="raw_source",
         )
     ]
-    for destination in DERIVED_SPLIT_ASSETS:
+    for destination in LOCKED_SPLIT_ASSETS:
         assets.append(
             _asset(
                 asset_id=f"split_v1:{PurePosixPath(destination).name}",
                 scope="data",
                 destination=destination,
                 identity=file_identity(source_root / destination),
-                distribution=DERIVED_FROM_RAW,
+                distribution=DIRECT_DOWNLOAD,
                 role="derived_split",
             )
         )
@@ -394,10 +395,15 @@ def install_local_bundles(manifest: Mapping[str, Any], project_root: Path, direc
 
 
 def direct_download_url(url: str) -> str:
-    """Turn a Google Drive share link into its direct-download form."""
+    """Turn Google Drive and Sheets share links into direct-download forms."""
     if not url.startswith("https://"):
-        raise ReproduceError(f"Bundle link must be https: {url}")
+        raise ReproduceError(f"Download link must be https: {url}")
     host = urllib.parse.urlsplit(url).netloc.lower()
+    if host == "docs.google.com":
+        match = re.search(r"/spreadsheets/d/([A-Za-z0-9_-]+)", url)
+        if match is None:
+            raise ReproduceError(f"Google Sheets link has no spreadsheet id: {url}")
+        return f"https://docs.google.com/spreadsheets/d/{match.group(1)}/export?format=csv"
     if host not in {"drive.google.com", "drive.usercontent.google.com"}:
         return url
     match = re.search(r"/file/d/([A-Za-z0-9_-]+)", url) or re.search(r"[?&]id=([A-Za-z0-9_-]+)", url)
@@ -407,12 +413,18 @@ def direct_download_url(url: str) -> str:
 
 
 def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, Any]:
-    """Record one download link per bundle filename; every bundle must be named."""
+    """Record every bundle and locked split link from one exact mapping."""
     filenames = {bundle["filename"] for bundle in manifest["bundles"]}
-    if set(links) != filenames:
+    direct_assets = {
+        asset["repository_relative_destination"]: asset
+        for asset in manifest["assets"]
+        if asset["distribution_classification"] == DIRECT_DOWNLOAD
+    }
+    expected = filenames | set(direct_assets)
+    if set(links) != expected:
         raise ReproduceError(
-            f"Links must name every bundle exactly: missing={sorted(filenames - set(links))} "
-            f"unknown={sorted(set(links) - filenames)}"
+            f"Links must name every bundle and direct asset exactly: "
+            f"missing={sorted(expected - set(links))} unknown={sorted(set(links) - expected)}"
         )
     urls = {}
     for bundle in manifest["bundles"]:
@@ -421,6 +433,8 @@ def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, 
     for asset in manifest["assets"]:
         if asset["distribution_classification"] == PROJECT_BUNDLE:
             asset["url"] = urls[asset["bundle_id"]]
+    for destination, asset in direct_assets.items():
+        asset["url"] = direct_download_url(links[destination])
     validate_manifest(manifest)
     return manifest
 
@@ -431,7 +445,7 @@ def check_publication(
     opener: Callable[..., Any] = urllib.request.urlopen,
     repository_url: str = REPOSITORY_URL,
 ) -> dict[str, Any]:
-    """Confirm the repository and every bundle are reachable without credentials."""
+    """Confirm the repository and every published download are anonymously reachable."""
     failures: dict[str, str] = {}
     if not manifest["bundles"]:
         failures["bundles"] = "no bundles declared"
@@ -452,4 +466,41 @@ def check_publication(
                     failures[bundle["bundle_id"]] = f"size mismatch: {total!r}"
         except OSError as exc:
             failures[bundle["bundle_id"]] = str(exc)
-    return {"status": "FAIL" if failures else "PASS", "bundle_count": len(manifest["bundles"]), "failures": failures}
+    direct_assets = [
+        asset for asset in manifest["assets"]
+        if asset["distribution_classification"] == DIRECT_DOWNLOAD and asset["required"]
+    ]
+    for asset in direct_assets:
+        if asset["url"] is None:
+            failures[asset["asset_id"]] = "no public url"
+            continue
+        request = urllib.request.Request(asset["url"])
+        try:
+            with opener(request, timeout=60) as response:
+                final_url = response.geturl() if hasattr(response, "geturl") else asset["url"]
+                if not final_url.startswith("https://"):
+                    failures[asset["asset_id"]] = "redirected away from https"
+                    continue
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                if content_type.startswith("text/html"):
+                    failures[asset["asset_id"]] = "returned HTML instead of a file"
+                    continue
+                digest = hashlib.sha256()
+                size = 0
+                for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                    size += len(chunk)
+                    digest.update(chunk)
+                identity = (size, digest.hexdigest())
+                expected = (asset["byte_size"], asset["sha256"])
+                if identity != expected:
+                    failures[asset["asset_id"]] = (
+                        f"identity mismatch: size={size} sha256={identity[1]}"
+                    )
+        except OSError as exc:
+            failures[asset["asset_id"]] = str(exc)
+    return {
+        "status": "FAIL" if failures else "PASS",
+        "bundle_count": len(manifest["bundles"]),
+        "direct_asset_count": len(direct_assets),
+        "failures": failures,
+    }

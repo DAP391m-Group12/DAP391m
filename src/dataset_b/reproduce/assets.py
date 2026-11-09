@@ -15,6 +15,7 @@ from typing import Any, Callable, Mapping, Sequence
 
 from .manifest import (
     DERIVED_FROM_RAW,
+    DIRECT_DOWNLOAD,
     GIT_TRACKED,
     OFFICIAL_SOURCE,
     ReproduceError,
@@ -238,7 +239,12 @@ def download_assets(
 
     result: dict[str, Any] = {"downloaded": [], "extracted_count": 0, "derived_count": 0}
     for asset in assets:
-        if asset["distribution_classification"] == OFFICIAL_SOURCE:
+        distribution = asset["distribution_classification"]
+        if (
+            distribution == DIRECT_DOWNLOAD and asset["url"] is not None
+        ) or (
+            distribution == OFFICIAL_SOURCE and asset["required"]
+        ):
             if download_file(
                 asset["url"],
                 safe_destination(root, asset["repository_relative_destination"]),

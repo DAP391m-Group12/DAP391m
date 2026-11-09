@@ -1,0 +1,7 @@
+{
+  "command": "download",
+  "created_at_utc": "2026-11-09T02:41:04.672569+00:00",
+  "error": "Download failed for train.csv after 5 attempts: short read: 22893871 of 23631341 bytes",
+  "manifest_sha256": "d24d71c898c2f741fe75ba74e482efdc27b6db4bb6f96a12f3ffa5cf080f8eee",
+  "status": "FAIL"
+}
