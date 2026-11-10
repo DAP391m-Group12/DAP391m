@@ -460,15 +460,25 @@ class _TabMMiniPredictor(_BaseFrozenPredictor):
         import torch
 
         chunks: list[np.ndarray] = []
-        self._model.eval()
-        with torch.inference_mode():
-            for start in range(0, rows, self.batch_size):
-                stop = min(start + self.batch_size, rows)
-                values = self._model.predict_approved_probability(
-                    prepared.x_num[start:stop].to(self.device),
-                    prepared.x_cat[start:stop].to(self.device),
-                )
-                chunks.append(values.detach().cpu().numpy())
+        previous_threads = torch.get_num_threads()
+        try:
+            # The accepted RQ2 TabMmini numerical result is reproduced by a
+            # single-threaded CPU kernel. Lock only this frozen inference call
+            # and restore the caller's process-wide setting afterwards.
+            if previous_threads != 1:
+                torch.set_num_threads(1)
+            self._model.eval()
+            with torch.inference_mode():
+                for start in range(0, rows, self.batch_size):
+                    stop = min(start + self.batch_size, rows)
+                    values = self._model.predict_approved_probability(
+                        prepared.x_num[start:stop].to(self.device),
+                        prepared.x_cat[start:stop].to(self.device),
+                    )
+                    chunks.append(values.detach().cpu().numpy())
+        finally:
+            if torch.get_num_threads() != previous_threads:
+                torch.set_num_threads(previous_threads)
         return np.concatenate(chunks).astype(np.float64, copy=False)
 
 

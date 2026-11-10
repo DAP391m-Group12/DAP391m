@@ -1,0 +1,90 @@
+{
+  "confidence_intervals_95_percentile": {
+    "average_precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7399082957946325,
+      "upper_97_5": 0.7534415603584447,
+      "valid_replicates": 1000
+    },
+    "balanced_accuracy": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7622098376535377,
+      "upper_97_5": 0.771523951265631,
+      "valid_replicates": 1000
+    },
+    "brier_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.11513607692786543,
+      "upper_97_5": 0.1188906264846219,
+      "valid_replicates": 1000
+    },
+    "calibration_intercept": {
+      "invalid_replicates": 0,
+      "lower_2_5": -0.049292495057909225,
+      "upper_97_5": -0.0064916190536441695,
+      "valid_replicates": 1000
+    },
+    "calibration_slope": {
+      "invalid_replicates": 2,
+      "lower_2_5": 0.2805832913096697,
+      "upper_97_5": 0.35458767213148373,
+      "valid_replicates": 998
+    },
+    "f1_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.635379824053895,
+      "upper_97_5": 0.6481233898014006,
+      "valid_replicates": 1000
+    },
+    "precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.592021915286499,
+      "upper_97_5": 0.6051330862043517,
+      "valid_replicates": 1000
+    },
+    "recall_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8383353649245772,
+      "upper_97_5": 0.8458342221545025,
+      "valid_replicates": 1000
+    },
+    "recall_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6835681066094267,
+      "upper_97_5": 0.7003912887934889,
+      "valid_replicates": 1000
+    },
+    "roc_auc_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8362953511555997,
+      "upper_97_5": 0.8453526276448247,
+      "valid_replicates": 1000
+    }
+  },
+  "counts": {
+    "fn_approved": 5184,
+    "fp_denied": 3446,
+    "n_approved": 32815,
+    "n_denied": 11181,
+    "tn_denied": 7735,
+    "tp_approved": 27631
+  },
+  "model": "random_forest",
+  "point_metrics": {
+    "average_precision_denied": 0.7466771922759448,
+    "balanced_accuracy": 0.7669110258836689,
+    "brier_approved": 0.11700907170835997,
+    "calibration_intercept": -0.02714382066212839,
+    "calibration_slope": 0.3161348661064332,
+    "f1_denied": 0.6419087136929461,
+    "precision_denied": 0.5987305519003019,
+    "recall_approved": 0.8420234648788664,
+    "recall_denied": 0.6917985868884715,
+    "roc_auc_approved": 0.8409401448766581
+  },
+  "rows": 43996,
+  "run_id": "rf_final_15f_20261002_01",
+  "schema_version": 1,
+  "test_inference_seconds": 2.064965399999892,
+  "threshold": 0.712
+}

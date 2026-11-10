@@ -1,0 +1,30 @@
+{
+  "accepted_run_ids": [
+    "rq3_fairness_20261010_01"
+  ],
+  "classification": "artifact-based",
+  "comparison_result": {
+    "failed_count": 0,
+    "row_count": 5,
+    "status": "PASS"
+  },
+  "failed": [],
+  "input_hashes": {
+    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/audit_metadata.csv": "26c0d71ef673c1d2d07e4ed4109feaa412bb3c22f85fc609dec83c2dcc3b2e35",
+    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/bootstrap_summary.csv": "768265836ff9de6d698b7a032e209ab118485a2a35ef6abaefa0f0c9f5162e52",
+    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/gap_metrics.csv": "77bc182b9d311f1d6539a55f21e524c0fcec0b598531eed507e773e0930ca21f",
+    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/group_metrics.csv": "8d7464b0292a4b504b3ac3c0ff8ee44284765e8bad64b349b76338034dd30cbe"
+  },
+  "limitations": [
+    "Audit of saved RQ1 predictions with locked thresholds and bootstrap indices; no prediction call."
+  ],
+  "output_hashes": {
+    "reports/reproducibility/research/rq3/output/audit_metadata.csv": "26c0d71ef673c1d2d07e4ed4109feaa412bb3c22f85fc609dec83c2dcc3b2e35",
+    "reports/reproducibility/research/rq3/output/bootstrap_summary.csv": "768265836ff9de6d698b7a032e209ab118485a2a35ef6abaefa0f0c9f5162e52",
+    "reports/reproducibility/research/rq3/output/gap_metrics.csv": "77bc182b9d311f1d6539a55f21e524c0fcec0b598531eed507e773e0930ca21f",
+    "reports/reproducibility/research/rq3/output/group_metrics.csv": "8d7464b0292a4b504b3ac3c0ff8ee44284765e8bad64b349b76338034dd30cbe",
+    "reports/reproducibility/research/rq3/output/runtime.csv": "888b4c066c0500126ab24c4d4bee84d37d7226e14a0400be8d0e9aecf8097ef2",
+    "reports/reproducibility/research/rq3/output/status.json": "0a48fc94386a3618d2d9db6aae23784d8042905178c504e328d299136e02e529"
+  },
+  "route": "rq3"
+}

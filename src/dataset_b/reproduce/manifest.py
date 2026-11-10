@@ -30,10 +30,13 @@ ROLES = frozenset(
     }
 )
 OFFICIAL_SOURCE = "official_source"
+DIRECT_DOWNLOAD = "direct_download"
 DERIVED_FROM_RAW = "derived_from_raw"
 PROJECT_BUNDLE = "project_bundle"
 GIT_TRACKED = "git_tracked"
-DISTRIBUTIONS = frozenset({OFFICIAL_SOURCE, DERIVED_FROM_RAW, PROJECT_BUNDLE, GIT_TRACKED})
+DISTRIBUTIONS = frozenset(
+    {OFFICIAL_SOURCE, DIRECT_DOWNLOAD, DERIVED_FROM_RAW, PROJECT_BUNDLE, GIT_TRACKED}
+)
 HASH_MODES = frozenset({"bytes", "text_lf"})
 RQ1_SCOPES = frozenset({"lr", "rf", "xgboost", "plain_mlp", "realmlp", "tabmmini"})
 ASSET_FIELDS = frozenset(
@@ -53,6 +56,9 @@ ASSET_FIELDS = frozenset(
     }
 )
 BUNDLE_FIELDS = frozenset({"bundle_id", "filename", "url", "byte_size", "sha256"})
+SOURCE_PROVENANCE_FIELDS = frozenset(
+    {"source_revision", "inventory_sha256", "excluded_volatile_paths"}
+)
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _WINDOWS_RESERVED = re.compile(r"^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$", re.IGNORECASE)
 
@@ -154,6 +160,9 @@ def _asset_errors(asset: Any, bundles: Mapping[str, Mapping[str, Any]]) -> list[
     elif distribution == OFFICIAL_SOURCE:
         if not asset["url"] or asset["bundle_id"] is not None:
             errors.append(f"{owner}: official source needs a url and no bundle")
+    elif distribution == DIRECT_DOWNLOAD:
+        if asset["bundle_id"] is not None:
+            errors.append(f"{owner}: direct download must have no bundle")
     elif distribution == PROJECT_BUNDLE:
         bundle = bundles.get(asset["bundle_id"])
         if bundle is None:
@@ -174,6 +183,29 @@ def validate_manifest(manifest: Any) -> None:
         errors.append(f"schema_version must be {SCHEMA_VERSION}")
     if manifest.get("dataset") != "dataset_b":
         errors.append("dataset must be dataset_b")
+
+    provenance = manifest.get("source_provenance")
+    if provenance is not None:
+        if not isinstance(provenance, dict) or set(provenance) != SOURCE_PROVENANCE_FIELDS:
+            errors.append("source_provenance fields must equal the schema")
+        else:
+            revision = provenance["source_revision"]
+            if revision is not None and (
+                not isinstance(revision, str) or re.fullmatch(r"[0-9a-f]{40}", revision) is None
+            ):
+                errors.append("source_provenance source_revision must be null or a full Git SHA")
+            inventory_sha256 = provenance["inventory_sha256"]
+            if not isinstance(inventory_sha256, str) or _SHA256.match(inventory_sha256) is None:
+                errors.append("source_provenance inventory_sha256 must be 64 lowercase hex characters")
+            excluded = provenance["excluded_volatile_paths"]
+            if not isinstance(excluded, list):
+                errors.append("source_provenance excluded_volatile_paths must be a list")
+            else:
+                for relative in excluded:
+                    try:
+                        check_relative_path(relative)
+                    except ReproduceError as exc:
+                        errors.append(f"source_provenance excluded path: {exc}")
 
     bundles: dict[str, Mapping[str, Any]] = {}
     raw_bundles = manifest.get("bundles")
@@ -231,6 +263,6 @@ def unpublished_assets(assets: Iterable[Mapping[str, Any]]) -> list[str]:
         asset["asset_id"]
         for asset in assets
         if asset["required"]
-        and asset["distribution_classification"] == PROJECT_BUNDLE
+        and asset["distribution_classification"] in {PROJECT_BUNDLE, DIRECT_DOWNLOAD}
         and asset["url"] is None
     ]

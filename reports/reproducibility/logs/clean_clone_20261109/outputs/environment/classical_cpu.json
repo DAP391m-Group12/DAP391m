@@ -1,0 +1,33 @@
+{
+  "errors": [],
+  "fingerprint": {
+    "import_errors": {},
+    "nvidia_driver": "610.74",
+    "os": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "PyYAML": "6.0.3",
+      "joblib": "1.5.2",
+      "numpy": "2.3.5",
+      "pandas": "2.3.3",
+      "python-dateutil": "4.0.0",
+      "pytz": "2026.6",
+      "scikit-learn": "1.7.2",
+      "scipy": "1.16.3",
+      "threadpoolctl": "3.5.0",
+      "tzdata": "2026.6",
+      "xgboost": "3.3.0"
+    },
+    "python": "3.13.9",
+    "smoke_imports": [
+      "src.dataset_b.models.classical.lr.test_evaluation",
+      "src.dataset_b.models.classical.rf.test_evaluation",
+      "src.dataset_b.models.classical.xgboost.test_evaluation"
+    ],
+    "torch": {
+      "installed": false
+    }
+  },
+  "profile": "classical_cpu",
+  "status": "PASS",
+  "version_evidence": "Python, NumPy, pandas, SciPy, scikit-learn, joblib, and XGBoost match the classical run manifests. PyYAML and threadpoolctl come from the base environment that matches those versions; the manifests do not record them."
+}

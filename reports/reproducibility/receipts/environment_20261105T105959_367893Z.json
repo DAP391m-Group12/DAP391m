@@ -1,0 +1,31 @@
+{
+  "command": "environment",
+  "created_at_utc": "2026-11-05T10:59:59.367893+00:00",
+  "errors": [
+    "classical_cpu: environment is not installed",
+    "plain_mlp_cuda: environment is not installed",
+    "realmlp_cuda: environment is not installed",
+    "rq_cpu: environment is not installed",
+    "tabmmini_cuda: environment is not installed"
+  ],
+  "host_python": "3.13.0",
+  "manifest_sha256": "0a75c6e8fd31cab13cb4b29fc43108d0252a805ac6c2ccefc4a5ca8c6bd44b3f",
+  "profiles": {
+    "classical_cpu": {
+      "status": "FAIL"
+    },
+    "plain_mlp_cuda": {
+      "status": "FAIL"
+    },
+    "realmlp_cuda": {
+      "status": "FAIL"
+    },
+    "rq_cpu": {
+      "status": "FAIL"
+    },
+    "tabmmini_cuda": {
+      "status": "FAIL"
+    }
+  },
+  "status": "FAIL"
+}

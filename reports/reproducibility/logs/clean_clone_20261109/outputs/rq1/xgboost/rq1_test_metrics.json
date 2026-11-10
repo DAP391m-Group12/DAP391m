@@ -1,0 +1,90 @@
+{
+  "confidence_intervals_95_percentile": {
+    "average_precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7748968906407295,
+      "upper_97_5": 0.7865474587020311,
+      "valid_replicates": 1000
+    },
+    "balanced_accuracy": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7783787478398841,
+      "upper_97_5": 0.7872342535768468,
+      "valid_replicates": 1000
+    },
+    "brier_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.12987603530612457,
+      "upper_97_5": 0.13305401518694177,
+      "valid_replicates": 1000
+    },
+    "calibration_intercept": {
+      "invalid_replicates": 0,
+      "lower_2_5": 1.0052189435993542,
+      "upper_97_5": 1.0394341252122759,
+      "valid_replicates": 1000
+    },
+    "calibration_slope": {
+      "invalid_replicates": 0,
+      "lower_2_5": 1.0380720352866695,
+      "upper_97_5": 1.0835721765631618,
+      "valid_replicates": 1000
+    },
+    "f1_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6571438851463959,
+      "upper_97_5": 0.6693978852535606,
+      "valid_replicates": 1000
+    },
+    "precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6095096736888567,
+      "upper_97_5": 0.6227589083082319,
+      "valid_replicates": 1000
+    },
+    "recall_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8436370562242876,
+      "upper_97_5": 0.8513804662501905,
+      "valid_replicates": 1000
+    },
+    "recall_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7098649494678473,
+      "upper_97_5": 0.7261447992129506,
+      "valid_replicates": 1000
+    },
+    "roc_auc_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8598084367400058,
+      "upper_97_5": 0.8680268874927853,
+      "valid_replicates": 1000
+    }
+  },
+  "counts": {
+    "fn_approved": 4998,
+    "fp_denied": 3150,
+    "n_approved": 32815,
+    "n_denied": 11181,
+    "tn_denied": 8031,
+    "tp_approved": 27817
+  },
+  "model": "xgboost",
+  "point_metrics": {
+    "average_precision_denied": 0.7808254107431223,
+    "balanced_accuracy": 0.7829818365685688,
+    "brier_approved": 0.13138776492926293,
+    "calibration_intercept": 1.0224552011922488,
+    "calibration_slope": 1.0609784520415042,
+    "f1_denied": 0.6634448574969021,
+    "precision_denied": 0.6163941975592908,
+    "recall_approved": 0.8476916044491848,
+    "recall_denied": 0.7182720686879528,
+    "roc_auc_approved": 0.8641458255153933
+  },
+  "rows": 43996,
+  "run_id": "xgb_final_15f_20261003_01",
+  "schema_version": 1,
+  "test_inference_seconds": 1.5941381999996338,
+  "threshold": 0.525
+}

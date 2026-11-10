@@ -1,0 +1,90 @@
+{
+  "confidence_intervals_95_percentile": {
+    "average_precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.689279681198724,
+      "upper_97_5": 0.70390102258732,
+      "valid_replicates": 1000
+    },
+    "balanced_accuracy": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7333608081587658,
+      "upper_97_5": 0.7432897883186311,
+      "valid_replicates": 1000
+    },
+    "brier_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.15850749410224563,
+      "upper_97_5": 0.1617964943099709,
+      "valid_replicates": 1000
+    },
+    "calibration_intercept": {
+      "invalid_replicates": 0,
+      "lower_2_5": 1.0447404071569866,
+      "upper_97_5": 1.0749854601577276,
+      "valid_replicates": 1000
+    },
+    "calibration_slope": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.9967502782409471,
+      "upper_97_5": 1.0463118526789603,
+      "valid_replicates": 1000
+    },
+    "f1_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.5981422543348267,
+      "upper_97_5": 0.6118090026342679,
+      "valid_replicates": 1000
+    },
+    "precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.5711382850883813,
+      "upper_97_5": 0.5853313966058412,
+      "valid_replicates": 1000
+    },
+    "recall_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8383361267712937,
+      "upper_97_5": 0.8463819899436233,
+      "valid_replicates": 1000
+    },
+    "recall_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6248993828816742,
+      "upper_97_5": 0.64296574546105,
+      "valid_replicates": 1000
+    },
+    "roc_auc_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8130122715987836,
+      "upper_97_5": 0.8223042075742785,
+      "valid_replicates": 1000
+    }
+  },
+  "counts": {
+    "fn_approved": 5172,
+    "fp_denied": 4088,
+    "n_approved": 32815,
+    "n_denied": 11181,
+    "tn_denied": 7093,
+    "tp_approved": 27643
+  },
+  "model": "logistic_regression",
+  "point_metrics": {
+    "average_precision_denied": 0.6963052316700048,
+    "balanced_accuracy": 0.7383844513333394,
+    "brier_approved": 0.16012850537012083,
+    "calibration_intercept": 1.0603419045513314,
+    "calibration_slope": 1.0208435942728231,
+    "f1_denied": 0.6050499019022435,
+    "precision_denied": 0.5783122706889523,
+    "recall_approved": 0.8423891513027579,
+    "recall_denied": 0.6343797513639209,
+    "roc_auc_approved": 0.817943765287271
+  },
+  "rows": 43996,
+  "run_id": "lr_final_15f_20261002_01",
+  "schema_version": 1,
+  "test_inference_seconds": 0.4127465999999913,
+  "threshold": 0.493
+}

@@ -1,0 +1,90 @@
+{
+  "confidence_intervals_95_percentile": {
+    "average_precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.77533222201887,
+      "upper_97_5": 0.7874755944449189,
+      "valid_replicates": 1000
+    },
+    "balanced_accuracy": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7782038570035041,
+      "upper_97_5": 0.7874394137668216,
+      "valid_replicates": 1000
+    },
+    "brier_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.10483072046821498,
+      "upper_97_5": 0.10842083035483929,
+      "valid_replicates": 1000
+    },
+    "calibration_intercept": {
+      "invalid_replicates": 0,
+      "lower_2_5": -0.02431427638136956,
+      "upper_97_5": 0.01576565772741506,
+      "valid_replicates": 1000
+    },
+    "calibration_slope": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8802129080553895,
+      "upper_97_5": 0.925233103242286,
+      "valid_replicates": 1000
+    },
+    "f1_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6678193447866809,
+      "upper_97_5": 0.6812011997414265,
+      "valid_replicates": 1000
+    },
+    "precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6601192959299303,
+      "upper_97_5": 0.6751455149490231,
+      "valid_replicates": 1000
+    },
+    "recall_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8810902026512265,
+      "upper_97_5": 0.888010056376657,
+      "valid_replicates": 1000
+    },
+    "recall_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6722117878543958,
+      "upper_97_5": 0.6896520883641892,
+      "valid_replicates": 1000
+    },
+    "roc_auc_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8587185600250791,
+      "upper_97_5": 0.8672944087033106,
+      "valid_replicates": 1000
+    }
+  },
+  "counts": {
+    "fn_approved": 3787,
+    "fp_denied": 3567,
+    "n_approved": 32815,
+    "n_denied": 11181,
+    "tn_denied": 7614,
+    "tp_approved": 29028
+  },
+  "model": "realmlp",
+  "point_metrics": {
+    "average_precision_denied": 0.7815994303307904,
+    "balanced_accuracy": 0.7827860581110593,
+    "brier_approved": 0.1065088230151043,
+    "calibration_intercept": -0.004252092498650707,
+    "calibration_slope": 0.9027088107068156,
+    "f1_denied": 0.6743423965990611,
+    "precision_denied": 0.6678361547232698,
+    "recall_approved": 0.88459545939357,
+    "recall_denied": 0.6809766568285485,
+    "roc_auc_approved": 0.8632032832847532
+  },
+  "rows": 43996,
+  "run_id": "realmlp_final_15f_20261004_01",
+  "schema_version": 1,
+  "test_inference_seconds": 5.969030799999928,
+  "threshold": 0.726
+}

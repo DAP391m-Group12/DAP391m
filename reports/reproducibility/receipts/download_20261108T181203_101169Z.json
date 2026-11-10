@@ -1,0 +1,12 @@
+{
+  "command": "download",
+  "created_at_utc": "2026-11-08T18:12:03.101169+00:00",
+  "derived_count": 0,
+  "downloaded": [],
+  "error": "required assets have no public download route",
+  "extracted_count": 0,
+  "gate": "G1",
+  "manifest_sha256": "1c012e0a0cafbe213b8c8b755e55ddad5230b49ac958935625291e87ac7f0263",
+  "status": "BLOCKED",
+  "unpublished_required_count": 631
+}

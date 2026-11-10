@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 from src.dataset_b.cli import build_parser
@@ -10,6 +11,8 @@ from src.utils.path import PROJECT_ROOT
 REPRODUCE = PROJECT_ROOT / "REPRODUCE.md"
 ACCEPTANCE = PROJECT_ROOT / "docs" / "handbook" / "REPRODUCIBILITY_ACCEPTANCE.md"
 HANDBOOK = PROJECT_ROOT / "docs" / "handbook" / "README.md"
+STATUS = PROJECT_ROOT / "docs" / "handbook" / "STATUS.md"
+PINNED_REPRODUCTION_COMMIT = "61a87bec7878c3507b0b76dd5fdae5d4d320b7ff"
 
 ALLOWED_STATUSES = {
     "PASS",
@@ -63,6 +66,56 @@ def test_submission_and_reviewed_commit_identities_are_exact() -> None:
     assert "ed1afbf783db502ade5dfb959738df51cdb6a5e7" in combined
 
 
+def test_current_guide_and_acceptance_pin_version_2_4_source() -> None:
+    reproduce = _read(REPRODUCE)
+    acceptance = _read(ACCEPTANCE)
+
+    assert "| Document version" in reproduce
+    assert "| `2.4`" in reproduce
+    assert "Documentation version/date: `2.4`, `2026-11-09`" in acceptance
+    assert PINNED_REPRODUCTION_COMMIT in reproduce
+    assert PINNED_REPRODUCTION_COMMIT in acceptance
+    assert "## Historical acceptance" in acceptance
+    assert "Version 2.1 received documentation-only acceptance" in acceptance
+
+
+def test_quick_start_checks_out_the_pinned_reproduction_commit() -> None:
+    text = _read(REPRODUCE)
+
+    assert f"git checkout {PINNED_REPRODUCTION_COMMIT}" in text
+    assert "git switch codex/full-reproducibility" not in text
+    assert (PROJECT_ROOT / "src" / "dataset_b" / "reproduce" / "__main__.py").is_file()
+
+
+def test_pinned_commit_contains_the_reproduction_entrypoint_when_git_is_available() -> None:
+    if not (PROJECT_ROOT / ".git").exists():
+        return
+
+    result = subprocess.run(
+        [
+            "git",
+            "cat-file",
+            "-e",
+            f"{PINNED_REPRODUCTION_COMMIT}:src/dataset_b/reproduce/__main__.py",
+        ],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_status_owns_the_current_reproduction_execution_state() -> None:
+    text = _read(STATUS)
+
+    assert "## Current Dataset B reproduction route — 2026-11-03" in text
+    assert PINNED_REPRODUCTION_COMMIT in text
+    assert "| Overall reproduction runtime | `PARTIAL` |" in text
+    assert "current-source end-to-end clean-clone reproducibility is not established" in text
+
+
 def test_five_public_cli_commands_are_documented_once_as_the_complete_set() -> None:
     text = _read(REPRODUCE)
     documented = set(re.findall(r"src\.dataset_b\.cli ([a-z-]+)", text))
@@ -107,10 +160,14 @@ def test_documentation_does_not_overclaim_prohibited_runtime_results() -> None:
 
     assert "FULL_REPRODUCIBILITY_PASS" not in combined
     assert (
-        "No clean installation, model execution, training, or GPU walkthrough "
-        "was performed in this documentation task."
+        "The version 2.3 documentation review did not itself perform a new clean "
+        "installation, training run, notebook execution, or end-to-end clean-clone run."
     ) in normalized
     assert "clean-host installation was attempted or accepted" in normalized
+    assert (
+        "This acceptance does not establish a successful clean-clone end-to-end run, "
+        "notebook regeneration, or universal runtime reproducibility."
+    ) in normalized
 
 
 def test_handbook_routes_to_acceptance_without_replacing_status() -> None:

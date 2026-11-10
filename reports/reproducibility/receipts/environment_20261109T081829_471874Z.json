@@ -1,0 +1,82 @@
+{
+  "command": "environment",
+  "created_at_utc": "2026-11-09T08:18:29.471874+00:00",
+  "errors": [],
+  "host_python": "3.13.14",
+  "manifest_sha256": "19d8f2c293103cb0353bc78fbc4de32f100911260cdef3fcbf9d23e0ac6bc5ff",
+  "profiles": {
+    "classical_cpu": {
+      "nvidia_driver": "610.74",
+      "python": "3.13.9",
+      "status": "PASS",
+      "torch": {
+        "installed": false
+      }
+    },
+    "plain_mlp_cuda": {
+      "nvidia_driver": "610.74",
+      "python": "3.12.13",
+      "status": "PASS",
+      "torch": {
+        "cuda_available": true,
+        "cuda_build": "13.0",
+        "cudnn_version": 92400,
+        "device_index": 0,
+        "finite_cuda_operation": true,
+        "gpu_name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+        "installed": true,
+        "version": "2.14.0+cu130",
+        "vram_bytes": 8546484224
+      }
+    },
+    "realmlp_cuda": {
+      "nvidia_driver": "610.74",
+      "python": "3.13.14",
+      "status": "PASS",
+      "torch": {
+        "cuda_available": true,
+        "cuda_build": "13.0",
+        "cudnn_version": 92400,
+        "device_index": 0,
+        "finite_cuda_operation": true,
+        "gpu_name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+        "installed": true,
+        "version": "2.14.0+cu130",
+        "vram_bytes": 8546484224
+      }
+    },
+    "rq_cpu": {
+      "nvidia_driver": "610.74",
+      "python": "3.13.14",
+      "status": "PASS",
+      "torch": {
+        "cuda_available": false,
+        "cuda_build": null,
+        "cudnn_version": null,
+        "device_index": null,
+        "finite_cuda_operation": false,
+        "gpu_name": null,
+        "installed": true,
+        "version": "2.14.0+cpu",
+        "vram_bytes": null
+      }
+    },
+    "tabmmini_cuda": {
+      "nvidia_driver": "610.74",
+      "python": "3.12.13",
+      "status": "PASS",
+      "torch": {
+        "cuda_available": true,
+        "cuda_build": "13.0",
+        "cudnn_version": 92400,
+        "device_index": 0,
+        "finite_cuda_operation": true,
+        "gpu_name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+        "installed": true,
+        "version": "2.14.0+cu130",
+        "vram_bytes": 8546484224
+      }
+    }
+  },
+  "status": "PASS"
+}

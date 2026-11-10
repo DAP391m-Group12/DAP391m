@@ -1,0 +1,10 @@
+{
+  "command": "compare",
+  "created_at_utc": "2026-11-09T08:24:35.073547+00:00",
+  "failed": [],
+  "failed_count": 0,
+  "manifest_sha256": "19d8f2c293103cb0353bc78fbc4de32f100911260cdef3fcbf9d23e0ac6bc5ff",
+  "row_count": 402,
+  "status": "PASS",
+  "table": "reports/reproducibility/rq1/comparison.csv"
+}

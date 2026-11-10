@@ -1,0 +1,11 @@
+{
+  "asset_count": 654,
+  "command": "verify-assets",
+  "created_at_utc": "2026-11-08T18:10:25.711736+00:00",
+  "manifest_sha256": "1c012e0a0cafbe213b8c8b755e55ddad5230b49ac958935625291e87ac7f0263",
+  "mismatch": [],
+  "missing_optional_count": 0,
+  "missing_required": [],
+  "status": "PASS",
+  "verified_count": 654
+}

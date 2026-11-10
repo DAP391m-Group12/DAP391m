@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
+import subprocess
 import urllib.parse
 import urllib.request
 import zipfile
@@ -13,6 +15,7 @@ from typing import Any, Callable, Iterator, Mapping
 
 from .assets import extract_bundle
 from .manifest import (
+    DIRECT_DOWNLOAD,
     DERIVED_FROM_RAW,
     GIT_TRACKED,
     MANIFEST_RELATIVE_PATH,
@@ -30,7 +33,7 @@ BUNDLE_DIRECTORY = "dist/reproducibility"
 MAX_BUNDLE_BYTES = 1_900_000_000
 _ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
 
-OFFICIAL_RAW_URL = "https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024"
+OFFICIAL_RAW_URL = "https://drive.usercontent.google.com/download?id=18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg&export=download&confirm=t"
 RAW_ASSET = "data/raw/state_NY_2024.csv"
 DERIVED_SPLIT_ASSETS = (
     "data/dataset_b/split_v1/train.csv",
@@ -78,6 +81,9 @@ RQ_RUNS = {
 }
 # Retained on disk but not accepted evidence, so a reproduction does not need them.
 NOT_ACCEPTED_RUNS = frozenset({"rq4b3_adv_20261019_01", "rq4b3_sex_supplementary_20261024_01"})
+VOLATILE_RQ_METADATA = frozenset(
+    {"artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"}
+)
 CHECKPOINT_PINS = {
     "artifacts/dataset_b/lr/final/lr_final_15f_20261002_01/checkpoints/fitted_pipeline.joblib":
         "69770bc11558f56f147e2af89f79747c903e74e779aeae17d1347a25de620859",
@@ -111,6 +117,8 @@ def classify_role(scope: str, relative: PurePosixPath) -> str:
         return "bootstrap_indices"
     if name == "rq1_test_bootstrap_manifest.json":
         return "bootstrap_manifest"
+    if scope == "rq3" and name == "runtime.csv":
+        return "reference_report"
     if scope in RQ_RUNS:
         return "reference_report" if "reporting" in relative.parts else "rq_input"
     if relative.suffix in {".joblib", ".pt"}:
@@ -166,11 +174,14 @@ def _run_assets(source_root: Path, scope: str, run_root: str, run_id: str, *, re
     assets = []
     for path in _walk_files(source_root / run_root):
         relative = PurePosixPath(path.relative_to(source_root / run_root).as_posix())
+        destination = f"{run_root}/{relative}"
+        if destination in VOLATILE_RQ_METADATA:
+            continue
         assets.append(
             _asset(
                 asset_id=f"{run_id}:{relative}",
                 scope=scope,
-                destination=f"{run_root}/{relative}",
+                destination=destination,
                 identity=file_identity(path),
                 required=required,
                 accepted_run_id=run_id if required else None,
@@ -178,6 +189,38 @@ def _run_assets(source_root: Path, scope: str, run_root: str, run_id: str, *, re
             )
         )
     return assets
+
+
+def source_provenance(source_root: Path, assets: list[dict[str, Any]]) -> dict[str, Any]:
+    """Describe the retained source inventory without publishing a machine-local path."""
+    inventory = [
+        {
+            "destination": asset["repository_relative_destination"],
+            "byte_size": asset["byte_size"],
+            "sha256": asset["sha256"],
+            "hash_mode": asset["hash_mode"],
+        }
+        for asset in sorted(assets, key=lambda item: item["repository_relative_destination"])
+    ]
+    payload = json.dumps(inventory, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    revision = None
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(source_root), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=False,
+            text=True,
+        )
+        candidate = result.stdout.strip().lower()
+        if result.returncode == 0 and re.fullmatch(r"[0-9a-f]{40}", candidate):
+            revision = candidate
+    except OSError:
+        pass
+    return {
+        "source_revision": revision,
+        "inventory_sha256": hashlib.sha256(payload).hexdigest(),
+        "excluded_volatile_paths": sorted(VOLATILE_RQ_METADATA),
+    }
 
 
 def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any]]:
@@ -189,7 +232,8 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
             destination=RAW_ASSET,
             identity=file_identity(source_root / RAW_ASSET),
             url=OFFICIAL_RAW_URL,
-            distribution=OFFICIAL_SOURCE,
+            distribution=DIRECT_DOWNLOAD,
+            required=True,
             role="raw_source",
         )
     ]
@@ -200,7 +244,7 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
                 scope="data",
                 destination=destination,
                 identity=file_identity(source_root / destination),
-                distribution=DERIVED_FROM_RAW,
+                distribution=DIRECT_DOWNLOAD,
                 role="derived_split",
             )
         )
@@ -305,7 +349,13 @@ def build_release(source_root: Path, project_root: Path) -> dict[str, Any]:
     project = project_root.resolve()
     assets = build_inventory(source, project)
     bundles = build_bundles(assets, source, project / BUNDLE_DIRECTORY)
-    manifest = {"schema_version": SCHEMA_VERSION, "dataset": "dataset_b", "bundles": bundles, "assets": assets}
+    manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "dataset": "dataset_b",
+        "source_provenance": source_provenance(source, assets),
+        "bundles": bundles,
+        "assets": assets,
+    }
     write_manifest(manifest, project)
     return {
         "status": "PASS",
@@ -377,13 +427,33 @@ def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, 
     return manifest
 
 
+def bind_split_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, Any]:
+    """Record direct-download links for the three locked split CSVs."""
+    expected = {PurePosixPath(path).name: path for path in DERIVED_SPLIT_ASSETS}
+    if set(links) != set(expected):
+        raise ReproduceError(
+            f"Split links must name train.csv, validation.csv, and test.csv exactly: "
+            f"missing={sorted(set(expected) - set(links))} unknown={sorted(set(links) - set(expected))}"
+        )
+    by_destination = {
+        asset["repository_relative_destination"]: asset for asset in manifest["assets"]
+    }
+    for filename, destination in expected.items():
+        asset = by_destination.get(destination)
+        if asset is None or asset["distribution_classification"] != DIRECT_DOWNLOAD:
+            raise ReproduceError(f"Manifest has no direct-download split asset: {filename}")
+        asset["url"] = direct_download_url(links[filename])
+    validate_manifest(manifest)
+    return manifest
+
+
 def check_publication(
     manifest: Mapping[str, Any],
     *,
     opener: Callable[..., Any] = urllib.request.urlopen,
     repository_url: str = REPOSITORY_URL,
 ) -> dict[str, Any]:
-    """Confirm the repository and every bundle are reachable without credentials."""
+    """Confirm the repository and every published download are anonymously reachable."""
     failures: dict[str, str] = {}
     if not manifest["bundles"]:
         failures["bundles"] = "no bundles declared"
@@ -404,4 +474,42 @@ def check_publication(
                     failures[bundle["bundle_id"]] = f"size mismatch: {total!r}"
         except OSError as exc:
             failures[bundle["bundle_id"]] = str(exc)
-    return {"status": "FAIL" if failures else "PASS", "bundle_count": len(manifest["bundles"]), "failures": failures}
+    direct_assets = [
+        asset
+        for asset in manifest["assets"]
+        if asset["distribution_classification"] == DIRECT_DOWNLOAD and asset["required"]
+    ]
+    for asset in direct_assets:
+        if asset["url"] is None:
+            failures[asset["asset_id"]] = "no public url"
+            continue
+        request = urllib.request.Request(asset["url"])
+        try:
+            with opener(request, timeout=60) as response:
+                final_url = response.geturl() if hasattr(response, "geturl") else asset["url"]
+                if not final_url.startswith("https://"):
+                    failures[asset["asset_id"]] = "redirected away from https"
+                    continue
+                content_type = (response.headers.get("Content-Type") or "").lower()
+                if content_type.startswith("text/html"):
+                    failures[asset["asset_id"]] = "returned HTML instead of a file"
+                    continue
+                digest = hashlib.sha256()
+                size = 0
+                for chunk in iter(lambda: response.read(1024 * 1024), b""):
+                    size += len(chunk)
+                    digest.update(chunk)
+                identity = (size, digest.hexdigest())
+                expected = (asset["byte_size"], asset["sha256"])
+                if identity != expected:
+                    failures[asset["asset_id"]] = (
+                        f"identity mismatch: size={size} sha256={identity[1]}"
+                    )
+        except OSError as exc:
+            failures[asset["asset_id"]] = str(exc)
+    return {
+        "status": "FAIL" if failures else "PASS",
+        "bundle_count": len(manifest["bundles"]),
+        "direct_asset_count": len(direct_assets),
+        "failures": failures,
+    }
