@@ -1,0 +1,34 @@
+{
+  "bootstrap_replicates": 1000,
+  "bootstrap_seed": 4204,
+  "checkpoint_format": "rq2_bootstrap_chunk_v1",
+  "chunk_id": 3,
+  "chunk_size": 100,
+  "invalid_reason_counts": {
+    "kendall_tau_b": {},
+    "mean_absolute_rank_difference": {},
+    "spearman": {},
+    "top_k_jaccard": {}
+  },
+  "invalid_replicates": {
+    "kendall_tau_b": 0,
+    "mean_absolute_rank_difference": 0,
+    "spearman": 0,
+    "top_k_jaccard": 0
+  },
+  "model_key": "lr",
+  "model_run_id": "lr_final_15f_20261002_01",
+  "observation_count": 256,
+  "player_count": 12,
+  "protocol_version": "rq2_explanation_v1",
+  "replicate_start": 300,
+  "replicate_stop": 400,
+  "run_id": "rq2_reproduction_20261103_01",
+  "seconds": 64.6133537,
+  "valid_replicates": {
+    "kendall_tau_b": 100,
+    "mean_absolute_rank_difference": 100,
+    "spearman": 100,
+    "top_k_jaccard": 100
+  }
+}

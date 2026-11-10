@@ -27,16 +27,38 @@ policies.
 - The optional RQ4 audit archive also exists and matches its separate manifest:
   `dataset_b_rq4_audit_evidence_20261105.zip`, 1,830,814 bytes,
   SHA-256 `f8bb82202ec167c51e16d3299b808d0af014d76dce67d2c38ac20200dbb6a40b`.
-- All eleven core ZIP bundles are present locally. On 2026-11-09 each passed its
-  manifest byte size, SHA-256, and member inventory; their total is 678,068,350 bytes.
-- The three locked split URLs and eleven bundle URLs are bound. Anonymous publication
-  verification passes: all three split files match their exact locked identities, and
-  the repository endpoint plus all eleven ZIP URLs pass reachability and expected
-  remote-size checks.
-- A partial non-CUDA clean-worktree `download` and independent `verify-assets` both
-  pass with 653/654 assets verified, no mismatch or required asset missing, and one
-  optional provenance asset absent. CUDA Phase B and the full clean-clone route remain
-  pending.
+- The other ten core ZIP bundles are not present in this workspace. Every source
+  member named by the current manifest was present when checked on 2026-11-08.
+- A 2026-11-08 attempt at commit
+  `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` passed 654/654 assets, all five
+  locked environment fingerprints, all three finite CUDA tensor checks, six of six
+  frozen-checkpoint evaluations, and 402/402 RQ1 numerical comparisons. RQ3, RQ4a,
+  and RQ4b passed their reproduction comparisons. An initial RQ2 run completed all
+  six frozen CPU-inference models but failed 3/28 comparison rows, all for TabMmini:
+  `importance.csv` delta `2.12172445194711e-10`, `cube.npy` maximum delta
+  `5.960464477539063e-08`, and `gsv_local.npy` maximum delta
+  `1.9868215961338365e-09`, each against the locked `1e-12` tolerance. The policy
+  and accepted artifacts were not changed. Diagnosis isolated the current-host cause
+  to the unpinned Torch CPU intra-op thread count. After a scoped one-thread inference
+  lock, `research --route all` passed RQ2 28/28, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17.
+  `reports` then returned the allowed documented `INCOMPLETE` result with 5 objects
+  PASS and 3 `NOT_REGENERATED`. Phase B is complete; Phase C, LFS staging, commit,
+  and push did not run.
+- On 2026-11-09 Phase C rebuilt all 11 core ZIPs, totaling 678,068,350 bytes.
+  Bundle size, SHA-256, and exact member inventory all matched the prebuild manifest.
+  RQ3 `runtime.csv` and the optional RQ4 audit archive remained outside core. Release
+  commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all core LFS objects were
+  pushed to `codex/cuda-phase-b-c-handoff`; post-push `git lfs fsck` passed.
+- At Phase C completion, the default data route treated raw HMDA as optional provenance and the three
+  locked split CSVs as required direct downloads with atomic `.part` publication and
+  exact size/SHA-256 verification. All 14 URLs were later supplied and bound. Anonymous
+  publication plus detached-worktree `download`/`verify-assets` passed on 2026-11-09;
+  the complete clean-clone route remains separate.
+  Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2` and manifest commit
+  `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` record this final policy without
+  changing any core ZIP identity. The current policy supersedes the optional-raw
+  classification: raw HMDA and all three locked split CSVs are required direct
+  downloads. Raw HMDA uses the locked Google Drive copy, not the live endpoint.
 
 ## Branch and transfer
 
@@ -72,9 +94,6 @@ handoff. Do not copy or inspect local `scratch/` as part of the core route.
 - Keep `scratch/` and `refactor/` local and out of commits.
 
 ## Phase B sequence
-
-This sequence remains pending. The 2026-11-09 non-CUDA preparation did not run any
-command in this section.
 
 Run from the repository root. Use `--env-root` consistently if the five profiles
 are not under `.venv-repro/`.
@@ -139,10 +158,6 @@ an accepted identity merely to make the check pass.
 
 ## Publishing the remaining bundles
 
-The current three CSV and eleven core bundle links passed anonymous publication and
-partial clean-worktree checks on 2026-11-09. Preserve those exact links and identities.
-This evidence does not replace CUDA Phase B or the complete clean-clone route.
-
 The release ZIP paths are configured for Git LFS. After Phase B and Phase C pass:
 
 ```powershell
@@ -162,6 +177,15 @@ upload, keep the commit and ZIPs unchanged, upload the exact ZIP bytes to the ch
 release store, fill `bundle_links.json`, bind the links, and run
 `maintainer-check-publication`. Do not commit credentials or private tokens.
 
+On 2026-11-09 the owner supplied the 11 bundle URLs and three locked split URLs.
+`maintainer-check-publication` passed, including full identity checks for the CSVs. A
+detached worktree then downloaded all bundles and split files; `download` and
+`verify-assets` both passed with 653/654 assets verified, no mismatch or required asset
+missing, and one optional provenance asset absent. Retain
+`download_20261109T073546_424715Z.json` and
+`verify-assets_20261109T073632_076796Z.json` as the non-CUDA public-distribution
+evidence. This did not rerun Phase B/C and is not a complete clean-clone claim.
+
 ## Evidence to return
 
 Return the following to the original host or commit it on the handoff branch:
@@ -173,5 +197,17 @@ Return the following to the original host or commit it on the handoff branch:
 - the Git commit and branch containing the LFS pointers;
 - any blocked or incomplete gate without changing its status wording.
 
-Completion of Phase B/C must remain separate from clean-clone and anonymous public
-download claims until those routes are actually executed.
+Phase B/C completion remains distinct from the later anonymous publication and partial
+clean-worktree PASS.
+
+## Clean-clone acceptance run — 2026-11-09
+
+An anonymous clean clone of this branch at `e470e12c49d558184ad44d26fd0e6186a0a58782`
+ran on the qualified CUDA host. Publication, download, `verify-assets`, all five
+environments, `evaluate` 6/6, `compare` 402/402, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17
+passed with no training or fitting. RQ3 needed the raw HMDA file, which the manifest had
+marked optional; the owner's Google Drive copy matched the locked size and SHA-256 and
+is now bound as a required direct download. The owner closed execution during RQ2. The
+11 core ZIPs were not rebuilt or restaged. Receipts and the full record are under
+`reports/reproducibility/receipts/`, with the step log under
+`reports/reproducibility/logs/clean_clone_20261109/`.

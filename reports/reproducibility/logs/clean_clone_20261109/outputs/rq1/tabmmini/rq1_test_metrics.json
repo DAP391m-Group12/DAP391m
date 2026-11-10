@@ -1,0 +1,90 @@
+{
+  "confidence_intervals_95_percentile": {
+    "average_precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7679460731369684,
+      "upper_97_5": 0.7799251144058791,
+      "valid_replicates": 1000
+    },
+    "balanced_accuracy": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.7754155074924602,
+      "upper_97_5": 0.7844354434082121,
+      "valid_replicates": 1000
+    },
+    "brier_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.13018883429197003,
+      "upper_97_5": 0.13334790068851707,
+      "valid_replicates": 1000
+    },
+    "calibration_intercept": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.9799397618531912,
+      "upper_97_5": 1.0157790941085876,
+      "valid_replicates": 1000
+    },
+    "calibration_slope": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.9747245857469378,
+      "upper_97_5": 1.021109371630233,
+      "valid_replicates": 1000
+    },
+    "f1_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6596250200892041,
+      "upper_97_5": 0.6723903999331668,
+      "valid_replicates": 1000
+    },
+    "precision_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6362570634793083,
+      "upper_97_5": 0.650140137560434,
+      "valid_replicates": 1000
+    },
+    "recall_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8659142160597287,
+      "upper_97_5": 0.8731380466250191,
+      "valid_replicates": 1000
+    },
+    "recall_denied": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.6819604686521779,
+      "upper_97_5": 0.6979787138896342,
+      "valid_replicates": 1000
+    },
+    "roc_auc_approved": {
+      "invalid_replicates": 0,
+      "lower_2_5": 0.8532760780757904,
+      "upper_97_5": 0.8618383683217961,
+      "valid_replicates": 1000
+    }
+  },
+  "counts": {
+    "fn_approved": 4276,
+    "fp_denied": 3464,
+    "n_approved": 32815,
+    "n_denied": 11181,
+    "tn_denied": 7717,
+    "tp_approved": 28539
+  },
+  "model": "tabmmini",
+  "point_metrics": {
+    "average_precision_denied": 0.77418272008226,
+    "balanced_accuracy": 0.7799412253076253,
+    "brier_approved": 0.1316699131001235,
+    "calibration_intercept": 0.9982380974832341,
+    "calibration_slope": 0.9975737432775154,
+    "f1_denied": 0.6660050056097351,
+    "precision_denied": 0.643458684232469,
+    "recall_approved": 0.8696937376199908,
+    "recall_denied": 0.6901887129952599,
+    "roc_auc_approved": 0.8578386763651571
+  },
+  "rows": 43996,
+  "run_id": "tabmmini_final_15f_20261004_01",
+  "schema_version": 1,
+  "test_inference_seconds": 2.5091299000000618,
+  "threshold": 0.508
+}

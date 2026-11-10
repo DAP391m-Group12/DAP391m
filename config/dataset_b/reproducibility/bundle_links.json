@@ -1,7 +1,4 @@
 {
-  "data/dataset_b/split_v1/train.csv": "https://drive.google.com/file/d/1VDDEO3uSQUq7dWj-3ir6_g4bmGVoposo/view?usp=sharing",
-  "data/dataset_b/split_v1/validation.csv": "https://drive.google.com/file/d/1t_qV893lbcrdlFDb22mCvadvNwGXzWTV/view?usp=drive_link",
-  "data/dataset_b/split_v1/test.csv": "https://drive.google.com/file/d/16z2rvUUoRzJx6n3wB61fiqeMjSDJfDGX/view?usp=drive_link",
   "dataset_b_core_part01.zip": "https://drive.google.com/file/d/16jlJNsubNckZTVurIoGxqYjv-s0qen-E/view?usp=drive_link",
   "dataset_b_lr_part01.zip": "https://drive.google.com/file/d/1ekmIi9lSgp6Qd1Vgx7dQTbSW3BKnWeEb/view?usp=drive_link",
   "dataset_b_plain_mlp_part01.zip": "https://drive.google.com/file/d/1R4hO8Rr3FIYfkXtONvbhM692v4yevQHN/view?usp=drive_link",

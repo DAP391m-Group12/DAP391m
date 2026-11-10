@@ -333,6 +333,7 @@ def test_tabmmini_route_batches_on_the_bundle_setting_and_returns_float64(
 
     class _Model:
         eval_calls = 0
+        inference_thread_counts: list[int] = []
 
         def eval(self) -> None:
             self.eval_calls += 1
@@ -340,6 +341,7 @@ def test_tabmmini_route_batches_on_the_bundle_setting_and_returns_float64(
         def predict_approved_probability(self, x_num, x_cat):
             assert x_num.device.type == "cpu"
             assert x_cat.device.type == "cpu"
+            self.inference_thread_counts.append(torch.get_num_threads())
             return torch.full((len(x_num),), 0.6, dtype=torch.float32)
 
     model = _Model()
@@ -352,6 +354,7 @@ def test_tabmmini_route_batches_on_the_bundle_setting_and_returns_float64(
     adapter = load_frozen_predictor(
         "tabmmini", artifact_root=tmp_path, tabmmini_device="cpu"
     )
+    original_thread_count = torch.get_num_threads()
     timed = adapter.predict_p_approved_timed(_valid_frame())
     observed = timed.probabilities
 
@@ -363,6 +366,8 @@ def test_tabmmini_route_batches_on_the_bundle_setting_and_returns_float64(
     assert adapter.execution_device == "cpu"
     assert adapter.batch_size == 1
     assert model.eval_calls == 1
+    assert model.inference_thread_counts == [1, 1]
+    assert torch.get_num_threads() == original_thread_count
 
 
 def test_preflight_rejects_missing_freeze_and_wrong_lineage(tmp_path: Path) -> None:

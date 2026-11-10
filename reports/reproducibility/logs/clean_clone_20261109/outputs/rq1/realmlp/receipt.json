@@ -1,0 +1,33 @@
+{
+  "accepted_run_ids": [
+    "realmlp_final_15f_20261004_01"
+  ],
+  "classification": "checkpoint-based",
+  "compute": {
+    "device": "cuda:0",
+    "gpu_name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+    "peak_memory_allocated_bytes": 52161536
+  },
+  "execution": {
+    "checkpoint_inference_passes": 1,
+    "model_fit_calls": 0,
+    "preprocessing_fit_calls": 0,
+    "training_code_called": false
+  },
+  "input_hashes": {
+    "artifacts/dataset_b/rq1_test_bootstrap_indices.npz": "2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1",
+    "full_train/fitted_model.joblib": "b5b79dcd3200f989ecd9cdae850fccaeb2f98ae0487046c68cebbdbcf8ea2754",
+    "split_v1/test.csv": "5815caf720ea5a9b3a1c8925f9fe193062ce862ee6a78c534a3aa14b572cae05",
+    "threshold/threshold_selection.json": "ecaab224aae14f6a7d086bb1b2e87677db8821ec3b324b9cb222931f6ee83084"
+  },
+  "limitations": [
+    "Stored Test predictions are read only for record order and for comparison."
+  ],
+  "model": "realmlp",
+  "output_hashes": {
+    "rq1_bootstrap_metrics.csv": "8aabbe0bd157ec2776ef83e56f55de364dc1a0aff9b1073b0dee7937f466d4dd",
+    "rq1_test_metrics.json": "8b61151e9a3251f8ccce218c53f5c70dac06e9512ff87f9c3e2e966d69fe16b4",
+    "test_predictions.csv": "c2399f98d7d01fe19830e7a2bda4e85f0fc92b5d6d7ba368ad901fbadb7edc2e"
+  },
+  "status": "EVALUATED"
+}

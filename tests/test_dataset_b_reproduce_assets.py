@@ -24,7 +24,6 @@ from src.dataset_b.reproduce.assets import (
     verify_assets,
 )
 from src.dataset_b.reproduce.manifest import (
-    DIRECT_DOWNLOAD,
     MANIFEST_RELATIVE_PATH,
     ReproduceError,
     check_relative_path,
@@ -35,9 +34,9 @@ from src.dataset_b.reproduce.manifest import (
     validate_manifest,
 )
 from src.dataset_b.reproduce.release import (
+    bind_split_links,
     CHECKPOINT_PINS,
     LINEAGE_PINS,
-    OFFICIAL_RAW_URL,
     RAW_PIN,
     bind_links,
     bind_release,
@@ -177,18 +176,6 @@ def test_valid_manifest_is_accepted() -> None:
     validate_manifest(make_manifest([make_asset("artifacts/a.json", b"a")]))
 
 
-def test_direct_download_allows_binding_after_manifest_build() -> None:
-    asset = make_asset(
-        "data/dataset_b/split_v1/train.csv",
-        b"train",
-        distribution_classification=DIRECT_DOWNLOAD,
-        bundle_id=None,
-    )
-    manifest = make_manifest([asset], [])
-    validate_manifest(manifest)
-    assert unpublished_assets(manifest["assets"]) == [asset["asset_id"]]
-
-
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -242,6 +229,21 @@ def test_manifest_rejects_official_source_without_url_and_url_mismatch() -> None
     mismatch = make_asset("artifacts/a.json", b"a", url="https://example.test/other.zip")
     with pytest.raises(ReproduceError, match="bundle url"):
         validate_manifest(make_manifest([mismatch]))
+
+
+def test_direct_download_allows_a_pending_https_link_but_never_a_bundle() -> None:
+    pending = make_asset(
+        "data/dataset_b/split_v1/test.csv",
+        b"test",
+        distribution_classification="direct_download",
+        bundle_id=None,
+    )
+    validate_manifest(make_manifest([pending], []))
+    pending["url"] = URL
+    validate_manifest(make_manifest([pending], []))
+    pending["bundle_id"] = "bundle_a"
+    with pytest.raises(ReproduceError, match="no bundle"):
+        validate_manifest(make_manifest([pending]))
 
 
 @pytest.mark.parametrize(
@@ -463,54 +465,6 @@ def test_download_assets_is_idempotent(tmp_path: Path) -> None:
     assert len(server.ranges) == calls
 
 
-def test_direct_download_is_published_independently(tmp_path: Path) -> None:
-    content = b"locked split"
-    asset = make_asset(
-        "data/dataset_b/split_v1/train.csv",
-        content,
-        url=URL,
-        distribution_classification=DIRECT_DOWNLOAD,
-        bundle_id=None,
-    )
-    manifest = make_manifest([asset], [])
-    result = download_assets(manifest, tmp_path, opener=RangeServer(content), sleep=no_sleep)
-    assert result["status"] == "PASS"
-    assert result["downloaded"] == [asset["asset_id"]]
-    assert (tmp_path / asset["repository_relative_destination"]).read_bytes() == content
-
-
-def test_unpublished_direct_download_blocks_without_network_call(tmp_path: Path) -> None:
-    asset = make_asset(
-        "data/dataset_b/split_v1/train.csv",
-        b"locked split",
-        distribution_classification=DIRECT_DOWNLOAD,
-        bundle_id=None,
-    )
-    server = RangeServer(b"unexpected")
-    result = download_assets(make_manifest([asset], []), tmp_path, opener=server, sleep=no_sleep)
-    assert result["status"] == "BLOCKED"
-    assert result["gate"] == "G1"
-    assert result["unpublished_required_count"] == 1
-    assert server.ranges == []
-
-
-def test_optional_official_provenance_is_not_downloaded(tmp_path: Path) -> None:
-    asset = make_asset(
-        "data/raw/state_NY_2024.csv",
-        b"raw",
-        url=URL,
-        required=False,
-        distribution_classification="official_source",
-        bundle_id=None,
-        role="raw_source",
-    )
-    server = RangeServer(b"raw")
-    result = download_assets(make_manifest([asset], []), tmp_path, opener=server, sleep=no_sleep)
-    assert result["status"] == "PASS"
-    assert result["missing_optional_count"] == 1
-    assert server.ranges == []
-
-
 def test_unpublished_required_asset_blocks_g1(tmp_path: Path) -> None:
     manifest = make_manifest([make_asset("artifacts/a.json", b"a")])
     assert unpublished_assets(manifest["assets"]) == ["artifacts/a.json"]
@@ -555,6 +509,32 @@ def test_missing_git_tracked_asset_fails(tmp_path: Path) -> None:
     result = download_assets(make_manifest([asset], []), tmp_path, opener=RangeServer(b""), sleep=no_sleep)
     assert result["status"] == "FAIL"
     assert result["missing"] == ["reports/a.txt"]
+
+
+def test_direct_split_download_is_verified_without_fetching_optional_raw(tmp_path: Path) -> None:
+    raw = make_asset(
+        "data/raw/state_NY_2024.csv",
+        b"raw",
+        url="https://example.test/raw.csv",
+        distribution_classification="official_source",
+        bundle_id=None,
+        required=False,
+        role="raw_source",
+    )
+    split = make_asset(
+        "data/dataset_b/split_v1/test.csv",
+        b"test",
+        url=URL,
+        distribution_classification="direct_download",
+        bundle_id=None,
+        role="derived_split",
+    )
+    server = RangeServer(b"test")
+    result = download_assets(make_manifest([raw, split], []), tmp_path, opener=server, sleep=no_sleep)
+    assert result["status"] == "PASS"
+    assert result["downloaded"] == [split["asset_id"]]
+    assert not (tmp_path / "data/raw/state_NY_2024.csv").exists()
+    assert (tmp_path / "data/dataset_b/split_v1/test.csv").read_bytes() == b"test"
 
 
 def derived_manifest(*, split_url: str | None) -> tuple[dict, RangeServer, list[dict]]:
@@ -755,12 +735,6 @@ def test_other_links_are_kept_and_unusable_links_are_rejected() -> None:
             direct_download_url(bad)
 
 
-def test_sheets_share_link_becomes_csv_export() -> None:
-    assert direct_download_url(
-        "https://docs.google.com/spreadsheets/d/AbC_1-x/edit?usp=sharing"
-    ) == "https://docs.google.com/spreadsheets/d/AbC_1-x/export?format=csv"
-
-
 def test_bind_links_requires_every_bundle_exactly() -> None:
     manifest = make_manifest([make_asset("artifacts/a.json", b"a")])
     for links in ({}, {"bundle_a.zip": URL, "other.zip": URL}):
@@ -771,25 +745,24 @@ def test_bind_links_requires_every_bundle_exactly() -> None:
     assert unpublished_assets(bound["assets"]) == []
 
 
-def test_bind_links_requires_and_normalizes_direct_assets() -> None:
-    destination = "data/dataset_b/split_v1/train.csv"
-    direct = make_asset(
-        destination,
-        b"train",
-        distribution_classification=DIRECT_DOWNLOAD,
-        bundle_id=None,
-    )
-    manifest = make_manifest([direct], [])
-    with pytest.raises(ReproduceError, match="direct asset exactly"):
-        bind_links(copy.deepcopy(manifest), {})
-    bound = bind_links(
-        manifest,
-        {destination: "https://docs.google.com/spreadsheets/d/AbC_1-x/edit?usp=sharing"},
-    )
-    assert bound["assets"][0]["url"] == (
-        "https://docs.google.com/spreadsheets/d/AbC_1-x/export?format=csv"
-    )
+def test_bind_split_links_requires_all_three_locked_csv_names() -> None:
+    assets = [
+        make_asset(
+            f"data/dataset_b/split_v1/{name}",
+            name.encode(),
+            distribution_classification="direct_download",
+            bundle_id=None,
+            role="derived_split",
+        )
+        for name in ("train.csv", "validation.csv", "test.csv")
+    ]
+    manifest = make_manifest(assets, [])
+    links = {name: f"https://example.test/{name}" for name in ("train.csv", "validation.csv", "test.csv")}
+    bound = bind_split_links(manifest, links)
+    assert {asset["url"] for asset in bound["assets"]} == set(links.values())
     assert unpublished_assets(bound["assets"]) == []
+    with pytest.raises(ReproduceError, match="exactly"):
+        bind_split_links(manifest, {"train.csv": links["train.csv"]})
 
 
 def test_check_publication_requires_url_declared_size_and_public_repository() -> None:
@@ -823,13 +796,13 @@ def test_check_publication_rejects_an_empty_bundle_list() -> None:
     assert result["failures"] == {"bundles": "no bundles declared"}
 
 
-def test_check_publication_checks_direct_asset_size() -> None:
+def test_check_publication_checks_direct_asset_identity() -> None:
     url = "https://example.test/train.csv"
     direct = make_asset(
         "data/dataset_b/split_v1/train.csv",
         b"train",
         url=url,
-        distribution_classification=DIRECT_DOWNLOAD,
+        distribution_classification="direct_download",
         bundle_id=None,
     )
     manifest = make_manifest([direct], [])
@@ -844,6 +817,28 @@ def test_check_publication_checks_direct_asset_size() -> None:
     assert result["failures"] == {"bundles": "no bundles declared"}
 
 
+def test_check_publication_rejects_wrong_direct_asset_identity() -> None:
+    direct = make_asset(
+        "data/dataset_b/split_v1/train.csv",
+        b"train",
+        url="https://example.test/train.csv",
+        distribution_classification="direct_download",
+        bundle_id=None,
+    )
+    manifest = make_manifest([direct], [make_bundle("https://example.test/bundle.zip", b"zip")])
+
+    def opener(request, timeout=None):
+        if "info/refs" in request.full_url:
+            return FakeResponse(b"")
+        if request.headers.get("Range"):
+            return FakeResponse(b"z", 206, {"Content-Range": "bytes 0-0/3"})
+        return FakeResponse(b"wrong", headers={"Content-Type": "text/csv"})
+
+    result = check_publication(manifest, opener=opener)
+    assert result["status"] == "FAIL"
+    assert direct["asset_id"] in result["failures"]
+
+
 # Committed manifest
 
 
@@ -856,8 +851,20 @@ def test_committed_manifest_is_valid_and_covers_the_pinned_evidence() -> None:
         "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
     ]
     raw = by_destination["data/raw/state_NY_2024.csv"]
-    assert (raw["url"], raw["sha256"]) == (OFFICIAL_RAW_URL, RAW_PIN)
-    assert raw["distribution_classification"] == "official_source"
+    # RQ3 reads derived_race from the locked raw file, so the clean-clone route needs it.
+    raw_url = "https://drive.usercontent.google.com/download?id=18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg&export=download&confirm=t"
+    assert (raw["url"], raw["sha256"]) == (raw_url, RAW_PIN)
+    assert raw["distribution_classification"] == "direct_download"
+    assert raw["required"] is True
+    split_urls = {
+        "train.csv": "https://drive.usercontent.google.com/download?id=1VDDEO3uSQUq7dWj-3ir6_g4bmGVoposo&export=download&confirm=t",
+        "validation.csv": "https://drive.usercontent.google.com/download?id=1t_qV893lbcrdlFDb22mCvadvNwGXzWTV&export=download&confirm=t",
+        "test.csv": "https://drive.usercontent.google.com/download?id=16z2rvUUoRzJx6n3wB61fiqeMjSDJfDGX&export=download&confirm=t",
+    }
+    for filename in ("train.csv", "validation.csv", "test.csv"):
+        split = by_destination[f"data/dataset_b/split_v1/{filename}"]
+        assert split["distribution_classification"] == "direct_download"
+        assert split["url"] == split_urls[filename]
     for destination, pin in {**LINEAGE_PINS, **CHECKPOINT_PINS}.items():
         assert by_destination[destination]["sha256"] == pin
         assert by_destination[destination]["required"] is True

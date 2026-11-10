@@ -9,11 +9,11 @@ remains the sole register of experimental execution state.
 - Reviewed submission commit: PR #12 merge commit
   `369fe494506fce888d6c917f504d086a1dfcb097`.
 - Reviewed PR head: `ed1afbf783db502ade5dfb959738df51cdb6a5e7`.
-- Documentation version/date: `2.3`, `2026-11-03`.
+- Documentation version/date: `2.4`, `2026-11-09`.
 - Source version: commit `4bdfa0a5aebe138982b75a055891c1321a4d5496`
   on `main`.
 - Scope: the rubric sections 0 through 12 in
-  [REPRODUCE](../../REPRODUCE.md) version 2.3, Dataset B only.
+  [REPRODUCE](../../REPRODUCE.md) version 2.4, Dataset B only.
 - Evidence rule: repository source, Git history, accepted historical manifests,
   receipts, frozen artifacts, reports, saved notebook structure, and handbook.
 - Runtime boundary: this documentation review did not itself perform a new clean
@@ -60,16 +60,16 @@ The following owner decisions define the current documentation-acceptance gate:
 | Item | Status | Evidence path | Limitation | Action required to raise status |
 |---:|---|---|---|---|
 | 0 General information | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 0; source commit `4bdfa0a5...`; submission commits `369fe494...` and `ed1afbf...` | formal bilingual title, semester, supervisor, roster, IDs, and contact data are not declared | add only authoritative project metadata |
-| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 1; `src/dataset_b/reproduce/`; focused unit tests; recorded 2026-11-03 author-machine observations and 2026-11-09 partial clean-worktree PASS in STATUS | public download and asset verification passed in a detached worktree, but environment, evaluation, comparison, research, and reports were not run there | run the pinned complete clean-clone route on a qualified host |
+| 1 Quick Start | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Sections 1.0 and 1.3; `src/dataset_b/reproduce/`; focused unit tests; 2026-11-09 clean-clone receipts and `reports/reproducibility/receipts/clean_clone_acceptance_20261109.md` | the anonymous clean clone passed publication, download, assets, environments, evaluation, comparison, RQ3, RQ4a, and RQ4b; RQ2 and `reports` rest on 2026-11-08 receipts; Section 1.0 still pins `61a87be`, which predates the bound links | repin Section 1.0 to the final tag once the owner creates it |
 | 2 Repository structure | `PASS` | `README.md`; `config/README.md`; `notebooks/dataset_b/README.md`; `src/dataset_b/README.md`; handbook router | none for documented Dataset B navigation | none |
-| 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; STATUS | RTX 5050 Laptop GPU, nominal 8 GB device memory where evidenced, and CUDA build 13.0 are recorded; CPU model, RAM, driver, cuDNN, and some exact OS/Python fields remain unrecorded | none for current acceptance; do not rerun CUDA smoke solely to fill fields |
-| 4 Environment installation | `PASS_WITH_LIMITATION` | `environments/reproducibility/`; `requirements.txt`; `pyproject.toml`; recorded 2026-11-03 author-machine installation | the five profiles were installed on the author machine, but no clean-host resolver/install sequence was executed; CPU and GPU profiles differ and no lower compatibility floor is inferred | run the pinned install route on a clean qualified host |
-| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; 2026-11-09 public-link and partial clean-worktree checks in STATUS | raw HMDA is optional provenance and upstream terms are not declared in repository evidence | none for the locked public split and bundle identities; retain the recorded links and hashes |
+| 3 Hardware and software | `PASS_WITH_LIMITATION` | accepted RQ1 runtime/manifests; RQ4 CPU runtime manifest; `environment_20261108T125329_497165Z.json`; STATUS | the 2026-11-08 host verified RTX 5050 Laptop GPU, 8,546,484,224 bytes, driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, cuDNN 92400, and finite CUDA operations in all three neural profiles; the 2026-11-09 clean-clone host recorded an Intel Core i7-13650HX with 34,053,414,912 bytes of RAM; no lower floor was tested | do not infer a lower compatibility floor |
+| 4 Environment installation | `PASS_WITH_LIMITATION` | five locks under `environments/reproducibility/`; `environment_20261108T125329_497165Z.json`; clean-clone `environment_20261109T081829_471874Z.json` | all five profiles installed from scratch in the anonymous clean clone and passed with finite CUDA checks; installation reused the host package cache for wheels | none for the qualified host |
+| 5 Data | `PASS_WITH_LIMITATION` | data/split contracts; root locks; six frozen run manifests; final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff`; Phase C verification; 2026-11-09 publication and detached-worktree receipts | 654 retained assets and all 11 core ZIPs passed identity/member checks and were pushed through Git LFS; all 14 public URLs are bound, and anonymous plus detached-worktree asset verification passed; raw HMDA is now a required direct download of the locked Google Drive copy; the earlier 14-URL checks predate that binding | retain the recorded links/hashes and complete the final clean-clone route |
 | 6 Config and hyperparameters | `PASS` | `config/dataset_b/catalog.yaml` and its eleven targets; accepted manifests | config status may intentionally lag accepted STATUS for frozen lineage | none; interpret frozen config with STATUS |
 | 7 Training | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 7; six accepted frozen RQ1 run IDs; three completed RQ4b development runs; STATUS | the inventory records only completed accepted runs and actual seed coverage; no fresh training occurred in this task and several future routes are internal/operator-only | none for current documentation acceptance; fresh training requires a separate task |
-| 8 Evaluation and inference | `DOCUMENTED_NOT_RERUN` | `REPRODUCE.md` Sections 1 and 8; split/evaluation contract; accepted Test manifests; STATUS | historical checkpoint evaluation was observed before the final source edits, but the pinned current source was not rerun end to end; RQ2 was not run | rerun only the pinned frozen-checkpoint route on a qualified host; no training or fitting |
-| 9 Seeds and determinism | `PASS_WITH_LIMITATION` | split/model/RQ configs; numerical comparison policies; accepted multi-seed RQ4b evidence | cross-host/GPU determinism is not established and tolerances are model-specific | repeat under a declared host matrix without changing locked policies |
-| 10 Result/report mapping | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 10; final notebook router; RQ1/RQ2/RQ3-RQ4 retained reports; figure verification notes; accepted run roots | RQ-level mapping and retained object-level provenance are accepted; notebooks and report generation were not rerun | none for current acceptance; per-object regeneration commands are needed only for an expanded fresh-report scope |
+| 8 Evaluation and inference | `PASS_WITH_LIMITATION` | `evaluate_20261108T125910_329422Z.json`; `compare_20261108T125939_503172Z.json`; `research_20261108T174830_904582Z.json`; clean-clone `evaluate_20261109T082407_179201Z.json`, `compare_20261109T082435_073547Z.json`, and RQ3/RQ4a/RQ4b research receipts of 2026-11-09; STATUS | the clean clone passed six frozen-checkpoint evaluations, 402 RQ1 rows, RQ3, RQ4a, and RQ4b; RQ2 28/28 is the 2026-11-08 in-place receipt because the owner closed the clean-clone RQ2 run | none under the owner's 2026-11-09 closure |
+| 9 Seeds and determinism | `PASS_WITH_LIMITATION` | split/model/RQ configs; numerical comparison policies; accepted multi-seed RQ4b evidence; `research_20261108T174830_904582Z.json`; STATUS | locking TabMmini frozen CPU inference to one intra-op thread restored all 28 RQ2 comparisons without reselection or policy change; the accepted historical package still lacks enough provenance to prove its original thread configuration | retain both the initial failed receipt and passing rerun as diagnostic evidence |
+| 10 Result/report mapping | `PASS_WITH_LIMITATION` | `REPRODUCE.md` Section 10; `reports_20261108T174846_986881Z.json`; report mapping; retained reports and figure notes | five mapped objects passed; Figures 2 and 3 plus assembled RQ text reports remain `NOT_REGENERATED` because no source-backed builder exists and notebooks were not executed | none for current Phase B acceptance; notebook regeneration requires a separately authorized expanded scope |
 | 11 Limitations and troubleshooting | `PASS` | `REPRODUCE.md` Section 11; runbooks; STATUS limitations | none for the documentation claim | none |
 | 12 License citation and AI | `PASS` | `REPRODUCE.md` Section 12; Git history; STATUS; RQ4 plan/runbook; repository file inventory | license/citation completeness is excluded from the acceptance score; `NOT_DECLARED` inventory is retained transparently; AI-use evidence remains recorded | none for current documentation acceptance |
 
@@ -91,11 +91,11 @@ Documentation acceptance requires all of the following:
 
 ## Asset distribution decision
 
-On 2026-11-03 the owner decided that the project bundles would be distributed through
-Google Drive links, which were not yet available at that date. On that basis the owner accepted
+On 2026-11-03 the owner decided that the project bundles will be distributed through
+Google Drive links, which the owner will add later. On that basis the owner accepted
 gate G1 and authorized work on the following gates. This is an owner decision, not
-download evidence: at that date the links were not recorded, anonymous download through them was
-not verified, and anonymous repository access returned HTTP 401. The
+download evidence: the links are not yet recorded, anonymous download through them is
+not verified, and anonymous repository access returned HTTP 401 when last checked. The
 clean-clone gate needs the links recorded and every download hash-verified.
 
 On 2026-11-05 the owner separately authorized preservation of selected RQ4 historical
@@ -109,20 +109,8 @@ The same review reconciled RQ3 `runtime.csv` as volatile historical timing metad
 not a scientific reproduction input. The canonical file remains in its accepted run,
 while the core manifest and rebuilt RQ3 bundle exclude it. The manifest now records an
 included-inventory digest, source revision, and the excluded volatile path. Local
-asset verification passed 654/654; public bundle publication and anonymous download
-remain separate delivery gates.
-
-On 2026-11-09 the owner supplied byte-preserving links for the three locked split CSVs
-and links for eleven core ZIPs. The manifest treats the CSVs as independent direct
-downloads and retains raw HMDA only as optional historical provenance. Implementation
-tests passed 119/119 and all eleven local ZIP identities and member inventories passed,
-totaling 678,068,350 bytes. Anonymous publication verification passed for the
-repository endpoint, all three exact split identities, and the expected remote sizes
-of all eleven ZIPs. A detached temporary worktree then downloaded the CSVs and ZIPs;
-`download` and `verify-assets` both passed with 653/654 assets verified, no mismatch or
-required asset missing, and one optional provenance asset absent. This closes the
-public-download and partial clean-worktree gates, not CUDA Phase B or the full
-clean-clone route.
+asset verification passed 654/654. Public bundle publication and anonymous download
+later passed on 2026-11-09, as recorded in STATUS.
 
 Later on 2026-11-03 the owner prohibited training or fitting any model and then set
 the acceptance criterion for the remaining work: the command-line route must work
@@ -142,7 +130,7 @@ complete clean-clone execution.
 
 | ID | Template section | Requirement | State | Condition to proceed |
 |---|---|---|---|---|
-| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` obtained the three locked split CSVs directly in the partial clean-worktree PASS, and later preprocessing runs inside the model routes | none for the data-download gate; model-route execution remains separate |
+| TG-1 | 5, 8 | Data description, preprocessing steps, and metric definitions | written in `REPRODUCE.md` Sections 5.3, 5.4, and 8.1; metric formulas are read from the LR route only; `download` obtains the three locked split CSVs directly, and later preprocessing runs inside the model routes | none |
 | TG-2 | 4 | Declare environment variables | written in `REPRODUCE.md` Section 4; no `.env.example` is needed | none |
 | TG-3 | 9 | Multi-seed results for RQ1 | declared as a limitation in `REPRODUCE.md` Sections 9 and 11 | new training needs a separate owner authorization |
 | TG-4 | 7 | Training command per model, outside the read-only navigation CLI | written in `REPRODUCE.md` Section 7.2 as `DOCUMENTED_NOT_RERUN`; LR and TabMmini have no command-line training route; a reduced run is not required because accepted fits are under 4 GPU hours | execution needs a separate owner authorization |
@@ -159,10 +147,10 @@ guide contains the required content; it is not a runtime result.
 
 | Checklist item | State | Evidence or gap |
 |---|---|---|
-| Commit or tag and links in Section 0 | commit met; tag and links not met | source commit `4bdfa0a5...` is pinned; the final tag and bundle links come from the owner at delivery |
+| Commit or tag and links in Section 0 | commits and public links met; tag not met | source and release commits are pinned; all 14 public links are bound; the final tag remains owner-supplied |
 | Quick Start from clone to expected numbers | met in content; clean run not executed | `REPRODUCE.md` Section 1.0 |
 | Exact version locks installable in a new environment | met; installed on the author machine only | `environments/reproducibility/` |
-| Public data and checkpoint links with checksums | met for the 3 locked CSVs and 11 core bundles | Sections 5.1, 5.2, 5.5; manifest; retained partial clean-worktree receipts |
+| Public data and checkpoint links with checksums | met for the 3 locked CSVs and 11 core bundles | Sections 5.1, 5.2, 5.5; manifest; retained detached-worktree receipts |
 | No absolute personal paths in code | met for `src`, `scripts`, and `tests`; the Colab profile config holds three `/content` paths | a search of tracked files on 2026-11-03 |
 | Fixed Test set not used for selection | met | `split_v1.json`; split and evaluation contract |
 | Seeds recorded; multi-seed mean and standard deviation | seeds met; multi-seed not met for RQ1, declared as a limitation | Section 9 |
@@ -173,8 +161,7 @@ guide contains the required content; it is not a runtime result.
 | Non-reproducible parts and AI tools declared | met | Sections 11 and 12 |
 
 Open items that only the owner can supply: formal titles, semester, supervisor, roster,
-student IDs, contact, code license, HMDA data terms, the final tag, and the 11 bundle
-links.
+student IDs, contact, code license, HMDA data terms, and the final tag.
 
 Other known gaps: CPU and RAM are not recorded; peak training VRAM is not recorded for
 the final fits; LR and TabMmini have no command-line training route; the Quick Start has
@@ -197,19 +184,38 @@ added. This historical decision is not current execution status.
 
 ## Acceptance conclusion
 
-The current-host technical issue recorded on 2026-11-05 is resolved and `COMPLETE`:
-the asset gate passed 654/654; this machine has no CUDA and does not contain the five
-locked virtual environments; the owner records that those environments are on another
-machine; and the owner stopped the current Phase B and Phase C attempt. No checkpoint
-or metric comparison failed in this attempt.
+The CUDA handoff Phase B run on 2026-11-08 through 2026-11-09 is complete within its
+qualified-host scope. Asset integrity passed
+654/654 at commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0`. All five locked
+environment profiles passed; the three neural profiles performed finite CUDA tensor
+operations. Six frozen-checkpoint evaluations and all 402 RQ1 comparisons passed.
+RQ3, RQ4a, and RQ4b also passed without training or fitting.
 
-The current machine has no CUDA and does not contain the locked virtual environments;
-the owner records that those environments are on another machine. Public publication
-and partial clean-worktree download/asset verification passed on 2026-11-09. This
-acceptance does not establish a successful clean-clone run, current-source end-to-end
-execution, notebook regeneration, or universal runtime reproducibility. Completion of
-the public-download gate does not mark the entire reproduction runtime complete.
+An initial RQ2 run failed three TabMmini rows. Controlled frozen inference identified
+the unpinned Torch CPU thread count as the current-host cause; a scoped one-thread lock
+then produced a 28/28 passing official rerun. The tolerance and accepted artifacts
+remain unchanged. `reports` was run and returned the documented `INCOMPLETE` status:
+five objects passed and three notebook/authored-report objects were not regenerated.
+Phase C then rebuilt all 11 core ZIPs. All bundle identities and member inventories
+matched the prebuild manifest; RQ3 volatile runtime metadata and the optional RQ4 audit
+archive remained outside core. All 11 core LFS objects were pushed in release commit
+`1d38448...`; Phase C build/stage/commit/push is complete. Anonymous publication and
+detached-worktree `download`/`verify-assets` subsequently passed for all 14 bound URLs.
 
-This conclusion is a technical issue-resolution record. It is not a training result,
-a new model evaluation result, a current-host GPU compatibility result, or a universal
-numerical reproducibility claim.
+On 2026-11-09 an anonymous clean clone at `e470e12c49d558184ad44d26fd0e6186a0a58782`
+passed publication, download, `verify-assets`, all five environments, six-model
+frozen-checkpoint evaluation, 402/402 RQ1 comparisons, RQ3 5/5, RQ4a 4/4, and RQ4b
+17/17 without training or fitting. RQ3 first stopped because raw HMDA was optional; the
+owner's Google Drive copy matched the locked identity and is now a required direct
+download in the manifest, after which 654/654 assets verified. The owner closed
+execution during RQ2, so RQ2 and `reports` were not rerun in the clone and rest on the
+2026-11-08 receipts. The template-structured record is
+`reports/reproducibility/receipts/clean_clone_acceptance_20261109.md`. No final tag
+was supplied.
+
+This acceptance does not establish a successful clean-clone end-to-end run,
+notebook regeneration, or universal runtime reproducibility.
+
+This conclusion is a gate-status record. It is not a training result, a new model
+evaluation result, a locked-profile GPU compatibility result, or a universal numerical
+reproducibility claim.

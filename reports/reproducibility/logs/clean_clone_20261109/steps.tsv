@@ -1,0 +1,21 @@
+step	start_utc	end_utc	elapsed_s	exit_code	command
+clone	2026-11-09T08:00:49.159Z	2026-11-09T08:00:56.442Z	7.283	0	GIT_TERMINAL_PROMPT=0 GIT_LFS_SKIP_SMUDGE=1 git -c credential.helper= clone --branch codex/cuda-phase-b-c-handoff https://github.com/DAP391m-Group12/DAP391m.git <clean-clone-dir>
+host_venv_create	2026-11-09T08:01:36.260Z	2026-11-09T08:01:50.180Z	13.926	0	python -m venv .venv
+host_venv_install	2026-11-09T08:01:50.341Z	2026-11-09T08:03:42.093Z	111.751	0	.venv/Scripts/python.exe -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt
+gate0_publication	2026-11-09T08:03:50.052Z	2026-11-09T08:04:25.753Z	35.700	0	python -m src.dataset_b.reproduce maintainer-check-publication
+gate1_download	2026-11-09T08:04:33.527Z	2026-11-09T08:06:09.015Z	95.490	0	python -m src.dataset_b.reproduce download
+gate1_verify_assets	2026-11-09T08:06:09.163Z	2026-11-09T08:06:11.532Z	2.374	0	python -m src.dataset_b.reproduce verify-assets
+gate2_environment_install	2026-11-09T08:06:33.482Z	2026-11-09T08:17:51.094Z	677.611	0	python -m src.dataset_b.reproduce environment --install
+gate2_environment_check	2026-11-09T08:17:51.251Z	2026-11-09T08:18:29.506Z	38.252	0	python -m src.dataset_b.reproduce environment
+gate3_evaluate	2026-11-09T08:18:57.099Z	2026-11-09T08:24:07.212Z	310.113	0	python -m src.dataset_b.reproduce evaluate --model all
+gate4_compare	2026-11-09T08:24:34.025Z	2026-11-09T08:24:35.106Z	1.080	0	python -m src.dataset_b.reproduce compare
+gate5_research	2026-11-09T08:24:41.518Z	2026-11-09T09:31:15.583Z	3994.101	127	python -m src.dataset_b.reproduce research --route all
+gate5_research	2026-11-09T08:24:4x	2026-11-09T09:31:25.352Z	n/a	STOPPED	research --route all stopped manually after RQ3 FAIL was found (RQ2 incomplete)
+post_stop_verify_assets	2026-11-09T09:31:25.392Z	2026-11-09T09:31:27.792Z	2.399	0	python -m src.dataset_b.reproduce verify-assets
+bind_publication	2026-11-09T10:03:38.111Z	2026-11-09T10:06:15.455Z	157.343	0	python -m src.dataset_b.reproduce maintainer-check-publication
+bind_download	2026-11-09T10:06:15.603Z	2026-11-09T10:08:54.404Z	158.804	0	python -m src.dataset_b.reproduce download
+bind_verify_assets	2026-11-09T10:08:54.575Z	2026-11-09T10:08:57.396Z	2.801	0	python -m src.dataset_b.reproduce verify-assets
+gate5_rq3	2026-11-09T10:10:17.209Z	2026-11-09T10:18:41.273Z	504.063	0	python -m src.dataset_b.reproduce research --route rq3
+gate5_rq4a	2026-11-09T10:18:48.611Z	2026-11-09T10:18:53.374Z	4.762	0	python -m src.dataset_b.reproduce research --route rq4a
+gate5_rq4b	2026-11-09T10:19:04.585Z	2026-11-09T10:22:46.076Z	221.491	0	python -m src.dataset_b.reproduce research --route rq4b
+gate5_rq2	2026-11-09T10:23:06.046Z	2026-11-09T11:04:55.670Z	2509.646	127	python -m src.dataset_b.reproduce research --route rq2

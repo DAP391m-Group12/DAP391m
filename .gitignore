@@ -368,3 +368,15 @@ Desktop.ini
 ~$*
 *paper
 /.venv-repro/
+
+# Keep these reproducibility bundles local only.
+/dist/reproducibility/dataset_b_core_part01.zip
+/dist/reproducibility/dataset_b_lr_part01.zip
+/dist/reproducibility/dataset_b_plain_mlp_part01.zip
+/dist/reproducibility/dataset_b_realmlp_part01.zip
+/dist/reproducibility/dataset_b_rf_part01.zip
+/dist/reproducibility/dataset_b_rq2_part01.zip
+/dist/reproducibility/dataset_b_rq4a_part01.zip
+/dist/reproducibility/dataset_b_rq4b_part01.zip
+/dist/reproducibility/dataset_b_tabmmini_part01.zip
+/dist/reproducibility/dataset_b_xgboost_part01.zip

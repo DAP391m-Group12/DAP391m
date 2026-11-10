@@ -5,14 +5,14 @@
    "asset_id": "hmda_ny_2024_raw",
    "bundle_id": null,
    "byte_size": 145740132,
-   "distribution_classification": "official_source",
+   "distribution_classification": "direct_download",
    "hash_mode": "bytes",
    "model_or_rq_scope": "data",
    "repository_relative_destination": "data/raw/state_NY_2024.csv",
-   "required": false,
+   "required": true,
    "role": "raw_source",
    "sha256": "e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d",
-   "url": "https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024"
+   "url": "https://drive.usercontent.google.com/download?id=18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg&export=download&confirm=t"
   },
   {
    "accepted_run_id": null,
@@ -9243,6 +9243,6 @@
    "artifacts/dataset_b/rq3/rq3_fairness_20261010_01/runtime.csv"
   ],
   "inventory_sha256": "aec8106c4a49e85fe9489c91d0040ffc154a7c4998ad74605123eade1a70af65",
-  "source_revision": "4bdfa0a5aebe138982b75a055891c1321a4d5496"
+  "source_revision": "0aa028a00845852d383e0a180ccae82942bafad2"
  }
 }

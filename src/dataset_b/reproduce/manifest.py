@@ -162,7 +162,7 @@ def _asset_errors(asset: Any, bundles: Mapping[str, Mapping[str, Any]]) -> list[
             errors.append(f"{owner}: official source needs a url and no bundle")
     elif distribution == DIRECT_DOWNLOAD:
         if asset["bundle_id"] is not None:
-            errors.append(f"{owner}: direct download must not name a bundle")
+            errors.append(f"{owner}: direct download must have no bundle")
     elif distribution == PROJECT_BUNDLE:
         bundle = bundles.get(asset["bundle_id"])
         if bundle is None:

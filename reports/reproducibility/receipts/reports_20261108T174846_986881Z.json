@@ -1,0 +1,11 @@
+{
+  "command": "reports",
+  "created_at_utc": "2026-11-08T17:48:46.986881+00:00",
+  "manifest_sha256": "f021ec2dd430aef7292eba68f41369d6ff5a9a48de047d5122ff9948fe798435",
+  "mapping": "reports/reproducibility/reports/report_mapping.csv",
+  "object_counts": {
+    "NOT_REGENERATED": 3,
+    "PASS": 5
+  },
+  "status": "INCOMPLETE"
+}

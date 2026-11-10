@@ -1,10 +1,32 @@
 # Dataset B Reproducibility Guide
 
 This guide is the reproducibility entry point for Dataset B. It distinguishes
-static verification, runs observed on 2026-11-03, accepted historical runtime
+static verification, runs observed on 2026-11-03 and 2026-11-08, accepted historical runtime
 evidence, procedures that were not rerun, and limitations that remain unverified.
 Section 1 gives the command route; the end-to-end clean-clone run has not been
 executed, and no model was trained or fitted for this guide.
+
+The qualified-host Phase B run on 2026-11-08 through 2026-11-09 passed asset
+verification, all five environment profiles, six-model frozen-checkpoint evaluation,
+all 402 RQ1 comparisons, and all four research routes. An initial RQ2 run failed three
+TabMmini comparisons because the frozen CPU inference path did not lock Torch's
+intra-op thread count. A one-thread lock scoped to each TabMmini inference call restored
+the caller's setting afterwards and the official rerun passed all 28 RQ2 rows without
+changing the numerical policy or accepted artifacts. `reports` then returned the
+documented `INCOMPLETE` status: five objects passed and three notebook/authored-report
+objects were not regenerated. Phase C was not opened in that task. See
+`docs/handbook/STATUS.md` for the receipts and exact limitations.
+
+Phase C subsequently rebuilt all 11 core ZIPs from the retained inventory. Every
+bundle kept the size and SHA-256 declared before the build, every ZIP member matched
+its assigned manifest inventory, RQ3 `runtime.csv` remained excluded, and the optional
+RQ4 audit archive remained outside the core manifest. The verified local bundle total
+is 678,068,350 bytes. The 11 core LFS pointers and objects were pushed on branch
+`codex/cuda-phase-b-c-handoff` in release commit
+`1d384482f7b00f84c06cdecbb4abd13380da91a2`. The 11 bundle URLs and three locked
+split-CSV URLs were subsequently bound and passed anonymous publication verification.
+A detached worktree also passed `download` and `verify-assets`; complete clean-clone
+installation and the remaining runtime stages were not executed there.
 
 The authoritative documentation acceptance register is
 [REPRODUCIBILITY_ACCEPTANCE](docs/handbook/REPRODUCIBILITY_ACCEPTANCE.md).
@@ -28,13 +50,13 @@ Experimental execution status remains exclusively in
 | Contact                             |                                                                                                 |
 | Submission identity                 | PR #12 merge commit `369fe494506fce888d6c917f504d086a1dfcb097`                                |
 | Reviewed PR head                    | `ed1afbf783db502ade5dfb959738df51cdb6a5e7`                                                    |
-| Reproduction route version          | commit `4bdfa0a5aebe138982b75a055891c1321a4d5496` on `main`                                  |
+| Reproduction route version          | commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` on `codex/cuda-phase-b-c-handoff`          |
 | Final tag                           |                                                                                                 |
 | Processed data and checkpoint links |                                                                                                 |
-| Project bundle size                 | 11 bundles, 678,068,843 bytes in total (Section 5.5)                                            |
+| Project bundle size                 | 11 bundles, 678,068,350 bytes in total (Section 5.5)                                            |
 | Raw data link                       | `https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024`; 145,740,132 bytes |
-| Document version                    | `2.3`                                                                                         |
-| Document date                       | `2026-11-03`                                                                                  |
+| Document version                    | `2.4`                                                                                         |
+| Document date                       | `2026-11-09`                                                                                  |
 
 Three identities must not be conflated:
 
@@ -67,7 +89,7 @@ for the host; its lock needs Python 3.11 or newer, although `pyproject.toml` all
 ```powershell
 git clone https://github.com/DAP391m-Group12/DAP391m.git
 Set-Location DAP391m
-git checkout 4bdfa0a5aebe138982b75a055891c1321a4d5496
+git checkout 61a87bec7878c3507b0b76dd5fdae5d4d320b7ff
 python -m venv .venv
 & .\.venv\Scripts\Activate.ps1
 python -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt
@@ -94,23 +116,24 @@ Execution status of this route on 2026-11-03: `environment`, `verify-assets`,
 `evaluate`, `compare`, and `reports` were each observed on the author machine from
 a working tree whose assets came from verified local bundles. `evaluate` ran the
 classical and neural models in separate invocations after a first full invocation
-failed on a defect that was then fixed. The bootstrap lines above and the complete sequence on a clean
+failed on a defect that was then fixed. At that time `download` stopped with exit code
+3 because the public links had not been recorded. The bootstrap lines above and the complete sequence on a clean
 machine were not executed; the observed commands used the author's Python 3.13.14 host
 rather than the host lock. `reports` currently exits 1 with `INCOMPLETE`, because
 Section 10 lists objects that were not run or regenerated. Parts of the CLI, including
 `evaluate`, `compare`, and `reports`, were edited after those observations and are
-covered since then by unit tests only; the commands were not repeated.
+covered since then by unit tests only; the commands were not repeated in that 2026-11-03
+observation. On 2026-11-09 the bound public links and a detached-worktree
+`download`/`verify-assets` run passed, without running an environment install,
+evaluation, comparison, research route, or reports in that worktree.
 
-Non-CUDA publication preparation on 2026-11-09 recorded all 14 download URLs. After
-correcting the RQ2 URL and replacing the three split links with byte-preserving files,
-anonymous publication verification passed: the repository endpoint and all eleven ZIP
-URLs passed reachability and expected remote-size checks, and Train, Validation, and
-Test matched their locked byte sizes and SHA-256 values. A detached temporary worktree
-then completed `download` and `verify-assets`: 653 of 654 assets were verified, with
-no mismatch or required asset missing and one optional provenance asset absent. This
-closes the public-link and partial clean-worktree gates, not the complete Quick Start.
-No environment, model, CUDA, evaluation, comparison, research, or report command was
-run in that worktree. The preparation changes remain uncommitted and unpushed.
+Current-source status on the qualified handoff host: `evaluate`, `compare`,
+`research --route all`, and `reports` were repeated on 2026-11-08 through 2026-11-09.
+Evaluation passed 6/6, RQ1 comparison passed 402/402, RQ2 passed 28/28, RQ3 passed
+5/5, RQ4a passed 4/4, and RQ4b passed 17/17. `reports` remained `INCOMPLETE` only for
+the three documented notebook/authored-report objects that have no source-backed
+builder in the reproduction route. This was an in-place qualified-host run, not the
+clean-clone route above.
 
 Exit codes: 0 PASS; 1 FAIL or INCOMPLETE; 2 usage error; 3 gate BLOCKED. The stages
 above and the RQ routes also run in order through
@@ -168,6 +191,43 @@ Expected retained-workspace results:
 On a clean clone without retained artifacts, `status` may be `INCOMPLETE` and
 `validate-artifacts` must fail on a missing locked file.
 
+### 1.3 Anonymous clean-clone acceptance run, 2026-11-09
+
+The qualified CUDA host ran the route from a new anonymous clone of
+`codex/cuda-phase-b-c-handoff` at commit `e470e12c49d558184ad44d26fd0e6186a0a58782`,
+with Git LFS smudge off and nothing copied from an earlier workspace. The sequence and
+results were:
+
+```powershell
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+python -m pip install uv==0.11.22 -r environments/reproducibility/classical_cpu.txt
+python -m src.dataset_b.reproduce maintainer-check-publication   # PASS: 11 bundles, 4 direct assets
+python -m src.dataset_b.reproduce download                       # PASS: 654/654 verified
+python -m src.dataset_b.reproduce verify-assets                  # PASS: 654/654
+python -m src.dataset_b.reproduce environment --install          # PASS: 5/5; 677.6 s
+python -m src.dataset_b.reproduce environment                    # PASS: 5/5; finite CUDA in 3 profiles
+python -m src.dataset_b.reproduce evaluate --model all           # PASS: 6/6; 310.1 s; no fit
+python -m src.dataset_b.reproduce compare                        # PASS: 402/402
+python -m src.dataset_b.reproduce research --route rq3           # PASS: 5/5; 504.1 s
+python -m src.dataset_b.reproduce research --route rq4a          # PASS: 4/4
+python -m src.dataset_b.reproduce research --route rq4b          # PASS: 17/17
+```
+
+The host was Windows 11 10.0.26200, Intel Core i7-13650HX (14 cores, 20 threads),
+34,053,414,912 bytes of RAM, NVIDIA GeForce RTX 5050 Laptop GPU with 8,546,484,224
+bytes, driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, and cuDNN 92400. The RQ1
+Test values equal the table in Section 1.0.
+
+The first `research --route all` attempt stopped in RQ3 because raw HMDA was optional
+and absent. The owner then supplied a Google Drive copy of the locked raw file, and the
+manifest now binds it as a required direct download (Section 5.5). Run the four
+research routes one at a time: `research --route all` continues after a failed route.
+The owner closed execution during `research --route rq2` after three of six models,
+so RQ2 28/28 and the `reports` result rest on the 2026-11-08 receipts. Receipts, step
+log, and the template-structured acceptance record are in
+[clean_clone_acceptance_20261109.md](reports/reproducibility/receipts/clean_clone_acceptance_20261109.md).
+
 ## 2. Repository structure
 
 ```text
@@ -184,7 +244,7 @@ scripts/reproduce.ps1    PowerShell wrapper for the reproduction CLI
 docs/handbook/           contracts, runbooks, STATUS, and acceptance register
 reports/                 durable metrics and publication outputs
 reports/reproducibility/ generated reproduction outputs; never accepted runs
-dist/reproducibility/    release bundles; not Git-distributed
+dist/reproducibility/    release bundles; Git LFS on the handoff branch
 tests/                   static, contract, and implementation tests
 ```
 
@@ -309,7 +369,7 @@ comparison only. The hash below remains the identity check. Data terms are in Se
 
 | Item                          | Role                                     | Local path                                               | Size (bytes) | SHA-256                                                              | Distribution                             |
 | ----------------------------- | ---------------------------------------- | -------------------------------------------------------- | -----------: | -------------------------------------------------------------------- | ---------------------------------------- |
-| HMDA NY 2024 CSV              | immutable raw source                     | `data/raw/state_NY_2024.csv`                           |  145,740,132 | `e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d` | official source; not in a project bundle |
+| HMDA NY 2024 CSV              | immutable raw source                     | `data/raw/state_NY_2024.csv`                           |  145,740,132 | `e973343e8bf60c9ad9cefe9f7d0a9321b8e04813c8ec4379f746679b0ddc847d` | required direct download (Google Drive copy of the locked export); not in a project bundle |
 | split v1 manifest             | ordered Train/Validation/Test membership | `artifacts/dataset_b/split_v1.json`                    |    7,919,382 | `66816ba47da64bfd85c010a90a14b9d80443a46d319258bf9fc1b3657f731596` | project bundle                           |
 | shared Test bootstrap indices | 1,000 locked paired-bootstrap replicates | `artifacts/dataset_b/rq1_test_bootstrap_indices.npz`   |  113,753,708 | `2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1` | project bundle                           |
 | bootstrap manifest            | index contract and lineage               | `artifacts/dataset_b/rq1_test_bootstrap_manifest.json` |          886 | `5544af4ebe91bfdf8c5b3b574fa2ef24f3da8c14827f353970cbe9d759e9d21e` | project bundle                           |
@@ -426,8 +486,8 @@ for LR and `full_train/model/preprocessor.joblib` for TabMmini.
 
 | Route                         | Assets | Handling by `download`                              |
 | ----------------------------- | -----: | ----------------------------------------------------- |
-| Historical HMDA provenance    |      1 | optional; not downloaded by the default frozen route  |
-| Locked split CSVs             |      3 | downloaded independently and hash-verified            |
+| Locked HMDA raw source        |      1 | downloaded directly from Google Drive, then verified by size and SHA-256; RQ3 reads `derived_race` from it |
+| Locked split CSVs             |      3 | downloaded directly, then verified by size and SHA-256 |
 | Project bundles               |    647 | 11 ZIP files downloaded, verified, and extracted      |
 | Git-tracked reference reports |      3 | already present in the clone                          |
 
@@ -440,22 +500,53 @@ from the core release inventory. It records non-deterministic wall-clock timings
 reproduction route. The manifest records this exclusion under `source_provenance`,
 along with the source revision and a digest of the included source inventory.
 
-**Status, 2026-11-09:** the 3 CSV and 11 bundle links are bound in the manifest and
-anonymous publication verification is `PASS`. Train, Validation, and Test match their
-locked byte sizes and SHA-256 values. The anonymous repository endpoint and all eleven
-ZIP URLs pass reachability and expected remote-size checks. A detached temporary
-worktree subsequently downloaded the eleven ZIPs and verified their extracted assets;
-full remote ZIP integrity is therefore covered by that clean-download evidence rather
-than by the publication check alone.
+**Status:** Phase C rebuilt and verified all 11 local ZIPs on 2026-11-09. The bundle
+identities and 654-asset inventory were unchanged from the prebuild manifest; only
+`source_provenance.source_revision` records direct-download implementation commit
+`0aa028a00845852d383e0a180ccae82942bafad2`. Final evidence is in
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T181358Z.json`.
+Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS
+objects were pushed to `codex/cuda-phase-b-c-handoff`; `git lfs fsck` passed before
+and after the push. The default data route does not rebuild the splits from the live
+HMDA endpoint. It downloads the three locked CSVs to `.part` files and publishes them
+only after their declared size and SHA-256 pass; an existing correct file is skipped
+and an existing incorrect file is never overwritten. On 2026-11-09 the owner supplied
+the 11 public bundle links and three byte-preserving locked split links. Anonymous
+publication verification passed, including exact byte-size/SHA-256 checks for all
+three CSVs. A detached worktree then downloaded all 14 files, extracted 647 bundle
+members, and passed `download` plus independent `verify-assets` with 653/654 assets
+verified, no mismatch or required asset missing, and one optional provenance asset
+absent. The retained receipts are
+`reports/reproducibility/receipts/download_20261109T073546_424715Z.json` and
+`reports/reproducibility/receipts/verify-assets_20261109T073632_076796Z.json`.
 
-To bind a corrected set of links, copy
+To record a replacement set of bundle links, copy
 [`bundle_links.example.json`](config/dataset_b/reproducibility/bundle_links.example.json)
-to `bundle_links.json` in the same folder, fill in the 3 split and 11 bundle links, share each file with
+to `bundle_links.json` in the same folder, fill in the 11 links, share each file with
 anyone who has the link, and run:
 
 ```powershell
 python -m src.dataset_b.reproduce maintainer-bind-links --links-file config/dataset_b/reproducibility/bundle_links.json
 ```
+
+For the three split CSVs, copy
+[`split_links.example.json`](config/dataset_b/reproducibility/split_links.example.json)
+to `split_links.json`, replace all placeholders with the exact HTTPS links, and run:
+
+```powershell
+python -m src.dataset_b.reproduce maintainer-bind-split-links --links-file config/dataset_b/reproducibility/split_links.json
+```
+
+The locked identities are 23,631,341 bytes / `04575b2f...d692477` for Train,
+5,063,935 bytes / `cd233414...9d3cbb` for Validation, and 5,064,953 bytes /
+`5815caf7...2cae05` for Test. Raw HMDA is not needed for frozen-checkpoint evaluation,
+but RQ3 needs it for `derived_race`. Since 2026-11-09 the manifest binds the owner's
+Google Drive copy
+(`https://drive.google.com/file/d/18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg/view?usp=drive_link`)
+as a required direct download; an anonymous download returned 145,740,132 bytes with the
+locked SHA-256. `maintainer-build` now records this same locked Google Drive raw
+copy as a required direct download and preserves its pinned size and SHA-256; it
+does not bind the live HMDA endpoint.
 
 ### 5.6 Optional RQ4 audit evidence
 
@@ -748,7 +839,7 @@ covers both.
 | RQ1 report Section 6: CV folds, confusion matrix, calibration curve                     | none in the reproduction CLI; confusion counts are in `rq1_test_metrics.json`                                                                           | model configs in Section 6                     | each run's `reporting/cv_fold_metrics.csv`, `confusion_matrix.csv`, and `calibration_curve.csv` | not regenerated                                |
 | Other RQ1 and RQ2 report sections: scope, lineage, cohort, checks, ledgers, limitations | none; authored report text                                                                                                                                | Sections 5 and 6                               | `reports/RQ1_Research_Metrics_Final.txt`, `reports/RQ2_Research_Metrics_Final.txt`                | not regenerated                                |
 | RQ1 paired comparisons, Section 7 of the RQ1 report                                     | `07_model_total_review.ipynb`                                                                                                                           | `split_and_evaluation.md`                    | six stored bootstrap tables                                                                           | 150 rows; not regenerated                      |
-| RQ2 report Sections 5 to 8                                                              | `reproduce research --route rq2`                                                                                                                        | `rq2_protocol.yaml`                          | `reports/reproducibility/research/rq2/`                                                             | not run                                        |
+| RQ2 report Sections 5 to 8                                                              | `reproduce research --route rq2`                                                                                                                        | `rq2_protocol.yaml`                          | `reports/reproducibility/research/rq2/`                                                             | 28 of 28 comparison rows passed                |
 | RQ3 group, gap, and bootstrap tables                                                    | `reproduce research --route rq3`                                                                                                                        | `rq3_protocol.yaml`                          | `reports/reproducibility/research/rq3/output/`                                                      | 5 of 5 comparison rows passed                  |
 | Tables 4A to 4E                                                                         | `reproduce research --route rq4a`                                                                                                                       | `rq4a_postprocessing.yaml`                   | stored `reporting/` of both RQ4a runs                                                               | stored package validated; not regenerated      |
 | Tables 5A to 5E                                                                         | `reproduce research --route rq4b`                                                                                                                       | `rq4b_adversarial.yaml`                      | `reports/reproducibility/research/rq4b/output/`                                                     | 17 of 17 comparison rows passed                |
@@ -782,6 +873,8 @@ covers both.
 | Multi-seed RQ1 mean and standard deviation are absent                                                               | each of the six final RQ1 models has one final fit                                                                              | read Section 9; do not present fold variation as seed variation                                      |
 | Notebook contains saved error output                                                                                | it is not clean saved reporting evidence                                                                                        | inspect the named notebook as JSON; do not execute or resave without separate authorization          |
 | Historical `D:\Proj\...` or `/content/drive/MyDrive/...` path appears                                           | it is run-profile lineage, not a portable repository default                                                                    | interpret against the recorded runtime; use repository-relative catalog paths for current navigation |
+| RQ3 fails with `FileNotFoundError` for `data/raw/state_NY_2024.csv`                                             | the raw HMDA file was not downloaded; RQ3 reads `derived_race` from it                                                          | use a manifest that binds the raw file as a required direct download (Section 5.5), then rerun `download` |
+| `research --route all` keeps running after one route fails                                                        | the command runs every selected route before it reports                                                                         | run `--route rq3`, `rq4a`, `rq4b`, and `rq2` one at a time and check each result                     |
 
 The frozen configuration and manifests intentionally preserve historical
 absolute paths. Do not edit them for portability. Current navigation resolves
@@ -791,15 +884,13 @@ profile-specific and its recorded runtime execution remains not started.
 
 ### 11.1 Current-source runtime verification gaps
 
-- The complete clean-clone sequence was not executed.
-- The 2026-11-09 partial clean-worktree `download` and `verify-assets` gates passed with
-  653/654 assets verified, no mismatch or required asset missing, and one optional
-  provenance asset absent. This was not the complete clean-clone sequence.
-- The RQ2 route was not run.
-- `evaluate`, `compare`, and `reports` were edited after their last observed run and
-  were not repeated from the pinned current source.
-- The RQ route receipts in the author's working tree predate the current receipt format
-  and hold no input hashes.
+- Anonymous publication and detached-worktree `download`/`verify-assets` passed on
+  2026-11-09. The anonymous clean-clone run in Section 1.3 then passed publication,
+  download, asset verification, all five environments, evaluation, comparison, RQ3,
+  RQ4a, and RQ4b. RQ2 and `reports` were not rerun in that clone.
+- The qualified-host route was run in place, not from a clean clone.
+- Three notebook/authored-report objects remain `NOT_REGENERATED`; `reports` therefore
+  returns the documented `INCOMPLETE` status.
 
 These are conditions still needed for full current-source runtime reproducibility.
 
@@ -836,9 +927,10 @@ not contain the five locked virtual environments.
 
 The owner records that the locked virtual environments are on another machine. The
 stopped current-host attempt is an environment-boundary record, not a checkpoint,
-metric, or scientific-result failure. `compare`, RQ2, `reports`, complete clean-clone
-execution, final tagging, and release publication were not run. Public download and
-partial clean-worktree verification passed later on 2026-11-09.
+metric, or scientific-result failure. `compare`, RQ2, `reports`, clean-clone execution,
+public download verification, final tagging, and release publication were not run in
+that 2026-11-05 attempt. Public download and partial clean-worktree verification passed
+later on 2026-11-09.
 Completion here applies only to diagnosis, recording, and closure of this technical
 issue; it does not state that the entire reproduction runtime is complete.
 

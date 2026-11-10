@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterator, Mapping
 from .assets import extract_bundle
 from .manifest import (
     DIRECT_DOWNLOAD,
+    DERIVED_FROM_RAW,
     GIT_TRACKED,
     MANIFEST_RELATIVE_PATH,
     OFFICIAL_SOURCE,
@@ -32,9 +33,9 @@ BUNDLE_DIRECTORY = "dist/reproducibility"
 MAX_BUNDLE_BYTES = 1_900_000_000
 _ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)
 
-OFFICIAL_RAW_URL = "https://ffiec.cfpb.gov/v2/data-browser-api/view/csv?states=NY&years=2024"
+OFFICIAL_RAW_URL = "https://drive.usercontent.google.com/download?id=18UuN7nm7TCoMm8FxPQytl5cFb3QgFKbg&export=download&confirm=t"
 RAW_ASSET = "data/raw/state_NY_2024.csv"
-LOCKED_SPLIT_ASSETS = (
+DERIVED_SPLIT_ASSETS = (
     "data/dataset_b/split_v1/train.csv",
     "data/dataset_b/split_v1/validation.csv",
     "data/dataset_b/split_v1/test.csv",
@@ -230,13 +231,13 @@ def build_inventory(source_root: Path, project_root: Path) -> list[dict[str, Any
             scope="data",
             destination=RAW_ASSET,
             identity=file_identity(source_root / RAW_ASSET),
-            required=False,
             url=OFFICIAL_RAW_URL,
-            distribution=OFFICIAL_SOURCE,
+            distribution=DIRECT_DOWNLOAD,
+            required=True,
             role="raw_source",
         )
     ]
-    for destination in LOCKED_SPLIT_ASSETS:
+    for destination in DERIVED_SPLIT_ASSETS:
         assets.append(
             _asset(
                 asset_id=f"split_v1:{PurePosixPath(destination).name}",
@@ -395,15 +396,10 @@ def install_local_bundles(manifest: Mapping[str, Any], project_root: Path, direc
 
 
 def direct_download_url(url: str) -> str:
-    """Turn Google Drive and Sheets share links into direct-download forms."""
+    """Turn a Google Drive share link into its direct-download form."""
     if not url.startswith("https://"):
-        raise ReproduceError(f"Download link must be https: {url}")
+        raise ReproduceError(f"Bundle link must be https: {url}")
     host = urllib.parse.urlsplit(url).netloc.lower()
-    if host == "docs.google.com":
-        match = re.search(r"/spreadsheets/d/([A-Za-z0-9_-]+)", url)
-        if match is None:
-            raise ReproduceError(f"Google Sheets link has no spreadsheet id: {url}")
-        return f"https://docs.google.com/spreadsheets/d/{match.group(1)}/export?format=csv"
     if host not in {"drive.google.com", "drive.usercontent.google.com"}:
         return url
     match = re.search(r"/file/d/([A-Za-z0-9_-]+)", url) or re.search(r"[?&]id=([A-Za-z0-9_-]+)", url)
@@ -413,18 +409,12 @@ def direct_download_url(url: str) -> str:
 
 
 def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, Any]:
-    """Record every bundle and locked split link from one exact mapping."""
+    """Record one download link per bundle filename; every bundle must be named."""
     filenames = {bundle["filename"] for bundle in manifest["bundles"]}
-    direct_assets = {
-        asset["repository_relative_destination"]: asset
-        for asset in manifest["assets"]
-        if asset["distribution_classification"] == DIRECT_DOWNLOAD
-    }
-    expected = filenames | set(direct_assets)
-    if set(links) != expected:
+    if set(links) != filenames:
         raise ReproduceError(
-            f"Links must name every bundle and direct asset exactly: "
-            f"missing={sorted(expected - set(links))} unknown={sorted(set(links) - expected)}"
+            f"Links must name every bundle exactly: missing={sorted(filenames - set(links))} "
+            f"unknown={sorted(set(links) - filenames)}"
         )
     urls = {}
     for bundle in manifest["bundles"]:
@@ -433,8 +423,26 @@ def bind_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, 
     for asset in manifest["assets"]:
         if asset["distribution_classification"] == PROJECT_BUNDLE:
             asset["url"] = urls[asset["bundle_id"]]
-    for destination, asset in direct_assets.items():
-        asset["url"] = direct_download_url(links[destination])
+    validate_manifest(manifest)
+    return manifest
+
+
+def bind_split_links(manifest: dict[str, Any], links: Mapping[str, str]) -> dict[str, Any]:
+    """Record direct-download links for the three locked split CSVs."""
+    expected = {PurePosixPath(path).name: path for path in DERIVED_SPLIT_ASSETS}
+    if set(links) != set(expected):
+        raise ReproduceError(
+            f"Split links must name train.csv, validation.csv, and test.csv exactly: "
+            f"missing={sorted(set(expected) - set(links))} unknown={sorted(set(links) - set(expected))}"
+        )
+    by_destination = {
+        asset["repository_relative_destination"]: asset for asset in manifest["assets"]
+    }
+    for filename, destination in expected.items():
+        asset = by_destination.get(destination)
+        if asset is None or asset["distribution_classification"] != DIRECT_DOWNLOAD:
+            raise ReproduceError(f"Manifest has no direct-download split asset: {filename}")
+        asset["url"] = direct_download_url(links[filename])
     validate_manifest(manifest)
     return manifest
 
@@ -467,7 +475,8 @@ def check_publication(
         except OSError as exc:
             failures[bundle["bundle_id"]] = str(exc)
     direct_assets = [
-        asset for asset in manifest["assets"]
+        asset
+        for asset in manifest["assets"]
         if asset["distribution_classification"] == DIRECT_DOWNLOAD and asset["required"]
     ]
     for asset in direct_assets:

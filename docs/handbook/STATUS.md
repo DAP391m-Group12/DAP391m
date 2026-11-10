@@ -17,39 +17,172 @@ does not assign Claude a current implementer or verifier role.
 | Documentation and focused static/unit validation | `PASS` | The version 2.3 guide and acceptance register pin the source commit, resolve their internal links, preserve the 0–12 rubric, and are covered by the focused documentation suite. This is static/unit evidence, not an end-to-end runtime result. |
 | Historical author-machine observations | `PARTIAL` | On 2026-11-03, `environment`, `verify-assets`, `evaluate`, `compare`, and `reports` were observed from a working tree using verified local bundles. Classical and neural evaluation ran in separate invocations after an initial defect was fixed. `reports` exited 1 with `INCOMPLETE`. |
 | Current-host technical resolution | `COMPLETE` | The 2026-11-05 issue was identified and recorded: this machine has no CUDA and does not contain the locked virtual environments; the owner records that those environments are on another machine. The asset gate passed 654/654, no checkpoint or metric comparison failed, and Phase B/C were stopped by owner decision. This status applies only to resolution of this host/environment issue. |
+| CUDA handoff Phase B, 2026-11-08 to 2026-11-09 | `COMPLETE` | At commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0` plus the scoped TabMmini reproduction fix on `codex/cuda-phase-b-c-handoff`, assets, all five environments, six-model frozen-checkpoint evaluation, all 402 RQ1 rows, and RQ2/RQ3/RQ4a/RQ4b passed. RQ2 passed 28/28 after its CPU inference thread count was locked to one and restored after each call. `reports` returned the allowed documented `INCOMPLETE` result: 5 objects PASS and 3 `NOT_REGENERATED`. Phase C was not opened by this task. |
+| CUDA handoff Phase C build and LFS publication, 2026-11-09 | `COMPLETE` | `maintainer-build --source-root .` rebuilt 11 core ZIPs totaling 678,068,350 bytes from 654 assets. All size, SHA-256, and member-inventory checks passed; RQ3 `runtime.csv` and the optional RQ4 audit archive are absent from core. Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` and all 11 core LFS objects were pushed; post-push `git lfs fsck` passed. The default route treats raw HMDA as optional provenance and the three locked CSVs as direct-download assets. Public links and partial clean-worktree verification passed later on 2026-11-09; complete clean-clone verification remains separate. |
+| Anonymous clean-clone acceptance run, 2026-11-09 | `PARTIAL` | From a new anonymous clone at `e470e12c49d558184ad44d26fd0e6186a0a58782`: publication, download, `verify-assets` 654/654, five environments, `evaluate` 6/6 with no fit, `compare` 402/402, RQ3 5/5, RQ4a 4/4, and RQ4b 17/17 passed. Raw HMDA was bound as a required Google Drive direct download after RQ3 stopped on the missing file. The owner closed execution during RQ2 after three of six models; RQ2 and `reports` were not rerun in the clone. Record: `reports/reproducibility/receipts/clean_clone_acceptance_20261109.md`. |
 | Overall reproduction runtime | `PARTIAL` | The current-source end-to-end clean-clone reproducibility is not established. Closing the current-host Phase B/C attempt does not mark the entire reproduction runtime complete. |
 
-### Non-CUDA publication preparation — 2026-11-09
+### CUDA handoff Phase B — 2026-11-08 to 2026-11-09
 
-The direct-download implementation for the three locked split CSVs is present in the
-working tree. Raw HMDA remains an optional historical-provenance asset and is not a
-default frozen-checkpoint-route prerequisite. The downloader uses a `.part` file,
-checks exact byte size and SHA-256, atomically publishes only a verified file, skips an
-already verified destination, and refuses to overwrite a mismatched destination.
-Focused asset, release/link-binding, and documentation tests passed 119/119 on the
-current host after the final publication-status update.
+The attempt ran from commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0`
+on `codex/cuda-phase-b-c-handoff`. Static inspection of every reachable Phase B
+entrypoint preceded execution. Imported modules that also contain training functions
+were traced to the inference-only helpers actually called. No training, fitting,
+refitting, threshold selection, lambda selection, or seed selection route ran.
 
-All eleven local core ZIPs passed filename, byte-size, SHA-256, and member-inventory
-checks; their manifest total is 678,068,350 bytes. RQ3 `runtime.csv` remains excluded,
-and the optional RQ4 audit archive remains outside the core manifest.
+`verify-assets` exited 0 and passed 654/654 assets with no missing or mismatched
+entries. After the owner authorized installation, `environment --install` created
+the five locked profiles and the environment gate passed all five. The three CUDA
+profiles used Torch `2.14.0+cu130`, CUDA build `13.0`, cuDNN `92400`, driver
+`610.74`, and each completed a finite CUDA tensor operation on the NVIDIA GeForce
+RTX 5050 Laptop GPU with 8,546,484,224 bytes of device memory. The retained receipts
+are `verify-assets_20261108T122017_953903Z.json` and
+`environment_20261108T125329_497165Z.json` under
+`reports/reproducibility/receipts/`.
 
-Anonymous publication verification is `PASS`. After the corrected RQ2 link and three
-byte-preserving split links were bound, the anonymous repository endpoint and all
-eleven ZIP URLs passed reachability and expected remote-size checks. Train, Validation,
-and Test matched their locked byte sizes and SHA-256 values. The publication check
-alone does not hash the complete remote ZIP bodies.
+`evaluate --model all` then passed six of six frozen-checkpoint evaluations. Every
+model receipt records zero model-fit calls, zero preprocessing-fit calls, one
+checkpoint-inference pass, and `training_code_called=false`. The three neural models
+recorded actual `cuda:0` allocations of 35,195,392, 52,161,536, and 86,641,664 bytes.
+`compare` passed all 402 rows with zero failures. The command receipts are
+`evaluate_20261108T125910_329422Z.json` and
+`compare_20261108T125939_503172Z.json`.
 
-A detached temporary worktree at source commit `5a5667b13546e6b088756cd8e9da8e963a0ccfe0`
-with the current downloader and manifest changes ran the allowed non-CUDA route.
-`download` fetched the three locked CSVs and all eleven ZIPs, extracted 647 members,
-and passed with 653/654 assets verified, no mismatch or required asset missing, and one
-optional provenance asset absent. Independent `verify-assets` returned the same PASS.
-The retained receipts are
-`reports/reproducibility/receipts/download_20261109T071729_398185Z.json` and
-`reports/reproducibility/receipts/verify-assets_20261109T071743_149615Z.json`.
-This closes the public publication and partial clean-worktree gates, not the complete
-clean-clone reproduction. CUDA Phase B and the full clean-clone route remain pending.
-No training, fitting, neural inference, or CUDA command ran.
+The first research run completed all four workers. RQ3 passed 5/5 comparison rows, RQ4a
+passed 4/4 package-validation rows without fitting `ThresholdOptimizer`, and RQ4b
+passed 17/17 rows from saved predictions without reopening training, CV, lambda, or
+threshold selection. RQ2 completed all six frozen CPU-inference models and all 1,000
+bootstrap replicates per model, but its final comparison failed 3 of 28 rows. All
+three failures are TabMmini numerical differences above the locked `1e-12` tolerance:
+`importance.csv` delta `2.12172445194711e-10`, `cube.npy` maximum delta
+`5.960464477539063e-08`, and `gsv_local.npy` maximum delta
+`1.9868215961338365e-09`. The research receipt is
+`research_20261108T141813_840212Z.json`.
+
+Diagnosis found 432 of 1,048,576 TabMmini cube values different, with the
+maximum difference equal to one float32-scale step at the observed value. The derived
+`gsv_local.npy` differs in 63 of 3,072 values, and 23 to 24 importance rows differ by
+column. This pattern is consistent with environment-sensitive CPU inference rounding,
+but the accepted RQ2 package does not record enough runtime provenance to confirm a
+specific hardware or kernel cause from historical provenance alone. A controlled
+frozen-inference check then isolated the current-host divergence: 14 Torch intra-op
+threads reproduced the failed output exactly, while one thread matched the accepted
+TabMmini cube block exactly; repeated calls on the same host were stable. The minimal
+fix locks TabMmini CPU inference to one intra-op thread and restores the caller's
+process-wide setting in a `finally` block. Its focused suite passed 51 tests.
+
+The official `research --route all` rerun passed RQ2 28/28, RQ3 5/5, RQ4a 4/4,
+and RQ4b 17/17. Its receipt is
+`research_20261108T174830_904582Z.json`. A log scan found no fit, train, refit,
+backward, optimizer-step, or selection event. `reports` then returned the documented
+`INCOMPLETE` status with five objects PASS and three `NOT_REGENERATED`: Figures 2 and
+3 and the assembled RQ text reports have no source-backed builder and their notebooks
+were not executed. The reports receipt is `reports_20261108T174846_986881Z.json`.
+
+The locked numerical policy was not changed and accepted artifacts were not modified.
+Phase B is complete under the handoff rule that permits the already documented
+object-level report gaps after all scientific gates pass. Phase C was not opened by
+this task, and no release build, LFS staging, commit, or push was attempted.
+
+### CUDA handoff Phase C build and LFS publication — 2026-11-09
+
+After the Phase B scientific gates passed, static review confirmed that
+`maintainer-build` only inventories retained files, hashes them, creates deterministic
+ZIPs, and writes the manifest. It has no training, fitting, inference, selection, or
+frozen-artifact write path. The focused asset/release/documentation suite passed 112
+tests when run with a Git ceiling that kept test fixtures outside repository discovery.
+
+The final build completed with 654 assets, 634 required assets, and 11 core bundles
+totaling 678,068,350 bytes. The bundle identities and content inventory digest remained
+unchanged; manifest policy changed only to make raw HMDA optional and the three locked
+splits direct downloads. Each ZIP passed
+its declared byte-size and SHA-256 check, and its exact member list matched the assets
+assigned to that bundle. RQ3 `runtime.csv` is excluded and the optional RQ4 audit
+archive is not present in the core manifest. The final manifest records
+`source_provenance.source_revision` as direct-download implementation commit
+`0aa028a00845852d383e0a180ccae82942bafad2`.
+
+The verification record is
+`reports/reproducibility/phase_c/phase_c_bundle_verification_20261108T181358Z.json`.
+Release commit `1d384482f7b00f84c06cdecbb4abd13380da91a2` was pushed to
+`origin/codex/cuda-phase-b-c-handoff`. The remote branch resolved to the same SHA,
+Git LFS reported no pending objects, all 11 core objects were listed with their locked
+SHA-256 identities, and post-push `git lfs fsck` passed. Phase C build/stage/commit/push
+status is `COMPLETE`. Public bundle URLs and direct URLs for the three locked split
+CSVs were absent at Phase C completion; they were supplied and verified later on
+2026-11-09 as recorded below.
+
+At Phase C completion, the manifest no longer derived the three locked splits from the live HMDA
+endpoint, and raw HMDA was optional historical provenance. The later clean-clone
+acceptance superseded that raw classification: the current manifest and inventory
+builder require the locked Google Drive raw copy. Train, Validation, and Test are
+required `direct_download` assets with their locked byte sizes and SHA-256 identities;
+the downloader uses `.part`, verifies before atomic publication, skips an already
+verified destination, and fails without overwriting a mismatched destination. The
+three URL fields were null at implementation commit time because that prompt supplied
+placeholders rather than usable links. The full focused Phase B/asset/release/documentation suite passed 176
+tests after this change, `verify-assets` again passed 654/654, and the 11 bundle
+identities were unchanged. Implementation commit `0aa028a00845852d383e0a180ccae82942bafad2`
+and final manifest commit `61a87bec7878c3507b0b76dd5fdae5d4d320b7ff` retain this evidence.
+
+### Anonymous clean-clone acceptance run — 2026-11-09
+
+A new directory outside every existing worktree received an anonymous clone of
+`codex/cuda-phase-b-c-handoff` (credential helper off, Git LFS smudge off), checked out
+at `e470e12c49d558184ad44d26fd0e6186a0a58782`. No data, artifact, output, checkpoint,
+or environment was copied from another workspace. The host was Windows 11 10.0.26200,
+Intel Core i7-13650HX, 34,053,414,912 bytes of RAM, NVIDIA GeForce RTX 5050 Laptop GPU
+(8,546,484,224 bytes), driver 610.74, Torch 2.14.0+cu130, CUDA build 13.0, cuDNN 92400.
+
+`maintainer-check-publication` passed (11 bundles, 3 direct assets). `download` fetched
+all 14 public files, extracted 647 members, and verified 653/654 with the optional raw
+HMDA absent (`download_20261109T080608_979875Z.json`); `verify-assets` matched
+(`verify-assets_20261109T080611_501473Z.json`). `environment --install` created all five
+profiles in 677.6 s and `environment` passed 5/5 with finite CUDA operations in the three
+neural profiles (`environment_20261109T081829_471874Z.json`). `evaluate --model all`
+passed 6/6 with zero model and preprocessing fits; the neural models used `cuda:0`
+with peak allocations of 35,195,392, 52,161,536, and 86,641,664 bytes
+(`evaluate_20261109T082407_179201Z.json`). `compare` passed 402/402 under the unchanged
+numerical policy (`compare_20261109T082435_073547Z.json`).
+
+The first `research --route all` stopped in RQ3 with `FileNotFoundError` for
+`data/raw/state_NY_2024.csv`: RQ3 reads `derived_race` from the raw file, but the
+manifest classified raw HMDA as optional. The route continued into RQ4a, RQ4b, and RQ2
+and was stopped. `verify-assets` then still passed 653/654, so no frozen asset changed.
+The owner supplied a Google Drive copy; an anonymous download matched 145,740,132 bytes
+and the locked SHA-256. With owner approval the manifest now records `hmda_ny_2024_raw`
+as a required `direct_download` from that link, and the committed-manifest test asserts
+it. Publication then passed with four direct assets, `download` fetched the raw file,
+and `verify-assets` passed 654/654 (`verify-assets_20261109T100857_361857Z.json`).
+
+Run one route at a time, RQ3 passed 5/5 (`research_20261109T101841_240460Z.json`), RQ4a
+4/4 without fitting `ThresholdOptimizer` (`research_20261109T101853_337649Z.json`), and
+RQ4b 17/17 with Gate C read only (`research_20261109T102246_041527Z.json`). The owner
+closed all execution while RQ2 was running, after LR, RF, and XGBoost passed their
+per-model checks; no RQ2 comparison receipt exists from the clone. `reports`, Phase C
+ZIP/LFS re-verification, and a final tag did not run in this acceptance. The focused
+reproduction and documentation suite passed 229 tests; the one failure,
+`test_removed_empty_scaffolds_remain_absent`, predates this work because `src/api/main.py`
+is tracked. No training, fitting, threshold or lambda selection, or bootstrap-index
+replacement occurred.
+
+### Non-CUDA public distribution gate — 2026-11-09
+
+The owner subsequently supplied 11 public bundle links and byte-preserving links for
+Train, Validation, and Test. The manifest binds all 14 URLs. Anonymous publication
+verification passed the repository endpoint, the expected remote sizes of all 11 ZIPs,
+and exact byte-size/SHA-256 checks for the three required direct-download CSVs.
+
+A detached worktree at remote source commit `63a7f41` plus the scoped publication
+checker change downloaded all three CSVs and all eleven bundles, extracted 647 members,
+and passed with 653/654 assets verified. Independent `verify-assets` returned the same
+PASS: no mismatch or required asset was missing; the single absent asset is optional
+raw-HMDA provenance. The retained receipts are
+`download_20261109T073546_424715Z.json` and
+`verify-assets_20261109T073632_076796Z.json`. No environment installation, training,
+fitting, inference, evaluation, comparison, research route, report generation, CUDA,
+or notebook execution ran in this detached worktree. This closes the anonymous
+publication and partial clean-worktree gates, not the complete clean-clone route.
 
 ### Current-host Phase B attempt — 2026-11-05
 
@@ -99,11 +232,13 @@ The core release policy now excludes this volatile timing file while preserving 
 historical artifact. The RQ3 bundle was rebuilt from its five deterministic members,
 and the manifest records source revision `4bdfa0a5aebe138982b75a055891c1321a4d5496`,
 an included-inventory digest, and the excluded path. Local `verify-assets` passed
-654/654 after reconciliation. This is local asset-integrity evidence only; it does not
-establish public download, current-source RQ execution, or clean-clone reproduction.
+654/654 after reconciliation. This local record by itself did not establish public
+download. The later non-CUDA public-distribution gate above established anonymous
+download and partial clean-worktree asset verification, but not complete clean-clone
+reproduction.
 
-The final tag, owner-supplied bundle links, anonymous download verification, and a
-qualified clean-host run remain delivery gates. Figures, text reports, and notebooks
+The final tag and a qualified complete clean-host run remain delivery gates. Figures,
+text reports, and notebooks
 were not regenerated; Figures 4 to 6 are absent from the repository and Figure 1 has
 no regeneration route. These limitations do not change the accepted frozen
 experimental runs recorded elsewhere in this register.
