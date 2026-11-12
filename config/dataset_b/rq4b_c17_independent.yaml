@@ -1,0 +1,28 @@
+schema_version: 1
+experiment_type: posthoc_epoch_matched_sensitivity
+epoch_policy: FIXED_BUDGET_SENSITIVITY
+execution_epochs: 17
+schedule_horizon_epochs: 256
+adversary_lambda: 0
+seeds: [42, 43, 44]
+batch_size: 256
+device: cuda:0
+split_rows: {train: 205310, validation: 43995, test: 43996}
+cv_fits_per_seed: 0
+full_train_fits_per_seed: 1
+recipe: config/dataset_b/realmlp_v1.yaml
+input_contract: config/dataset_b/rq4b_adversarial.yaml
+run_root: artifacts/dataset_b/rq4/rq4b_c17/rq4b_c17_20261111_02
+scratch_root: scratch/rq4b_c17_independent
+reference_manifest: artifacts/dataset_b/rq4/rq4b/test_evaluation/rq4b3_test_20261024_01/run_manifest.json
+reference_manifest_sha256: d05fc2980986452428b5fc656aaba89c8bad698923cab7da67f5ff241e7595a4
+bootstrap_sha256: 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1
+bootstrap_replicates: 1000
+minimum_valid_replicates_per_quantity: 1000
+quantile_method: linear
+quantities: [ba, eod3, eod6]
+contrasts: [A17-C17, C17-C_long]
+threshold: {start: 0.001, stop: 0.999, step: 0.001, count: 999, tie_break: [closest_to_0.5, lower]}
+replay: {atol: 0.000001, rtol: 0.00001, purpose: diagnostic_alert_not_weight_equivalence}
+acceptance_policy: independent_fixed_epoch_control_v1
+original_results: read_only_no_recomputation

@@ -1,7 +1,47 @@
 # Dataset B — Current Execution Status
 
-**Reconciled:** 2026-11-09
+**Reconciled:** 2026-11-12
 **Authority:** This file is the sole register of current execution status. Other project documents define contracts, procedures, or history; status claims found elsewhere are not authoritative unless they are clearly labeled as historical and point back here.
+
+## RQ4b C17 fixed-epoch sensitivity completion — 2026-11-12
+
+The independent C17 control is `COMPLETE` under
+`independent_fixed_epoch_control_v1`. Run
+`artifacts/dataset_b/rq4/rq4b_c17/rq4b_c17_20261112_01` contains three
+accepted lambda-zero units for seeds 42, 43 and 44, each with exactly 17
+execution epochs and schedule horizon 256, no CV, 13,617 predictor updates and
+zero adversary updates. Seed 42 was recovered artifact-only from the immutable
+failed run `rq4b_c17_20261111_02`: the full-Train preprocessing/input digest was
+reproduced exactly, serialization/reload probabilities were exactly equal, and
+no predictor fit or optimizer update was executed. Seeds 43 and 44 were fresh
+fits; fit-engine accounting is exactly `[43, 44]`. The historical failed run and
+its seed-42 checkpoint SHA-256
+`d8d0ebd000236f9dcd1d08ec90eab8c42f58a8003777bc98ffd4db6f9d06a8f7`
+remain unchanged.
+
+All three independent reload checks passed in eval mode on `cuda:0`. Validation
+thresholds were locked before Test at 0.750, 0.764 and 0.762 for seeds 42, 43
+and 44. Test membership/pairing against the accepted A17 and C_long arms passed.
+All six paired contrast calls used the locked 1,000-index bootstrap; every
+BA/EOD3/EOD6 quantity had 1,000/1,000 valid replicates. Descriptive across-seed
+means (sample SD) are: A17-C17 delta BA -0.000368 (0.000612), delta EOD3
+-0.000496 (0.006617), delta EOD6 -0.007256 (0.015268); C17-C_long delta BA
+-0.003330 (0.000110), delta EOD3 -0.003114 (0.007359), and delta EOD6
+-0.020267 (0.022357). Bootstrap replicates are not pooled across seeds and no
+across-seed significance claim is made. Historical-CE replay remains a
+diagnostic `BLOCK` for all three units and is not an acceptance gate; schedule,
+position and batch invariants remained enforced.
+
+Evidence: `fit_complete.json`, `sensitivity_results.json`, per-unit ledgers,
+reload/acceptance receipts and `completion_report.json` in the completed run;
+adapter regression and execution evidence under
+`scratch/rq4b_c17_independent/{adapter_serialization_20261112_01,completion_20261112_01}`.
+The focused C17 suite passed 54/54 before execution; package validation reports
+`PASS`, two fresh model fits, one recovered historical fit, zero CV fits, six
+paired-bootstrap calls, 137 protected files verified and no change to the
+historical failed run. This post-hoc three-seed sensitivity is model-behaviour
+evidence and does not establish causality, legal discrimination,
+creditworthiness or default risk.
 
 ## Current Dataset B reproduction route — 2026-11-03
 

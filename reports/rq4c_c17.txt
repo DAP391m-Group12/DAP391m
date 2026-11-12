@@ -1,0 +1,403 @@
+C17 FIXED-EPOCH CONTROL: LOGIC, EVALUATION RESULTS AND PAIRED COMPARISONS
+Generated from existing artifacts only: 2026-11-12
+
+IMPORTANT SCOPE NOTE
+====================
+
+This report is a read-only synthesis of the already stored C17 artifacts. No
+training, inference, threshold search, evaluation, bootstrap recomputation, or
+artifact regeneration was run to produce this file.
+
+The requested output filename uses "rq4c", but the underlying evidence is the
+RQ4b C17 fixed-epoch sensitivity run:
+
+  artifacts/dataset_b/rq4/rq4b_c17/rq4b_c17_20261112_01
+
+The numerical results below describe the stored execution package. They do not
+resolve the separate repository-closure issues previously identified: the
+canonical source/config still point to the older failed run, and the protected
+baseline no longer matches the subsequently edited STATUS.md. Therefore this
+report does not claim that the current repository is canonically closed or
+currently revalidated end to end.
+
+
+1. PURPOSE OF C17
+=================
+
+C17 is the independent lambda-zero fixed-budget control used to separate two
+questions:
+
+1. A17 - C17: at the same 17-epoch execution budget, what changes when the
+   accepted adversarial arm A17 is compared with the lambda=0 C17 control?
+
+2. C17 - C_long: for lambda=0, what changes when the 17-epoch C17 control is
+   compared with the accepted long-budget control C_long?
+
+This design keeps the model seed matched in every comparison. It is a post-hoc
+three-seed sensitivity analysis. It does not establish causality, legal
+discrimination, creditworthiness, or default risk.
+
+
+2. LOCKED C17 EXECUTION CONTRACT
+================================
+
+Model seeds:                         42, 43, 44
+Adversary lambda:                    0
+Execution epochs per seed:           17
+Schedule horizon:                    256 epochs
+Batch size:                          256
+Batches per execution epoch:         801
+Predictor updates per seed:          13,617
+Adversary updates per seed:          0
+Cross-validation fits:               0
+Train rows:                          205,310
+Validation rows:                     43,995
+Test rows:                           43,996
+Device recorded after reload:        cuda:0
+Predictor mode after reload:         eval (training=false)
+
+Fit origin:
+
+  Seed 42: recovered artifact-only from the historical seed-42 checkpoint;
+           zero predictor fits and zero optimizer updates in the completion
+           execution.
+  Seed 43: one fresh completion fit.
+  Seed 44: one fresh completion fit.
+
+Fit accounting in completion_report.json:
+
+  Actual fresh model fits:            2
+  Recovered historical model fits:    1
+  CV fits:                            0
+  Fit engine started/returned seeds:  [43, 44]
+
+All three stored acceptance receipts report PASS for the fixed-budget/recipe
+checks and checkpoint reload. Reload probabilities were exactly equal before
+and after serialization for all three seeds.
+
+The historical-CE replay status is BLOCK for all three seeds. The locked C17
+policy explicitly marks this replay as a diagnostic alert rather than a weight-
+equivalence or acceptance gate (ce_replay_required=false). It must not be
+misreported as either an acceptance PASS or an execution failure.
+
+
+3. EVALUATION LOGIC
+===================
+
+3.1 Threshold selection
+-----------------------
+
+Each seed uses its own Validation predictions. The chosen global threshold is
+the candidate that maximizes Validation balanced accuracy over 999 candidates:
+
+  0.001, 0.002, ..., 0.999
+
+Tie-breaking is locked as:
+
+  1. threshold closest to 0.5;
+  2. lower threshold if a tie remains.
+
+The threshold is locked on Validation before Test is evaluated. Test does not
+participate in threshold selection.
+
+3.2 Metrics
+-----------
+
+BA (balanced accuracy):
+
+  BA = (TPR + TNR) / 2
+
+Higher BA is better predictive performance.
+
+EOD3 and EOD6 use fixed race-group rosters. For a roster, equalized-odds
+disparity is:
+
+  EOD = max(range of approved-positive TPR,
+            range of approved-positive FPR)
+
+Lower EOD means less disparity within the specified roster.
+
+EOD3 roster:
+
+  White
+  Black or African American
+  Asian
+
+EOD6 roster:
+
+  White
+  Black or African American
+  Asian
+  American Indian or Alaska Native
+  2 or more minority races
+  Joint
+
+All stored C17 EOD3 and EOD6 Test quantities are valid; no required roster group
+is listed as invalid.
+
+3.3 Direction of the comparison deltas
+--------------------------------------
+
+The stored delta is always comparator minus control:
+
+  A17-C17     = metric(A17) - metric(C17)
+  C17-C_long  = metric(C17) - metric(C_long)
+
+For BA:
+
+  positive delta = the first named arm has higher BA;
+  negative delta = the first named arm has lower BA.
+
+For EOD:
+
+  negative delta = the first named arm has lower disparity;
+  positive delta = the first named arm has higher disparity.
+
+3.4 Confidence intervals
+------------------------
+
+Every comparison uses the same ordered Test rows within a seed and the locked
+Test bootstrap indices:
+
+  SHA-256: 2ee377b6fbae8a3a6453a7d8f2f4a0a3f1ce61374f1258ef882589b84230fee1
+
+For each seed and comparison:
+
+  Replicates:                   1,000 paired replicates
+  Confidence interval:         two-sided 95% percentile interval
+  Quantiles:                   0.025 and 0.975
+  Quantile interpolation:      linear
+  Validity requirement:        1,000/1,000 valid values per quantity
+  Replacement/top-up:          none
+  Rounding before quantiles:    none
+
+All 18 delta intervals below have 1,000/1,000 valid replicates, zero invalid
+replicates, and are evaluable.
+
+The package does not store a standalone bootstrap CI for the absolute C17 BA,
+EOD3, or EOD6 values. The available CIs are paired CIs for comparison deltas.
+No standalone C17 CI is invented in this report.
+
+
+4. VALIDATION THRESHOLDS
+========================
+
+Seed    Locked threshold    Validation BA    Tied candidates
+----    ----------------    -------------    -----------------
+42      0.750               0.782112251      [0.750]
+43      0.764               0.783518103      [0.764]
+44      0.762               0.781861188      [0.762]
+
+Each threshold receipt covers all 43,995 Validation rows. The singleton tied-
+candidate lists show that no threshold tie-break was needed for these three
+seeds.
+
+
+5. C17 TEST EVALUATION
+======================
+
+All Test receipts cover 43,996 rows with the seed-specific locked Validation
+threshold.
+
+Seed 42
+-------
+
+Threshold:        0.750
+BA:               0.780477644
+EOD3:             0.100813816
+  TPR range:      0.100813816
+  FPR range:      0.047302255
+EOD6:             0.117058617
+  TPR range:      0.100813816
+  FPR range:      0.117058617
+
+Seed 43
+-------
+
+Threshold:        0.764
+BA:               0.781481167
+EOD3:             0.106388058
+  TPR range:      0.106388058
+  FPR range:      0.055922563
+EOD6:             0.114380352
+  TPR range:      0.106388058
+  FPR range:      0.114380352
+
+Seed 44
+-------
+
+Threshold:        0.762
+BA:               0.781297968
+EOD3:             0.104914920
+  TPR range:      0.104914920
+  FPR range:      0.054577237
+EOD6:             0.136746224
+  TPR range:      0.104944781
+  FPR range:      0.136746224
+
+These are point estimates on the complete Test partition, not bootstrap means.
+
+
+6. PAIRED COMPARISON: A17 - C17
+================================
+
+Purpose: compare adversarial training against lambda=0 while holding the
+17-epoch execution budget and seed matched.
+
+The values below are stored point deltas followed by the paired 95% CI.
+
+Seed    Quantity    Point delta       95% CI lower       95% CI upper
+----    --------    -----------       ------------       ------------
+42      delta_BA     0.000314660      -0.001209745        0.001669425
+42      delta_EOD3   0.001141353      -0.005789862        0.007829270
+42      delta_EOD6   0.001479739      -0.031328246        0.049233399
+
+43      delta_BA    -0.000868374      -0.002379991        0.000751900
+43      delta_EOD3  -0.007777370      -0.014378138       -0.001148322
+43      delta_EOD6   0.001638764      -0.044831372        0.028189426
+
+44      delta_BA    -0.000550158      -0.001884435        0.000874021
+44      delta_EOD3   0.005149405      -0.000750061        0.011681535
+44      delta_EOD6  -0.024885112      -0.078179386        0.008852956
+
+Direct interpretation of the stored intervals:
+
+  - BA: all three seed-specific CIs include zero. The stored evidence does not
+    show a seed-specific non-zero A17-C17 BA difference at the 95% interval
+    level.
+
+  - EOD3: seed 43 is the only seed whose CI excludes zero. Its interval is
+    entirely negative, meaning A17 has lower EOD3 than C17 for seed 43. Seeds
+    42 and 44 include zero.
+
+  - EOD6: all three CIs include zero. The seed-44 point estimate favors lower
+    EOD6 for A17, but its CI crosses zero and must not be reported as a stable
+    non-zero difference.
+
+Across-seed descriptive summary (point deltas only):
+
+Quantity       Mean              Sample SD
+--------       ----              ---------
+delta_BA       -0.000367958       0.000612201
+delta_EOD3     -0.000495537       0.006617019
+delta_EOD6     -0.007255536       0.015267867
+
+
+7. PAIRED COMPARISON: C17 - C_LONG
+==================================
+
+Purpose: compare the lambda=0 17-epoch control with the same-seed accepted
+long-budget lambda=0 control.
+
+Seed    Quantity    Point delta       95% CI lower       95% CI upper
+----    --------    -----------       ------------       ------------
+42      delta_BA    -0.003386156      -0.005476726       -0.001183025
+42      delta_EOD3  -0.011015643      -0.021637183        0.000780889
+42      delta_EOD6  -0.023031317      -0.091318404        0.024028928
+
+43      delta_BA    -0.003203163      -0.005496029       -0.001056640
+43      delta_EOD3  -0.001871344      -0.010986666        0.007962616
+43      delta_EOD6  -0.041112804      -0.075910596        0.046279019
+
+44      delta_BA    -0.003400307      -0.005846287       -0.001120876
+44      delta_EOD3   0.003543743      -0.007033587        0.014962850
+44      delta_EOD6   0.003343710      -0.051852163        0.056062613
+
+Direct interpretation of the stored intervals:
+
+  - BA: all three CIs are entirely negative. C17 has lower Test BA than C_long
+    for seeds 42, 43, and 44. The point loss is approximately 0.0032-0.0034 in
+    raw BA units.
+
+  - EOD3: all three CIs include zero. Seeds 42 and 43 have negative point
+    estimates and seed 44 has a positive point estimate, but none establishes a
+    non-zero seed-specific difference at the 95% interval level.
+
+  - EOD6: all three CIs include zero. The direction of the point estimate also
+    changes across seeds; no stable non-zero EOD6 difference is supported by
+    these seed-specific intervals.
+
+Across-seed descriptive summary (point deltas only):
+
+Quantity       Mean              Sample SD
+--------       ----              ---------
+delta_BA       -0.003329875       0.000109964
+delta_EOD3     -0.003114414       0.007358862
+delta_EOD6     -0.020266804       0.022356818
+
+
+8. WHAT THE STORED RESULTS SUPPORT
+==================================
+
+1. The 17-epoch C17 control has very similar BA across the three seeds
+   (approximately 0.7805-0.7815), with EOD3 approximately 0.1008-0.1064.
+
+2. A17 versus C17 does not show a seed-specific BA difference whose 95% CI
+   excludes zero. The only A17-C17 disparity interval excluding zero is EOD3
+   for seed 43, favoring lower EOD3 for A17.
+
+3. C17 has lower BA than C_long in every seed, and all three paired BA CIs are
+   entirely below zero. This is the clearest consistent comparison result in
+   the stored C17 package.
+
+4. C17-C_long EOD3 and EOD6 intervals all cross zero. The stored evidence does
+   not support a consistent seed-specific non-zero fairness difference between
+   the short and long lambda-zero controls.
+
+5. The across-seed mean and sample SD are descriptive only. Bootstrap values
+   were not pooled across seeds, and the package makes no across-seed
+   significance claim.
+
+
+9. LIMITATIONS
+==============
+
+  - Only three seeds are included.
+  - This is a post-hoc fixed-budget sensitivity analysis.
+  - Same-seed pairing improves comparison precision but does not establish a
+    causal effect.
+  - Bootstrap inference is conditional on the fitted models and the locked
+    Validation thresholds.
+  - A CI including zero is not proof that the arms are equivalent.
+  - The package contains paired delta CIs, not standalone C17 metric CIs.
+  - EOD3 and EOD6 refer only to their locked fixed rosters and must not be
+    generalized to every possible protected-group definition.
+  - The diagnostic CE replay BLOCK is not an acceptance failure, but historical
+    weight equivalence was not proven.
+  - The stored execution package reported PASS at completion time; current
+    canonical repository closure/revalidation is a separate unresolved issue.
+
+
+10. EVIDENCE SOURCES READ
+=========================
+
+Primary package:
+
+  artifacts/dataset_b/rq4/rq4b_c17/rq4b_c17_20261112_01/
+
+Files used:
+
+  completion_report.json
+  fit_complete.json
+  provenance.json
+  sensitivity_results.json
+  all_validation_thresholds_locked.json
+
+For each seed 42, 43, and 44:
+
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/acceptance.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/reload.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/replay_diagnostic.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/threshold.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/validation_receipt.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/test_receipt.json
+  units/C17-FIXED_BUDGET_SENSITIVITY-E17-H256-L0-Sxx/new_contrasts.json
+
+Evaluation semantics were checked against:
+
+  src/dataset_b/mitigation/rq4b_c17_independent.py
+  src/dataset_b/mitigation/rq4b_evaluation.py
+  config/dataset_b/rq4b_c17_independent.yaml
+
+
+END OF REPORT
