@@ -64,9 +64,14 @@ backend.
 
 T05B2A moved the LR-08 Validation, LR-09 frozen Test evaluation, and LR-10
 read-only final-review implementations into `models/classical/lr/`. Their
-former `evaluation/` and `review/` paths remain compatibility delegates. No LR
-training implementation was reconstructed; the existing LR-07 source
-traceability gap remains recorded.
+former `evaluation/` and `review/` paths remain compatibility delegates. LR-07
+was originally executed on 2026-10-02 as an inline script that was never saved
+in the repository. Its training procedure was reconstructed afterwards from the
+recorded execution session into `models/classical/lr/training.py`; that module
+was not used to create the frozen bundle and its `run` function has not been
+executed on the real data. LR-07
+remains frozen and must not be retrained; use its read-only `validate` command
+to check the frozen bundle.
 
 T05B2B moved RF-07 training, RF-08 Validation, RF-09 frozen Test evaluation,
 and RF-10 read-only final review into `models/classical/rf/`. Former training,
